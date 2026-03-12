@@ -1,0 +1,200 @@
+import React, { useState } from 'react';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Alert,
+  IconButton,
+  InputAdornment
+} from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    // Clear error for this field
+    if (errors[e.target.name]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: ''
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(formData.email, formData.password);
+    setLoading(false);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    }
+  };
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Box
+          sx={{
+            marginTop: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              padding: 4,
+              width: '100%',
+              borderRadius: 4
+            }}
+          >
+            <Typography
+              component="h1"
+              variant="h4"
+              align="center"
+              gutterBottom
+              sx={{
+                fontFamily: '"Comic Neue", cursive',
+                fontWeight: 'bold',
+                color: 'primary.main'
+              }}
+            >
+              Welcome Back! 🎓
+            </Typography>
+            
+            <Typography
+              variant="body2"
+              align="center"
+              color="textSecondary"
+              sx={{ mb: 3 }}
+            >
+              Login to continue your learning journey
+            </Typography>
+
+            <form onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
+                margin="normal"
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                margin="normal"
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  py: 1.5,
+                  borderRadius: 3,
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold'
+                }}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </Button>
+
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="body2">
+                  Don't have an account?{' '}
+                  <Link
+                    to="/register"
+                    style={{
+                      color: '#3f51b5',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Sign up here
+                  </Link>
+                </Typography>
+              </Box>
+            </form>
+          </Paper>
+        </Box>
+      </motion.div>
+    </Container>
+  );
+};
+
+export default Login;

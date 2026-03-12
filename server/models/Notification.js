@@ -1,0 +1,44 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
+const Notification = sequelize.define('Notification', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  type: {
+    type: DataTypes.ENUM('achievement', 'quiz_result', 'comment', 'like', 'announcement', 'reminder'),
+    allowNull: false
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  message: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  data: {
+    type: DataTypes.TEXT,
+    defaultValue: '{}',
+    get() {
+      const val = this.getDataValue('data');
+      return val ? JSON.parse(val) : {};
+    },
+    set(val) {
+      this.setDataValue('data', JSON.stringify(val));
+    }
+  },
+
+  isRead: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  isDeleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
+});
+
+module.exports = Notification;
