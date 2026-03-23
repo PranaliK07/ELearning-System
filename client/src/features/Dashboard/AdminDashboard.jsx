@@ -34,7 +34,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  CircularProgress
 } from '@mui/material';
 import {
   People,
@@ -50,14 +51,14 @@ import {
   CheckCircle,
   Warning,
   BarChart,
-  Settings
+  Settings,
+  Refresh
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -71,6 +72,8 @@ const AdminDashboard = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [serverAccessAvailable, setServerAccessAvailable] = useState(true);
   const [openUserDialog, setOpenUserDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -83,6 +86,7 @@ const AdminDashboard = () => {
     teacher: new Set(['dashboard', 'subjects', 'assignments', 'reports']),
     student: new Set(['dashboard', 'subjects', 'assignments'])
   });
+  
   const loadSavedAccess = () => {
     try {
       const saved = localStorage.getItem('roleAccess');
@@ -107,19 +111,85 @@ const AdminDashboard = () => {
   }, [location.search]);
 
   const fetchAdminData = async () => {
+    setLoading(true);
     try {
+      // Fetch users
       const usersRes = await api.get('/api/users');
-      setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+      const usersData = Array.isArray(usersRes.data) ? usersRes.data : 
+                       (usersRes.data?.users ? usersRes.data.users : []);
+      setUsers(usersData);
+      console.log('Users fetched:', usersData.length);
 
-      const contentRes = await api.get('/api/content');
-      setContent(Array.isArray(contentRes.data) ? contentRes.data : []);
+      // Fetch content with better error handling
+      try {
+        const contentRes = await api.get('/api/content');
+        console.log('Content API response:', contentRes.data);
+        
+        let contentData = [];
+        
+        // Handle different response structures
+        if (Array.isArray(contentRes.data)) {
+          contentData = contentRes.data;
+        } else if (contentRes.data?.content) {
+          contentData = contentRes.data.content;
+        } else if (contentRes.data?.data) {
+          contentData = contentRes.data.data;
+        } else if (contentRes.data?.items) {
+          contentData = contentRes.data.items;
+        } else if (contentRes.data?.lessons) {
+          contentData = contentRes.data.lessons;
+        } else if (contentRes.data?.courses) {
+          contentData = contentRes.data.courses;
+        } else if (contentRes.data?.materials) {
+          contentData = contentRes.data.materials;
+        } else if (typeof contentRes.data === 'object' && contentRes.data !== null) {
+          // If it's a single content object, wrap it in an array
+          if (contentRes.data.id || contentRes.data._id) {
+            contentData = [contentRes.data];
+          }
+        }
+        
+        setContent(contentData);
+        console.log('Content fetched:', contentData.length);
+        
+      } catch (contentErr) {
+        console.error('Error fetching content:', contentErr);
+        if (contentErr.response?.status === 404) {
+          console.log('Content endpoint not found');
+        } else {
+          toast.error('Failed to fetch content data');
+        }
+        setContent([]);
+      }
 
-      // We can also fetch dashboard stats if needed
-      // const statsRes = await axios.get('/api/admin/stats');
-      // setDashboardStats(statsRes.data);
+      // Fetch reports
+      try {
+        const reportsRes = await api.get('/api/reports');
+        const reportsData = Array.isArray(reportsRes.data) ? reportsRes.data :
+                           (reportsRes.data?.reports ? reportsRes.data.reports : []);
+        setReports(reportsData);
+        console.log('Reports fetched:', reportsData.length);
+      } catch (err) {
+        console.log('Reports endpoint not available yet');
+        setReports([]);
+      }
+
     } catch (err) {
       console.error('Error fetching admin data:', err);
-    } 
+      toast.error('Failed to fetch dashboard data');
+      setUsers([]);
+      setContent([]);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAdminData();
+    setRefreshing(false);
+    toast.success('Dashboard refreshed');
   };
 
   useEffect(() => {
@@ -143,12 +213,24 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     try {
       await api.delete(`/api/users/${userId}`);
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      setUsers(prev => prev.filter(u => u.id !== userId && u._id !== userId));
+      toast.success('User deleted successfully');
     } catch (err) {
       console.error('Error deleting user:', err);
+      toast.error('Failed to delete user');
     }
   };
 
+  const handleDeleteContent = async (contentId) => {
+    try {
+      await api.delete(`/api/content/${contentId}`);
+      setContent(prev => prev.filter(c => c.id !== contentId && c._id !== contentId));
+      toast.success('Content deleted successfully');
+    } catch (err) {
+      console.error('Error deleting content:', err);
+      toast.error('Failed to delete content');
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -161,14 +243,31 @@ const AdminDashboard = () => {
     return matchesSearch && matchesRole;
   });
 
+  // Calculate stats with proper null/undefined checks
   const stats = {
     totalUsers: users.length,
-    activeUsers: users.filter(u => u.status === 'active').length,
-    totalStudents: users.filter(u => u.role === 'student').length,
-    totalTeachers: users.filter(u => u.role === 'teacher').length,
+    activeUsers: users.filter(u => {
+      const status = u.status || u.isActive || u.active;
+      return status === 'active' || status === 'Active' || status === true;
+    }).length,
+    totalStudents: users.filter(u => {
+      const role = u.role || u.userRole;
+      return role === 'student' || role === 'Student';
+    }).length,
+    totalTeachers: users.filter(u => {
+      const role = u.role || u.userRole;
+      return role === 'teacher' || role === 'Teacher';
+    }).length,
     totalContent: content.length,
-    totalReports: reports.filter(r => r.status !== 'resolved').length
+    totalReports: reports.filter(r => {
+      const status = r.status || r.reportStatus;
+      return status !== 'resolved' && status !== 'Resolved';
+    }).length
   };
+
+  // Debug log
+  console.log('Stats calculated:', stats);
+  console.log('Content items:', content);
 
   return (
     <Container maxWidth="lg">
@@ -177,14 +276,24 @@ const AdminDashboard = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            Admin Dashboard 👑
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Manage users, content, and monitor platform activity
-          </Typography>
+        {/* Header with Refresh Button */}
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Admin Dashboard 👑
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Manage users, content, and monitor platform activity
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={refreshing ? <CircularProgress size={20} /> : <Refresh />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            Refresh
+          </Button>
         </Box>
 
         {/* Stats Cards */}
@@ -292,83 +401,88 @@ const AdminDashboard = () => {
               </Box>
             </Box>
 
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>User</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Grade</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Last Login</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
-                            {user.name.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2">{user.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {user.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={user.role}
-                          size="small"
-                          color={
-                            user.role === 'admin' ? 'error' :
-                              user.role === 'teacher' ? 'warning' : 'primary'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>{user.grade || '-'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={user.status}
-                          size="small"
-                          color={user.status === 'active' ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell>{user.lastLogin}</TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" onClick={() => navigate(`/admin/users/${user.id}`)}>
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => {
-                            if (window.confirm('Delete this user? This cannot be undone.')) {
-                              handleDeleteUser(user.id);
-                            }
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                        {user.status === 'active' ? (
-                          <IconButton size="small" color="warning">
-                            <Block />
-                          </IconButton>
-                        ) : (
-                          <IconButton size="small" color="success">
-                            <CheckCircle />
-                          </IconButton>
-                        )}
-                      </TableCell>
+            {loading ? (
+              <LinearProgress />
+            ) : (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>User</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell>Grade</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Last Login</TableCell>
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          <Typography variant="body2" color="textSecondary">
+                            No users found
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <TableRow key={user.id || user._id} hover>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
+                                {(user.name || 'U').charAt(0).toUpperCase()}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="subtitle2">{user.name || 'Unknown'}</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {user.email || 'No email'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={user.role || 'student'}
+                              size="small"
+                              color={
+                                user.role === 'admin' ? 'error' :
+                                  user.role === 'teacher' ? 'warning' : 'primary'
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>{user.grade || '-'}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={user.status || 'active'}
+                              size="small"
+                              color={(user.status === 'active' || user.status === 'Active') ? 'success' : 'default'}
+                            />
+                          </TableCell>
+                          <TableCell>{user.lastLogin || 'Never'}</TableCell>
+                          <TableCell align="right">
+                            <IconButton size="small" onClick={() => navigate(`/admin/users/${user.id || user._id}`)}>
+                              <Edit />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                if (window.confirm('Delete this user? This cannot be undone.')) {
+                                  handleDeleteUser(user.id || user._id);
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Paper>
         )}
 
@@ -388,58 +502,151 @@ const AdminDashboard = () => {
               </Button>
             </Box>
 
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Grade</TableCell>
-                    <TableCell>Subject</TableCell>
-                    <TableCell>Views/Attempts</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {content.map((item) => (
-                    <TableRow key={item.id} hover>
-                      <TableCell>
-                        <Typography variant="subtitle2">{item.title}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={item.type}
-                          size="small"
-                          color={
-                            item.type === 'video' ? 'primary' :
-                              item.type === 'quiz' ? 'warning' : 'secondary'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>Class {item.grade}</TableCell>
-                      <TableCell>{item.subject}</TableCell>
-                      <TableCell>{item.views || item.attempts || 0}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={item.status}
-                          size="small"
-                          color={item.status === 'published' ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                        <IconButton size="small" color="error">
-                          <Delete />
-                        </IconButton>
-                      </TableCell>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Title</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Grade</TableCell>
+                      <TableCell>Subject</TableCell>
+                      <TableCell>Views/Attempts</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {content.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">
+                          <Box sx={{ py: 4 }}>
+                            <Typography variant="body2" color="textSecondary" gutterBottom>
+                              No content available
+                            </Typography>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<Add />}
+                              onClick={() => navigate('/content/create')}
+                              sx={{ mt: 1 }}
+                            >
+                              Create your first content
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      content.map((item) => (
+                        <TableRow key={item.id || item._id} hover>
+                          <TableCell>
+                            <Typography variant="subtitle2">
+                              {item.title || item.name || 'Untitled'}
+                            </Typography>
+                            {item.description && (
+                              <Typography variant="caption" color="textSecondary" display="block">
+                                {item.description.substring(0, 60)}...
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.type || item.contentType || 'unknown'}
+                              size="small"
+                              color={
+                                item.type === 'video' ? 'primary' :
+                                item.type === 'quiz' ? 'warning' : 
+                                item.type === 'assignment' ? 'success' : 'secondary'
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>{item.grade || item.gradeLevel || 'N/A'}</TableCell>
+                          <TableCell>{item.subject || 'N/A'}</TableCell>
+                          <TableCell>
+                            {item.views || item.attempts || item.downloads || 0}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.status || 'draft'}
+                              size="small"
+                              color={item.status === 'published' ? 'success' : 
+                                     item.status === 'draft' ? 'default' : 'warning'}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton 
+                              size="small"
+                              onClick={() => navigate(`/content/edit/${item.id || item._id}`)}
+                            >
+                              <Edit />
+                            </IconButton>
+                            <IconButton 
+                              size="small" 
+                              color="error"
+                              onClick={() => {
+                                if (window.confirm('Delete this content? This cannot be undone.')) {
+                                  handleDeleteContent(item.id || item._id);
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+            
+            {/* Content Summary Cards */}
+            {content.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Divider sx={{ mb: 2 }} />
+                <Typography variant="subtitle2" gutterBottom>
+                  Content Summary
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6">{content.filter(c => c.type === 'video' || c.contentType === 'video').length}</Typography>
+                        <Typography variant="caption">Videos</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6">{content.filter(c => c.type === 'quiz' || c.contentType === 'quiz').length}</Typography>
+                        <Typography variant="caption">Quizzes</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6">{content.filter(c => c.type === 'assignment' || c.contentType === 'assignment').length}</Typography>
+                        <Typography variant="caption">Assignments</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6">{content.filter(c => c.status === 'published').length}</Typography>
+                        <Typography variant="caption">Published</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
           </Paper>
         )}
 
@@ -463,41 +670,51 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id} hover>
-                      <TableCell>
-                        <Chip
-                          label={report.type}
-                          size="small"
-                          color={
-                            report.type === 'bug' ? 'error' :
-                              report.type === 'feedback' ? 'info' : 'warning'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>{report.title}</TableCell>
-                      <TableCell>{report.user}</TableCell>
-                      <TableCell>{report.date}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={report.status}
-                          size="small"
-                          color={
-                            report.status === 'resolved' ? 'success' :
-                              report.status === 'in-progress' ? 'warning' : 'error'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                        <IconButton size="small" color="primary">
-                          <CheckCircle />
-                        </IconButton>
+                  {reports.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography variant="body2" color="textSecondary">
+                          No reports available
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    reports.map((report) => (
+                      <TableRow key={report.id || report._id} hover>
+                        <TableCell>
+                          <Chip
+                            label={report.type || 'general'}
+                            size="small"
+                            color={
+                              report.type === 'bug' ? 'error' :
+                                report.type === 'feedback' ? 'info' : 'warning'
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>{report.title || 'Untitled'}</TableCell>
+                        <TableCell>{report.user || report.reportedBy || 'Anonymous'}</TableCell>
+                        <TableCell>{report.date || report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={report.status || 'pending'}
+                            size="small"
+                            color={
+                              report.status === 'resolved' ? 'success' :
+                                report.status === 'in-progress' ? 'warning' : 'error'
+                            }
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton size="small">
+                            <Edit />
+                          </IconButton>
+                          <IconButton size="small" color="primary">
+                            <CheckCircle />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -569,7 +786,10 @@ const AdminDashboard = () => {
             <Button
               variant="contained"
               onClick={() => {
-                if (!newUser.name.trim() || !newUser.email.trim()) return;
+                if (!newUser.name.trim() || !newUser.email.trim()) {
+                  toast.error('Please fill in all required fields');
+                  return;
+                }
                 setUsers(prev => ([
                   ...prev,
                   {
@@ -580,6 +800,7 @@ const AdminDashboard = () => {
                 ]));
                 setNewUser({ name: '', email: '', role: 'student', grade: '', status: 'active' });
                 setOpenUserDialog(false);
+                toast.success('User added successfully');
               }}
             >
               Save User
@@ -729,4 +950,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

@@ -4221,3 +4221,98 @@
 {"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:14:33"}
 {"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:14:33"}
 {"level":"info","message":"👋 SIGINT received, shutting down gracefully","service":"elearning-api","timestamp":"2026-03-23 13:17:17"}
+{"level":"info","message":"✅ Database connected successfully","service":"elearning-api","timestamp":"2026-03-23 13:17:20"}
+{"level":"info","message":"🚀 Server running on port 5000","service":"elearning-api","timestamp":"2026-03-23 13:17:24"}
+{"level":"info","message":"📝 Environment: development","service":"elearning-api","timestamp":"2026-03-23 13:17:24"}
+{"level":"info","message":"🔗 API: http://localhost:5000","service":"elearning-api","timestamp":"2026-03-23 13:17:24"}
+{"level":"info","message":"POST /api/auth/login","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:17:26"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 13:17:27"}
+{"level":"info","message":"GET /api/grades","service":"elearning-api","timestamp":"2026-03-23 13:17:30"}
+{"level":"info","message":"GET /api/grades","service":"elearning-api","timestamp":"2026-03-23 13:17:30"}
+{"level":"info","message":"POST /api/auth/login","service":"elearning-api","timestamp":"2026-03-23 13:58:58"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:58:58"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:58:58"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 13:58:58"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 13:58:58"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:58:59"}
+{"level":"info","message":"POST /api/auth/login","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 13:59:42"}
+{"level":"info","message":"POST /api/auth/login","service":"elearning-api","timestamp":"2026-03-23 14:01:13"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 14:01:13"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 14:01:13"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 14:01:13"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 14:01:14"}
+{"level":"info","message":"✅ Database connected successfully","service":"elearning-api","timestamp":"2026-03-23 19:52:15"}
+{"level":"info","message":"✅ Database connected successfully","service":"elearning-api","timestamp":"2026-03-23 19:54:09"}
+{"level":"info","message":"🚀 Server running on port 5000","service":"elearning-api","timestamp":"2026-03-23 19:54:13"}
+{"level":"info","message":"📝 Environment: development","service":"elearning-api","timestamp":"2026-03-23 19:54:13"}
+{"level":"info","message":"🔗 API: http://localhost:5000","service":"elearning-api","timestamp":"2026-03-23 19:54:13"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"GET /api/dashboard/teacher","service":"elearning-api","timestamp":"2026-03-23 19:54:48"}
+{"level":"info","message":"POST /api/auth/login","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/auth/me","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/progress","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/progress/watchtime","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /uploads/avatars/default-avatar.png","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 19:55:06"}
+{"level":"info","message":"GET /api/users","service":"elearning-api","timestamp":"2026-03-23 20:10:49"}
+{"level":"info","message":"GET /api/admin/role-access","service":"elearning-api","timestamp":"2026-03-23 20:10:49"}
+{"level":"info","message":"GET /api/content","service":"elearning-api","timestamp":"2026-03-23 20:10:50"}
+{"level":"info","message":"GET /api/reports","service":"elearning-api","timestamp":"2026-03-23 20:10:50"}
