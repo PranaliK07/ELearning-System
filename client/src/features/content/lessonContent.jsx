@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import ReactMarkdown from 'react-markdown';
 import { useProgress } from '../../context/ProgressContext';
 
@@ -43,18 +43,18 @@ const LessonContent = () => {
 
   const fetchContent = async () => {
     try {
-      const response = await axios.get(`/api/content/content/${contentId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`/api/content/${contentId}`);
       setContent(response.data);
     } catch (error) {
       console.error('Error fetching content:', error);
+      setContent(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleMarkComplete = async () => {
+    if (!content?.id) return;
     await updateProgress(content.id, {
       completed: true,
       watchTime: content.duration || 5
@@ -63,11 +63,13 @@ const LessonContent = () => {
   };
 
   const handleWatchVideo = () => {
-    navigate(`/play/${content.id}`);
+    if (!content?.id) return;
+    navigate(`/play/video/${content.id}`);
   };
 
   const handleTakeQuiz = () => {
-    navigate(`/quiz/${content.Quiz?.id}/start`);
+    if (!content?.Quiz?.id) return;
+    navigate(`/quiz/${content.Quiz.id}/start`);
   };
 
   if (loading) {
@@ -86,172 +88,73 @@ const LessonContent = () => {
 
   return (
     <Container maxWidth="md">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2 }}
-        >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mb: 2 }}>
           Back to Topics
         </Button>
 
         <Paper sx={{ p: 4, borderRadius: 4 }}>
-          {/* Header */}
           <Box sx={{ mb: 3 }}>
-            <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <Chip
-                label={content?.type}
-                color={content?.type === 'video' ? 'primary' : 'secondary'}
-              />
-              {completed && (
-                <Chip
-                  icon={<CheckCircle />}
-                  label="Completed"
-                  color="success"
-                />
-              )}
+            <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="wrap">
+              <Chip label={content?.type} color={content?.type === 'video' ? 'primary' : 'secondary'} />
+              {completed && <Chip icon={<CheckCircle />} label="Completed" color="success" />}
             </Box>
-            
-            <Typography variant="h4" gutterBottom>
-              {content?.title}
-            </Typography>
-            
-            <Typography variant="body1" color="textSecondary" paragraph>
-              {content?.description}
-            </Typography>
+
+            <Typography variant="h4" gutterBottom>{content?.title}</Typography>
+            <Typography variant="body1" color="textSecondary" paragraph>{content?.description}</Typography>
 
             <Box display="flex" gap={2} flexWrap="wrap">
-              <Chip label={`${content?.duration} minutes`} variant="outlined" />
-              {content?.isPremium && (
-                <Chip label="Premium" color="warning" variant="outlined" />
-              )}
+              <Chip label={`${content?.duration || 0} minutes`} variant="outlined" />
+              {content?.isPremium && <Chip label="Premium" color="warning" variant="outlined" />}
             </Box>
           </Box>
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Main Content */}
           <Box sx={{ mb: 4 }}>
             {content?.type === 'reading' && (
-              <Box sx={{ 
-                typography: 'body1',
-                '& img': { maxWidth: '100%', borderRadius: 2 },
-                '& h1, & h2, & h3': { color: 'primary.main', mt: 3, mb: 2 }
-              }}>
-                <ReactMarkdown>
-                  {content?.readingMaterial || 'No content available.'}
-                </ReactMarkdown>
+              <Box sx={{ typography: 'body1', '& img': { maxWidth: '100%', borderRadius: 2 }, '& h1, & h2, & h3': { color: 'primary.main', mt: 3, mb: 2 } }}>
+                <ReactMarkdown>{content?.readingMaterial || 'No content available.'}</ReactMarkdown>
               </Box>
             )}
 
             {content?.type === 'video' && (
               <Box
-                sx={{
-                  position: 'relative',
-                  paddingTop: '56.25%',
-                  bgcolor: 'black',
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  cursor: 'pointer'
-                }}
+                sx={{ position: 'relative', paddingTop: '56.25%', bgcolor: 'black', borderRadius: 2, overflow: 'hidden', cursor: 'pointer' }}
                 onClick={handleWatchVideo}
               >
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.5)'
-                  }}
-                >
+                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
                   <PlayCircle sx={{ fontSize: 80, color: 'white' }} />
                 </Box>
               </Box>
             )}
           </Box>
 
-          {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             {content?.type === 'video' && (
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<PlayCircle />}
-                onClick={handleWatchVideo}
-                sx={{ flex: 1 }}
-              >
+              <Button variant="contained" size="large" startIcon={<PlayCircle />} onClick={handleWatchVideo} sx={{ flex: 1 }}>
                 Watch Video
               </Button>
             )}
 
             {!completed && (
-              <Button
-                variant={content?.type === 'video' ? 'outlined' : 'contained'}
-                size="large"
-                startIcon={<CheckCircle />}
-                onClick={handleMarkComplete}
-                sx={{ flex: 1 }}
-              >
+              <Button variant={content?.type === 'video' ? 'outlined' : 'contained'} size="large" startIcon={<CheckCircle />} onClick={handleMarkComplete} sx={{ flex: 1 }}>
                 Mark as Complete
               </Button>
             )}
 
             {content?.Quiz && (
-              <Button
-                variant="contained"
-                color="warning"
-                size="large"
-                startIcon={<Quiz />}
-                onClick={handleTakeQuiz}
-                sx={{ flex: 1 }}
-              >
+              <Button variant="contained" color="warning" size="large" startIcon={<Quiz />} onClick={handleTakeQuiz} sx={{ flex: 1 }}>
                 Take Quiz
               </Button>
             )}
 
             {content?.type === 'reading' && (
-              <Button
-                variant="outlined"
-                size="large"
-                startIcon={<Download />}
-                sx={{ flex: 1 }}
-              >
+              <Button variant="outlined" size="large" startIcon={<Download />} sx={{ flex: 1 }}>
                 Download PDF
               </Button>
             )}
           </Box>
-
-          {/* Additional Resources */}
-          {content?.resources && content.resources.length > 0 && (
-            <>
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="h6" gutterBottom>
-                Additional Resources
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {content.resources.map((resource, index) => (
-                  <Button
-                    key={index}
-                    variant="outlined"
-                    startIcon={<Download />}
-                    href={resource.url}
-                    target="_blank"
-                  >
-                    {resource.name}
-                  </Button>
-                ))}
-              </Box>
-            </>
-          )}
         </Paper>
       </motion.div>
     </Container>

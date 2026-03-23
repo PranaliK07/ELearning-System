@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const {
+  getRoleAccess,
+  saveRoleAccess,
   getSystemStats,
   getUserAnalytics,
   getContentAnalytics,
@@ -16,8 +18,13 @@ const {
   restoreDatabase
 } = require('../controllers/adminController');
 
-// All routes require admin authentication
 router.use(protect);
+
+// Business settings: everyone logged-in can read; only admin can write
+router.get('/role-access', getRoleAccess);
+router.post('/role-access', authorize('admin'), saveRoleAccess);
+
+// All routes below require admin authentication
 router.use(authorize('admin'));
 
 // Dashboard stats

@@ -78,6 +78,24 @@ const Content = sequelize.define('Content', {
     }
   },
 
+  // Class targeting (optional)
+  GradeId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Grades',
+      key: 'id'
+    }
+  },
+  SubjectId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Subjects',
+      key: 'id'
+    }
+  },
+
   createdBy: {
     type: DataTypes.INTEGER,
     references: {

@@ -43,3 +43,9 @@ export const truncateText = (text, maxLength) => {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 };
+
+export const resolveMediaUrl = (path) => {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}`;
+};

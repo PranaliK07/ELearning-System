@@ -11,15 +11,14 @@ import ProtectedRoute from './features/auth/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
-import StudentDashboard from './features/Dashboard/StudentDashboard';
-import TeacherDashboard from './features/Dashboard/TeacherDashboard';
-import AdminDashboard from './features/Dashboard/AdminDashboard';
 import DashboardRouter from './features/Dashboard/DashboardRouter';
 
 import GradeSelect from './features/study/GradeSelect';
 import SubjectSelect from './features/study/SubjectSelect';
 import TopicList from './features/study/TopicList';
 import VideoView from './features/play/VideoView';
+import PlayHub from './features/play/PlayHub';
+import GamePage from './features/play/GamePage';
 import WatchTimeStats from './features/progress/WatchTimeStats';
 import LessonContent from './features/content/lessonContent';
 import QuizStart from './features/quiz/quizStart';
@@ -30,6 +29,12 @@ import ProfileView from './features/profile/ProfileView';
 import EditProfile from './features/profile/EditProfile';
 import InstagramFeed from './features/feed/InstagramFeed';
 import ContentManagement from './features/admin/ContentManagement';
+import AssignmentManagement from './features/teacher/AssignmentManagement';
+import Reports from './features/teacher/Reports';
+import SubmissionsList from './features/teacher/SubmissionsList';
+import StudentAssignmentView from './features/teacher/StudentAssignmentView';
+import TopicManager from './features/teacher/TopicManager';
+import NotFound from './features/NotFound';
 
 
 
@@ -143,23 +148,55 @@ function App() {
                       <Route index element={<GradeSelect />} />
                       <Route path="grade/:gradeId" element={<SubjectSelect />} />
                       <Route path="subject/:subjectId" element={<TopicList />} />
-                      <Route path="topic/:topicId" element={<LessonContent />} />
+                      <Route path="content/:contentId" element={<LessonContent />} />
+                      <Route path="topic/:contentId" element={<LessonContent />} />
                     </Route>
 
                     <Route path="feed" element={<InstagramFeed />} />
 
                     {/* Admin/Teacher routes */}
-                    <Route path="admin/content/create" element={
+                    <Route path="content/create" element={
                       <ProtectedRoute roles={['admin', 'teacher']}>
                         <ContentManagement />
                       </ProtectedRoute>
                     } />
 
+                    <Route path="assignments">
+                      <Route path="create" element={
+                        <ProtectedRoute roles={['teacher', 'admin']}>
+                          <AssignmentManagement />
+                        </ProtectedRoute>
+                      } />
+                      <Route path=":assignmentId/submissions" element={
+                        <ProtectedRoute roles={['teacher', 'admin']}>
+                          <SubmissionsList />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="view/:assignmentId" element={
+                        <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+                          <StudentAssignmentView />
+                        </ProtectedRoute>
+                      } />
+                    </Route>
+
+                    <Route path="reports" element={
+                      <ProtectedRoute roles={['teacher', 'admin']}>
+                        <Reports />
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="topics/manage" element={
+                      <ProtectedRoute roles={['teacher', 'admin']}>
+                        <TopicManager />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Play routes */}
 
                     <Route path="play">
-                      <Route path=":contentId" element={<VideoView />} />
+                      <Route index element={<PlayHub />} />
+                      <Route path="video/:contentId" element={<VideoView />} />
+                      <Route path="game/:slug" element={<GamePage />} />
                     </Route>
 
                     {/* Progress routes */}
@@ -184,6 +221,7 @@ function App() {
                       <Route path="edit" element={<EditProfile />} />
                     </Route>
                   </Route>
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </Router>
             </ProgressProvider>

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import axios from 'axios';
+import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 
 const ProgressContext = createContext();
@@ -85,7 +85,8 @@ export const ProgressProvider = ({ children }) => {
   };
 
   const getGradeProgress = (gradeId) => {
-    const gradeContents = progress.filter(p => p.Content?.Topic?.Subject?.GradeId === gradeId);
+    const normalizedGradeId = Number(gradeId);
+    const gradeContents = progress.filter((p) => Number(p.Content?.Topic?.Subject?.GradeId) === normalizedGradeId);
     if (gradeContents.length === 0) return 0;
     
     const completed = gradeContents.filter(p => p.completed).length;
@@ -93,7 +94,8 @@ export const ProgressProvider = ({ children }) => {
   };
 
   const getSubjectProgress = (subjectId) => {
-    const subjectContents = progress.filter(p => p.Content?.Topic?.SubjectId === subjectId);
+    const normalizedSubjectId = Number(subjectId);
+    const subjectContents = progress.filter((p) => Number(p.Content?.Topic?.SubjectId) === normalizedSubjectId);
     if (subjectContents.length === 0) return 0;
     
     const completed = subjectContents.filter(p => p.completed).length;

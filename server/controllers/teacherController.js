@@ -1,19 +1,12 @@
-const { User, Progress, Content, Class, Assignment, Submission } = require('../models');
+const { User, Progress, Content, Assignment, Submission, Grade, Announcement } = require('../models');
 const { Op } = require('sequelize');
 
 const getMyClasses = async (req, res) => {
   try {
-    const teacherId = req.user.id;
-
-    const classes = await Class.findAll({
-      where: { teacherId },
-      include: [{
-        model: User,
-        as: 'students',
-        attributes: ['id', 'name', 'avatar', 'grade']
-      }]
+    const classes = await Grade.findAll({
+      include: [{ model: User, where: { role: 'student' }, required: false, attributes: ['id', 'name', 'avatar', 'grade'] }],
+      order: [['level', 'ASC']]
     });
-
     res.json(classes);
   } catch (error) {
     console.error('Get my classes error:', error);
@@ -23,19 +16,12 @@ const getMyClasses = async (req, res) => {
 
 const getMyStudents = async (req, res) => {
   try {
-    const teacherId = req.user.id;
-
-    const classes = await Class.findAll({
-      where: { teacherId },
-      include: [{
-        model: User,
-        as: 'students',
-        attributes: ['id', 'name', 'avatar', 'grade', 'email', 'points']
-      }]
+    const students = await User.findAll({
+      where: { role: 'student' },
+      attributes: ['id', 'name', 'avatar', 'grade', 'email', 'points'],
+      include: [{ model: Grade, attributes: ['id', 'name', 'level'] }],
+      order: [['updatedAt', 'DESC']]
     });
-
-    const students = classes.reduce((acc, c) => [...acc, ...c.students], []);
-
     res.json(students);
   } catch (error) {
     console.error('Get my students error:', error);
@@ -45,32 +31,24 @@ const getMyStudents = async (req, res) => {
 
 const getStudentDetails = async (req, res) => {
   try {
-    const studentId = req.params.id;
-
-    const student = await User.findByPk(studentId, {
+    const student = await User.findByPk(req.params.id, {
       attributes: ['id', 'name', 'email', 'avatar', 'grade', 'points', 'streak'],
-      include: [{
-        model: Progress,
-        include: [Content]
-      }]
+      include: [{ model: Progress, include: [Content] }]
     });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Calculate stats
+    const progressList = student.Progress || [];
+    const quizScores = progressList.filter((p) => p.quizScore !== null && p.quizScore !== undefined).map((p) => p.quizScore);
     const stats = {
-      totalWatchTime: student.Progress.reduce((sum, p) => sum + p.watchTime, 0),
-      completedLessons: student.Progress.filter(p => p.completed).length,
-      averageQuizScore: student.Progress.filter(p => p.quizScore).reduce((sum, p) => sum + p.quizScore, 0) / 
-                       student.Progress.filter(p => p.quizScore).length || 0
+      totalWatchTime: progressList.reduce((sum, p) => sum + (p.watchTime || 0), 0),
+      completedLessons: progressList.filter((p) => p.completed).length,
+      averageQuizScore: quizScores.length ? quizScores.reduce((a, b) => a + b, 0) / quizScores.length : 0
     };
 
-    res.json({
-      student,
-      stats
-    });
+    res.json({ student, stats });
   } catch (error) {
     console.error('Get student details error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -79,15 +57,14 @@ const getStudentDetails = async (req, res) => {
 
 const createAssignment = async (req, res) => {
   try {
-    const { title, description, dueDate, classId, contentId } = req.body;
-
+    const { title, description, dueDate, subjectId, gradeId } = req.body;
     const assignment = await Assignment.create({
       title,
       description,
       dueDate,
-      ClassId: classId,
-      ContentId: contentId,
-      createdBy: req.user.id
+      subjectId,
+      gradeId,
+      teacherId: req.user.id
     });
 
     res.status(201).json({
@@ -107,14 +84,13 @@ const gradeAssignment = async (req, res) => {
     const { grade, feedback } = req.body;
 
     const submission = await Submission.findByPk(id);
-
     if (!submission) {
       return res.status(404).json({ message: 'Submission not found' });
     }
 
     submission.grade = grade;
     submission.feedback = feedback;
-    submission.gradedAt = new Date();
+    submission.status = 'graded';
     await submission.save();
 
     res.json({
@@ -132,19 +108,11 @@ const provideFeedback = async (req, res) => {
   try {
     const { studentId } = req.params;
     const { feedback } = req.body;
-
-    // Create feedback record
-    const feedbackRecord = await Feedback.create({
-      studentId,
-      teacherId: req.user.id,
-      feedback,
-      createdAt: new Date()
-    });
-
     res.json({
       success: true,
-      message: 'Feedback provided successfully',
-      feedback: feedbackRecord
+      message: 'Feedback recorded',
+      studentId,
+      feedback
     });
   } catch (error) {
     console.error('Provide feedback error:', error);
@@ -154,21 +122,13 @@ const provideFeedback = async (req, res) => {
 
 const getClassProgress = async (req, res) => {
   try {
-    const { classId } = req.params;
-
-    const classData = await Class.findByPk(classId, {
-      include: [{
-        model: User,
-        as: 'students',
-        include: [Progress]
-      }]
+    const classLevel = Number(req.params.classId);
+    const students = await User.findAll({
+      where: { role: 'student', grade: classLevel },
+      include: [{ model: Progress }]
     });
 
-    if (!classData) {
-      return res.status(404).json({ message: 'Class not found' });
-    }
-
-    const progress = classData.students.map(student => ({
+    const progress = students.map((student) => ({
       student: {
         id: student.id,
         name: student.name,
@@ -194,7 +154,8 @@ const getSubjectProgress = async (req, res) => {
         model: Progress,
         include: [{
           model: Content,
-          where: { '$Content.Topic.SubjectId$': subjectId }
+          where: { SubjectId: subjectId },
+          required: true
         }]
       }]
     });
@@ -208,13 +169,13 @@ const getSubjectProgress = async (req, res) => {
 
 const createAnnouncement = async (req, res) => {
   try {
-    const { title, content, classId } = req.body;
-
+    const { title, content, targetRole, expiresAt } = req.body;
     const announcement = await Announcement.create({
       title,
       content,
-      ClassId: classId,
-      createdBy: req.user.id
+      targetRole: targetRole || 'all',
+      expiresAt: expiresAt || null,
+      authorId: req.user.id
     });
 
     res.status(201).json({
@@ -231,16 +192,11 @@ const createAnnouncement = async (req, res) => {
 const getPendingReviews = async (req, res) => {
   try {
     const pending = await Submission.findAll({
-      where: {
-        grade: null,
-        submittedAt: { [Op.ne]: null }
-      },
-      include: [{
-        model: User,
-        attributes: ['id', 'name', 'avatar']
-      }, {
-        model: Assignment
-      }],
+      where: { grade: null, submittedAt: { [Op.ne]: null } },
+      include: [
+        { model: User, as: 'student', attributes: ['id', 'name', 'avatar'] },
+        { model: Assignment, where: { teacherId: req.user.id } }
+      ],
       order: [['submittedAt', 'ASC']]
     });
 

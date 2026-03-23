@@ -24,8 +24,8 @@ router.get('/:id/quizzes', getTopicQuizzes);
 
 // Teacher and Admin routes
 router.post('/', authorize('teacher', 'admin'), validate.topic, validate.handleValidationErrors, createTopic);
-router.put('/:id', authorize('teacher', 'admin'), validate.topic, validate.handleValidationErrors, updateTopic);
-router.delete('/:id', authorize('admin'), deleteTopic);
+router.put('/:id', authorize('teacher', 'admin'), updateTopic);
+router.delete('/:id', authorize('teacher', 'admin'), deleteTopic);
 router.post('/reorder', authorize('teacher', 'admin'), reorderTopics);
 
 module.exports = router;

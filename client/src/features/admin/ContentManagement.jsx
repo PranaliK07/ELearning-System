@@ -12,7 +12,11 @@ import {
     IconButton,
     Card,
     CardMedia,
-    LinearProgress
+    LinearProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material';
 import {
     CloudUpload,
@@ -24,7 +28,7 @@ import {
     CheckCircle
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
 
 const ContentManagement = () => {
@@ -34,6 +38,8 @@ const ContentManagement = () => {
     const [grades, setGrades] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [topics, setTopics] = useState([]);
+    const [subjectsLoading, setSubjectsLoading] = useState(false);
+    const [topicsLoading, setTopicsLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -50,6 +56,11 @@ const ContentManagement = () => {
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [videoPreview, setVideoPreview] = useState(null);
     const [thumbnailPreview, setThumbnailPreview] = useState(null);
+    const [topicDialogOpen, setTopicDialogOpen] = useState(false);
+    const [newTopic, setNewTopic] = useState({
+        name: '',
+        description: ''
+    });
 
     useEffect(() => {
         fetchGrades();
@@ -74,19 +85,32 @@ const ContentManagement = () => {
 
     const fetchSubjects = async (gradeId) => {
         try {
+            setSubjectsLoading(true);
             const res = await axios.get(`/api/subjects?gradeId=${gradeId}`);
             setSubjects(res.data);
+            // reset dependent selects
+            setFormData((prev) => ({ ...prev, subjectId: '', topicId: '' }));
+            setTopics([]);
         } catch (err) {
             console.error(err);
+            toast.error('Unable to load subjects for this class');
+        } finally {
+            setSubjectsLoading(false);
         }
     };
 
     const fetchTopics = async (subjectId) => {
         try {
+            setTopicsLoading(true);
             const res = await axios.get(`/api/topics?subjectId=${subjectId}`);
             setTopics(res.data);
+            // reset topic selection so user picks from fresh list
+            setFormData((prev) => ({ ...prev, topicId: '' }));
         } catch (err) {
             console.error(err);
+            toast.error('Unable to load topics for this subject');
+        } finally {
+            setTopicsLoading(false);
         }
     };
 
@@ -102,6 +126,32 @@ const ContentManagement = () => {
         } else {
             setThumbnailFile(file);
             setThumbnailPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleCreateTopic = async () => {
+        if (!formData.subjectId) {
+            return toast.error('Select a subject first');
+        }
+        if (!newTopic.name.trim()) {
+            return toast.error('Topic name is required');
+        }
+        try {
+            const payload = {
+                name: newTopic.name.trim(),
+                description: newTopic.description,
+                subjectId: parseInt(formData.subjectId, 10)
+            };
+            const res = await axios.post('/api/topics', payload);
+            toast.success('Topic created');
+            // refresh topics and select the new one
+            await fetchTopics(formData.subjectId);
+            setFormData((prev) => ({ ...prev, topicId: res.data.topic?.id || '' }));
+            setTopicDialogOpen(false);
+            setNewTopic({ name: '', description: '' });
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to create topic');
         }
     };
 
@@ -137,9 +187,12 @@ const ContentManagement = () => {
             // 2. Create content
             await axios.post('/api/content', {
                 ...formData,
+                gradeId: formData.gradeId ? parseInt(formData.gradeId, 10) : undefined,
+                subjectId: formData.subjectId ? parseInt(formData.subjectId, 10) : undefined,
+                topicId: formData.topicId ? parseInt(formData.topicId, 10) : undefined,
                 videoUrl: videoUrl,
+                videoFile: videoUrl,
                 thumbnail: thumbnailUrl
-
             });
 
             toast.success('Content uploaded successfully! 🎉');
@@ -212,16 +265,16 @@ const ContentManagement = () => {
                             <TextField
                                 fullWidth
                                 select
-                                label="Subject"
-                                name="subjectId"
-                                value={formData.subjectId}
-                                onChange={handleChange}
-                                disabled={!formData.gradeId}
-                                required
-                            >
-                                {subjects.map((s) => (
-                                    <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                                ))}
+                            label="Subject"
+                            name="subjectId"
+                            value={formData.subjectId}
+                            onChange={handleChange}
+                            disabled={!formData.gradeId || subjectsLoading}
+                            required
+                        >
+                            {subjects.map((s) => (
+                                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                            ))}
                             </TextField>
                         </Grid>
 
@@ -233,13 +286,23 @@ const ContentManagement = () => {
                                 name="topicId"
                                 value={formData.topicId}
                                 onChange={handleChange}
-                                disabled={!formData.subjectId}
+                                disabled={!formData.subjectId || topicsLoading}
                                 required
                             >
                                 {topics.map((t) => (
                                     <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
                                 ))}
                             </TextField>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                                <Button
+                                    size="small"
+                                    variant="text"
+                                    disabled={!formData.subjectId}
+                                    onClick={() => setTopicDialogOpen(true)}
+                                >
+                                    + Add Topic
+                                </Button>
+                            </Box>
                         </Grid>
 
                         <Grid item xs={12}>
@@ -366,6 +429,30 @@ const ContentManagement = () => {
                     </Grid>
                 </form>
             </Paper>
+
+            {/* Add Topic Dialog */}
+            <Dialog open={topicDialogOpen} onClose={() => setTopicDialogOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Add Topic</DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    <TextField
+                        label="Topic Name"
+                        value={newTopic.name}
+                        onChange={(e) => setNewTopic({ ...newTopic, name: e.target.value })}
+                        autoFocus
+                    />
+                    <TextField
+                        label="Description"
+                        value={newTopic.description}
+                        onChange={(e) => setNewTopic({ ...newTopic, description: e.target.value })}
+                        multiline
+                        rows={3}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setTopicDialogOpen(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={handleCreateTopic}>Save Topic</Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };

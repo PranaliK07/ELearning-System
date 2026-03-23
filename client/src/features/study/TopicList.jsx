@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
-  Card,
-  CardContent,
   Typography,
   Box,
   Chip,
@@ -15,8 +13,7 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText,
-  IconButton
+  ListItemText
 } from '@mui/material';
 import {
   ExpandMore,
@@ -24,12 +21,11 @@ import {
   MenuBook,
   Quiz,
   CheckCircle,
-  Lock,
   EmojiEvents
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { useProgress } from '../../context/ProgressContext';
 
 const TopicList = () => {
@@ -47,15 +43,17 @@ const TopicList = () => {
 
   const fetchTopics = async () => {
     try {
-      const response = await axios.get(`/api/content/subjects/${subjectId}/topics`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setTopics(response.data);
-      if (response.data.length > 0) {
-        setSubject(response.data[0].Subject);
-      }
+      setLoading(true);
+      const [subjectRes, topicRes] = await Promise.all([
+        axios.get(`/api/subjects/${subjectId}`),
+        axios.get(`/api/subjects/${subjectId}/topics`)
+      ]);
+      setSubject(subjectRes.data || null);
+      setTopics(Array.isArray(topicRes.data) ? topicRes.data : []);
     } catch (error) {
       console.error('Error fetching topics:', error);
+      setSubject(null);
+      setTopics([]);
     } finally {
       setLoading(false);
     }
@@ -67,11 +65,9 @@ const TopicList = () => {
 
   const handleContentClick = (content) => {
     if (content.type === 'video') {
-      navigate(`/play/${content.id}`);
-    } else if (content.type === 'reading') {
+      navigate(`/play/video/${content.id}`);
+    } else {
       navigate(`/study/content/${content.id}`);
-    } else if (content.type === 'quiz') {
-      navigate(`/quiz/${content.id}/start`);
     }
   };
 
@@ -88,7 +84,7 @@ const TopicList = () => {
     }
   };
 
-  const subjectProgress = getSubjectProgress(subjectId);
+  const subjectProgress = getSubjectProgress(Number(subjectId));
 
   if (loading) {
     return (
@@ -100,144 +96,67 @@ const TopicList = () => {
 
   return (
     <Container maxWidth="lg">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Header */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{
-              fontFamily: '"Comic Neue", cursive',
-              fontWeight: 'bold',
-              color: 'primary.main'
-            }}
-          >
-            {subject?.name || 'Subject'} Topics ðŸ“š
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: '"Comic Neue", cursive', fontWeight: 'bold', color: 'primary.main' }}>
+            {subject?.name || 'Subject'} Topics ??
           </Typography>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Chip
-              icon={<EmojiEvents />}
-              label={`${subjectProgress}% Complete`}
-              color="primary"
-              variant="outlined"
-            />
-            <Chip
-              icon={<MenuBook />}
-              label={`${topics.length} Topics`}
-              variant="outlined"
-            />
+            <Chip icon={<EmojiEvents />} label={`${subjectProgress}% Complete`} color="primary" variant="outlined" />
+            <Chip icon={<MenuBook />} label={`${topics.length} Topics`} variant="outlined" />
           </Box>
 
           <Box sx={{ mt: 2 }}>
-            <LinearProgress
-              variant="determinate"
-              value={subjectProgress}
-              sx={{ height: 8, borderRadius: 4 }}
-            />
+            <LinearProgress variant="determinate" value={subjectProgress} sx={{ height: 8, borderRadius: 4 }} />
           </Box>
         </Box>
 
-        {/* Topics List */}
         <Grid container spacing={3}>
           {topics.map((topic, index) => (
             <Grid item xs={12} key={topic.id}>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Accordion
-                  expanded={expanded === topic.id}
-                  onChange={handleAccordionChange(topic.id)}
-                  sx={{
-                    borderRadius: 3,
-                    '&:before': { display: 'none' },
-                    boxShadow: 2
-                  }}
-                >
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
+                <Accordion expanded={expanded === topic.id} onChange={handleAccordionChange(topic.id)} sx={{ borderRadius: 3, '&:before': { display: 'none' }, boxShadow: 2 }}>
                   <AccordionSummary
                     expandIcon={<ExpandMore />}
-                    sx={{
-                      '& .MuiAccordionSummary-content': {
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
-                      }
-                    }}
+                    sx={{ '& .MuiAccordionSummary-content': { display: 'flex', alignItems: 'center', gap: 2 } }}
                   >
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        bgcolor: 'primary.light',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white'
-                      }}
-                    >
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: 'primary.light', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                       {index + 1}
                     </Box>
-                    <Box flex={1}>
-                      <Typography variant="h6">{topic.name}</Typography>
+                    <Box flex={1} minWidth={0}>
+                      <Typography variant="h6" noWrap>{topic.name}</Typography>
                       <Typography variant="body2" color="textSecondary">
-                        {topic.Contents?.length || 0} lessons â€¢ {topic.Quizzes?.length || 0} quizzes
+                        {topic.Contents?.length || 0} lessons • {topic.Quizzes?.length || 0} quizzes
                       </Typography>
                     </Box>
                     <Chip
-                      label={`${Math.round((topic.Contents?.filter(c => c.completed)?.length || 0) / (topic.Contents?.length || 1) * 100)}%`}
+                      label={`${Math.round(((topic.Contents?.filter((c) => c.completed)?.length || 0) / (topic.Contents?.length || 1)) * 100)}%`}
                       size="small"
                       color="success"
                     />
                   </AccordionSummary>
-                  
+
                   <AccordionDetails>
                     <List>
                       {topic.Contents?.map((content) => (
                         <ListItem
                           key={content.id}
-                          button
                           onClick={() => handleContentClick(content)}
-                          sx={{
-                            borderRadius: 2,
-                            mb: 1,
-                            bgcolor: 'background.default',
-                            '&:hover': {
-                              bgcolor: 'action.hover'
-                            }
-                          }}
+                          sx={{ borderRadius: 2, mb: 1, bgcolor: 'background.default', '&:hover': { bgcolor: 'action.hover' } }}
                         >
-                          <ListItemIcon>
-                            {getContentIcon(content.type)}
-                          </ListItemIcon>
+                          <ListItemIcon>{getContentIcon(content.type)}</ListItemIcon>
                           <ListItemText
                             primary={content.title}
                             secondary={
                               <Box component="span" display="flex" gap={1}>
-                                <Typography variant="caption" color="textSecondary">
-                                  {content.duration} min
-                                </Typography>
-                                {content.completed && (
-                                  <Chip
-                                    icon={<CheckCircle />}
-                                    label="Completed"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                  />
-                                )}
+                                <Typography variant="caption" color="textSecondary">{content.duration || 0} min</Typography>
+                                {content.completed && <Chip icon={<CheckCircle />} label="Completed" size="small" color="success" variant="outlined" />}
                               </Box>
                             }
                           />
                           <Button
-                            variant={content.completed ? "outlined" : "contained"}
+                            variant={content.completed ? 'outlined' : 'contained'}
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -252,28 +171,13 @@ const TopicList = () => {
                       {topic.Quizzes?.map((quiz) => (
                         <ListItem
                           key={quiz.id}
-                          button
                           onClick={() => navigate(`/quiz/${quiz.id}/start`)}
-                          sx={{
-                            borderRadius: 2,
-                            mb: 1,
-                            bgcolor: 'warning.light',
-                            color: 'white',
-                            '&:hover': {
-                              bgcolor: 'warning.main'
-                            }
-                          }}
+                          sx={{ borderRadius: 2, mb: 1, bgcolor: 'warning.light', color: 'white', '&:hover': { bgcolor: 'warning.main' } }}
                         >
-                          <ListItemIcon sx={{ color: 'white' }}>
-                            <Quiz />
-                          </ListItemIcon>
+                          <ListItemIcon sx={{ color: 'white' }}><Quiz /></ListItemIcon>
                           <ListItemText
                             primary={quiz.title}
-                            secondary={
-                              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                {quiz.questions?.length || 0} questions â€¢ {quiz.timeLimit} min
-                              </Typography>
-                            }
+                            secondary={<Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>{quiz.questions?.length || 0} questions • {quiz.timeLimit || 10} min</Typography>}
                           />
                           <Button
                             variant="contained"

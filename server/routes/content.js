@@ -17,7 +17,8 @@ const {
   toggleBookmark,
   getRecommendedContent,
   getTrendingContent,
-  searchContent
+  searchContent,
+  getClassVideos
 } = require('../controllers/contentController');
 
 // All routes require authentication
@@ -28,6 +29,7 @@ router.get('/', getContents);
 router.get('/recommended', getRecommendedContent);
 router.get('/trending', getTrendingContent);
 router.get('/search', searchContent);
+router.get('/class/:grade/videos', getClassVideos);
 router.get('/:id', getContent);
 router.get('/:id/progress', getContentProgress);
 router.get('/:id/comments', getComments);
@@ -41,7 +43,7 @@ router.delete('/:id/comment/:commentId', deleteComment);
 
 // Teacher and Admin routes
 router.post('/', authorize('teacher', 'admin'), validate.content, validate.handleValidationErrors, createContent);
-router.put('/:id', authorize('teacher', 'admin'), validate.content, validate.handleValidationErrors, updateContent);
+router.put('/:id', authorize('teacher', 'admin'), updateContent);
 router.delete('/:id', authorize('teacher', 'admin'), deleteContent);
 
 module.exports = router;

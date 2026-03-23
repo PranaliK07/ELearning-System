@@ -76,11 +76,11 @@ const updateTopic = async (req, res) => {
 
     const { name, description, thumbnail, order, estimatedTime, isActive } = req.body;
 
-    if (name) topic.name = name;
-    if (description) topic.description = description;
-    if (thumbnail) topic.thumbnail = thumbnail;
-    if (order) topic.order = order;
-    if (estimatedTime) topic.estimatedTime = estimatedTime;
+    if (name !== undefined) topic.name = name;
+    if (description !== undefined) topic.description = description;
+    if (thumbnail !== undefined) topic.thumbnail = thumbnail;
+    if (order !== undefined) topic.order = order;
+    if (estimatedTime !== undefined) topic.estimatedTime = estimatedTime;
     if (isActive !== undefined) topic.isActive = isActive;
 
     await topic.save();
@@ -115,18 +115,17 @@ const deleteTopic = async (req, res) => {
 
 const getTopicContents = async (req, res) => {
   try {
-    const topic = await Topic.findByPk(req.params.id, {
-      include: [{
-        model: Content,
-        order: [['order', 'ASC']]
-      }]
-    });
-
+    const topic = await Topic.findByPk(req.params.id);
     if (!topic) {
       return res.status(404).json({ message: 'Topic not found' });
     }
 
-    res.json(topic.Contents);
+    const contents = await Content.findAll({
+      where: { TopicId: req.params.id },
+      order: [['order', 'ASC'], ['createdAt', 'DESC']]
+    });
+
+    res.json(contents);
   } catch (error) {
     console.error('Get topic contents error:', error);
     res.status(500).json({ message: 'Server error' });

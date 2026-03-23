@@ -25,6 +25,7 @@ const adminRoutes = require('./routes/admin');
 const teacherRoutes = require('./routes/teacher');
 const searchRoutes = require('./routes/search');
 const notificationRoutes = require('./routes/notifications');
+const assignmentRoutes = require('./routes/assignments');
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

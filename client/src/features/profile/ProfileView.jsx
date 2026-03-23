@@ -23,7 +23,9 @@ import {
   AccessTime,
   Star,
   TrendingUp,
-  CalendarToday
+  CalendarToday,
+  People,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -35,11 +37,16 @@ const ProfileView = () => {
   const { user } = useAuth();
   const { watchTimeStats } = useProgress();
 
-  const stats = [
+  const stats = user?.role === 'student' ? [
     { label: 'Total Watch Time', value: `${Math.round((watchTimeStats?.totalWatchTime || 0) / 60)}h`, icon: <AccessTime /> },
     { label: 'Points Earned', value: user?.points || 0, icon: <Star /> },
     { label: 'Achievements', value: '12', icon: <EmojiEvents /> },
     { label: 'Days Active', value: '45', icon: <CalendarToday /> }
+  ] : [
+    { label: 'Students Managed', value: '45', icon: <People /> },
+    { label: 'Assignments Created', value: '24', icon: <AssignmentIcon /> },
+    { label: 'Classes', value: '6', icon: <School /> },
+    { label: 'Days Active', value: '120', icon: <CalendarToday /> }
   ];
 
   const recentActivities = [
@@ -116,7 +123,7 @@ const ProfileView = () => {
               </Box>
 
               <Typography variant="body1" color="textSecondary" paragraph>
-                Student at Kids Learn Platform • Learning since 2024
+                {user?.role === 'teacher' ? 'Professional Educator at Kids Learn Platform' : 'Student at Kids Learn Platform'} • Learning since 2024
               </Typography>
 
               <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>

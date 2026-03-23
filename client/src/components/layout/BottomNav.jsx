@@ -39,7 +39,7 @@ const BottomNav = () => {
               navigate('/study');
               break;
             case 1:
-              navigate('/play/recent');
+              navigate('/play');
               break;
             case 2:
               navigate('/progress');

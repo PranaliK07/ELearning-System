@@ -19,63 +19,108 @@ import {
   LinearProgress,
   Avatar,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import {
   People,
   School,
-  Assignment,
+  Assignment as AssignmentIcon,
   TrendingUp,
   Add,
   Search,
   MoreVert,
   Email,
   Download,
-  BarChart
+  BarChart,
+  Person
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import axios from '../../utils/axios.js';
+import { toast } from 'react-hot-toast';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
+  const [data, setData] = useState({
+    students: [],
+    classes: [],
+    stats: {
+      totalStudents: 0,
+      activeClasses: 0,
+      assignments: 0,
+      avgProgress: 0,
+    },
+    recentSubmissions: [],  
+  });
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTeacherData();
+    fetchDashboardData();
   }, []);
 
-  const fetchTeacherData = async () => {
-    // Mock data - replace with actual API calls
-    setStudents([
-      { id: 1, name: 'John Doe', grade: 1, progress: 75, lastActive: 'Today', email: 'john@example.com' },
-      { id: 2, name: 'Jane Smith', grade: 1, progress: 82, lastActive: 'Yesterday', email: 'jane@example.com' },
-      { id: 3, name: 'Bob Johnson', grade: 2, progress: 45, lastActive: '2 days ago', email: 'bob@example.com' },
-      { id: 4, name: 'Alice Brown', grade: 2, progress: 91, lastActive: 'Today', email: 'alice@example.com' },
-      { id: 5, name: 'Charlie Wilson', grade: 3, progress: 68, lastActive: 'Yesterday', email: 'charlie@example.com' },
-    ]);
-
-    setClasses([
-      { id: 1, name: 'Class 1 - Mathematics', students: 12, progress: 68, pending: 3 },
-      { id: 2, name: 'Class 1 - Science', students: 12, progress: 72, pending: 2 },
-      { id: 3, name: 'Class 2 - Mathematics', students: 15, progress: 58, pending: 5 },
-      { id: 4, name: 'Class 2 - English', students: 15, progress: 81, pending: 1 },
-    ]);
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/dashboard/teacher');
+      setData({
+        students: response.data.students || [],
+        classes: response.data.classes || [],
+        stats: response.data.stats || {
+          totalStudents: 0,
+          activeClasses: 0,
+          assignments: 0,
+          avgProgress: 0,
+        },
+        recentSubmissions: response.data.recentSubmissions || [],
+      });
+    } catch (error) {
+      toast.error('Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const exportData = () => {
+    const headers = ['Name', 'Email', 'Grade', 'Last Active'];
+    const rows = data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "teacher_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    toast.success('Data exported successfully');
+  };
+
+  const filteredStudents = data.students.filter(student =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const stats = [
-    { label: 'Total Students', value: '45', icon: <People />, color: '#3f51b5' },
-    { label: 'Active Classes', value: '6', icon: <School />, color: '#f50057' },
-    { label: 'Assignments', value: '24', icon: <Assignment />, color: '#4caf50' },
-    { label: 'Avg Progress', value: '72%', icon: <TrendingUp />, color: '#ff9800' },
+  const statsConfig = [
+    { label: 'Total Students', value: data.stats.totalStudents, icon: <People />, color: '#3f51b5' },
+    { label: 'Active Classes', value: data.stats.activeClasses, icon: <School />, color: '#f50057' },
+    { label: 'Assignments', value: data.stats.assignments, icon: <AssignmentIcon />, color: '#4caf50' },
+    { label: 'Avg Progress', value: `${data.stats.avgProgress}%`, icon: <TrendingUp />, color: '#ff9800' },
   ];
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <LinearProgress />
+        <Typography sx={{ mt: 2 }} align="center">Loading teacher dashboard...</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -84,19 +129,29 @@ const TeacherDashboard = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Welcome Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome back, {user?.name}! 👨‍🏫
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Manage your classes and track student progress
-          </Typography>
+        {/* Header Section */}
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              Welcome back, {user?.name}! 👨‍🏫
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Here's an overview of your classes and student progress
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<Person />}
+            onClick={() => navigate('/profile')}
+            sx={{ borderRadius: 2 }}
+          >
+            My Profile
+          </Button>
         </Box>
 
         {/* Stats Grid */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {stats.map((stat, index) => (
+          {statsConfig.map((stat, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -104,14 +159,14 @@ const TeacherDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card sx={{ bgcolor: stat.color, color: 'white', borderRadius: 3 }}>
+                <Card sx={{ bgcolor: stat.color, color: 'white', borderRadius: 3, boxShadow: 3 }}>
                   <CardContent>
                     <Box display="flex" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <Typography variant="h6">{stat.label}</Typography>
-                        <Typography variant="h3">{stat.value}</Typography>
+                        <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>{stat.label}</Typography>
+                        <Typography variant="h4" fontWeight="bold">{stat.value}</Typography>
                       </Box>
-                      <Box sx={{ fontSize: 48, opacity: 0.8 }}>
+                      <Box sx={{ fontSize: 40, opacity: 0.7 }}>
                         {stat.icon}
                       </Box>
                     </Box>
@@ -123,103 +178,106 @@ const TeacherDashboard = () => {
         </Grid>
 
         {/* Quick Actions */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Paper sx={{ p: 3, borderRadius: 3, mb: 4, boxShadow: 2 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Quick Management
+          </Typography>
+            <Grid container spacing={2}>
+              <Grid item>
                 <Button
                   variant="contained"
                   startIcon={<Add />}
                   onClick={() => navigate('/content/create')}
                 >
-                  Create New Content
+                  New Lesson
                 </Button>
+              </Grid>
+              <Grid item>
                 <Button
                   variant="outlined"
-                  startIcon={<Assignment />}
+                  color="primary"
+                  startIcon={<Add />}
+                  onClick={() => navigate('/topics/manage')}
+                >
+                  Add Topic
+                </Button>
+              </Grid>
+              <Grid item>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<AssignmentIcon />}
                   onClick={() => navigate('/assignments/create')}
                 >
-                  Create Assignment
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<BarChart />}
-                  onClick={() => navigate('/reports')}
-                >
-                  View Reports
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Download />}
-                  onClick={() => {/* Export data */}}
-                >
-                  Export Data
-                </Button>
-              </Box>
-            </Paper>
+                Add Assignment
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="outlined"
+                color="info"
+                startIcon={<BarChart />}
+                onClick={() => navigate('/reports')}
+              >
+                View Analytics
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="outlined"
+                color="success"
+                startIcon={<Download />}
+                onClick={exportData}
+              >
+                Export Data
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
+        </Paper>
 
-        {/* Classes Overview */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Your Classes
-              </Typography>
-              <Grid container spacing={2}>
-                {classes.map((cls, index) => (
-                  <Grid item xs={12} sm={6} md={3} key={cls.id}>
-                    <Card 
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': { boxShadow: 6 }
-                      }}
-                      onClick={() => navigate(`/class/${cls.id}`)}
-                    >
-                      <CardContent>
-                        <Typography variant="subtitle1" gutterBottom>
-                          {cls.name}
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="body2" color="textSecondary">
-                            Students: {cls.students}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Pending: {cls.pending}
-                          </Typography>
-                        </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={cls.progress} 
-                          sx={{ height: 6, borderRadius: 3 }}
-                        />
-                        <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-                          {cls.progress}% Complete
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* Students Table */}
         <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
+          {/* Recent Submissions */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 3, borderRadius: 3, height: '100%', boxShadow: 2 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Recent Submissions
+              </Typography>
+              {data.recentSubmissions.length > 0 ? (
+                <Box>
+                  {data.recentSubmissions.map((sub) => (
+                    <Box key={sub.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar src={sub.student?.avatar} sx={{ width: 32, height: 32, mr: 1 }} />
+                        <Typography variant="subtitle2">{sub.student?.name}</Typography>
+                      </Box>
+                      <Typography variant="caption" color="textSecondary" display="block">
+                        Submitted: {sub.Assignment?.title}
+                      </Typography>
+                      <Typography variant="caption" color="primary">
+                        {new Date(sub.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <AssignmentIcon sx={{ fontSize: 48, color: 'divider' }} />
+                  <Typography color="textSecondary">No recent submissions</Typography>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+
+          {/* Students Table */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6">
+                <Typography variant="h6" fontWeight="bold">
                   Students Overview
                 </Typography>
                 <TextField
                   size="small"
-                  placeholder="Search students..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
@@ -229,19 +287,17 @@ const TeacherDashboard = () => {
                       </InputAdornment>
                     )
                   }}
-                  sx={{ width: 250 }}
+                  sx={{ width: 200 }}
                 />
               </Box>
 
-              <TableContainer>
-                <Table>
+              <TableContainer sx={{ maxHeight: 400 }}>
+                <Table stickyHeader>
                   <TableHead>
                     <TableRow>
                       <TableCell>Student</TableCell>
-                      <TableCell>Class</TableCell>
-                      <TableCell>Progress</TableCell>
+                      <TableCell>Grade</TableCell>
                       <TableCell>Last Active</TableCell>
-                      <TableCell>Status</TableCell>
                       <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -250,51 +306,38 @@ const TeacherDashboard = () => {
                       <TableRow key={student.id} hover>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }} src={student.avatar}>
                               {student.name.charAt(0)}
                             </Avatar>
                             <Box>
                               <Typography variant="subtitle2">{student.name}</Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {student.email}
-                              </Typography>
+                              <Typography variant="caption" color="textSecondary">{student.email}</Typography>
                             </Box>
                           </Box>
                         </TableCell>
-                        <TableCell>Class {student.grade}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', width: 120 }}>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={student.progress} 
-                              sx={{ flex: 1, mr: 1, height: 6, borderRadius: 3 }}
-                            />
-                            <Typography variant="caption">
-                              {student.progress}%
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>{student.lastActive}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={student.progress > 70 ? 'Active' : 'Needs Attention'} 
-                            size="small"
-                            color={student.progress > 70 ? 'success' : 'warning'}
-                          />
-                        </TableCell>
+                        <TableCell>{student.Grade?.name || 'Unassigned'}</TableCell>
+                        <TableCell>{new Date(student.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell align="right">
-                          <IconButton size="small" onClick={() => navigate(`/student/${student.id}`)}>
-                            <BarChart />
-                          </IconButton>
-                          <IconButton size="small" onClick={() => window.location.href = `mailto:${student.email}`}>
-                            <Email />
-                          </IconButton>
-                          <IconButton size="small">
-                            <MoreVert />
-                          </IconButton>
+                          <Tooltip title="View Report">
+                            <IconButton size="small" onClick={() => navigate('/reports')}>
+                              <BarChart fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Send Email">
+                            <IconButton size="small" onClick={() => window.location.href = `mailto:${student.email}`}>
+                              <Email fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {filteredStudents.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                          No students found
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

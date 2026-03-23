@@ -23,7 +23,7 @@ router.get('/:id/stats', getSubjectStats);
 
 // Teacher and Admin routes
 router.post('/', authorize('teacher', 'admin'), validate.subject, validate.handleValidationErrors, createSubject);
-router.put('/:id', authorize('teacher', 'admin'), validate.subject, validate.handleValidationErrors, updateSubject);
-router.delete('/:id', authorize('admin'), deleteSubject);
+router.put('/:id', authorize('teacher', 'admin'), updateSubject);
+router.delete('/:id', authorize('teacher', 'admin'), deleteSubject);
 
 module.exports = router;

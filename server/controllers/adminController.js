@@ -1,7 +1,105 @@
-const { User, Content, Quiz, Achievement, Announcement } = require('../models');
+const { User, Content, Quiz, Achievement, Announcement, RoleAccess, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const { exec } = require('child_process');
+
+const allowedModules = [
+  'dashboard',
+  'subjects',
+  'assignments',
+  'content',
+  'users',
+  'reports',
+  'analytics',
+  'settings',
+  'business-settings'
+];
+
+const defaultRoleAccess = {
+  admin: ['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'business-settings'],
+  teacher: ['dashboard', 'subjects', 'assignments', 'reports'],
+  student: ['dashboard', 'subjects', 'assignments']
+};
+
+// --- Business settings: role-based sidebar access ---
+const getRoleAccess = async (req, res) => {
+  try {
+    const roles = ['admin', 'teacher', 'student'];
+    const records = await RoleAccess.findAll();
+
+    // Seed defaults if table is empty
+    if (!records.length) {
+      const created = await Promise.all(
+        roles.map(role => RoleAccess.create({
+          role,
+          modules: defaultRoleAccess[role]
+        }))
+      );
+      return res.json(Object.fromEntries(created.map(r => [r.role, r.modules])));
+    }
+
+    const sanitized = Object.fromEntries(
+      records.map(rec => {
+        let mods = rec.modules;
+        if (typeof mods === 'string') {
+          try { mods = JSON.parse(mods); } catch(e) { mods = []; }
+        }
+        if (!Array.isArray(mods)) mods = [];
+        return [
+          rec.role,
+          mods.filter(m => allowedModules.includes(m))
+        ];
+      })
+    );
+
+    // Fill any missing role with defaults to keep UI stable
+    roles.forEach(role => {
+      if (!sanitized[role]) sanitized[role] = defaultRoleAccess[role] || [];
+    });
+
+    res.json(sanitized);
+  } catch (error) {
+    console.error('Get role access error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const saveRoleAccess = async (req, res) => {
+  try {
+    const incoming = req.body || {};
+    const roles = ['admin', 'teacher', 'student'];
+
+    const updates = {};
+    roles.forEach(role => {
+      const list = Array.isArray(incoming[role]) ? incoming[role] : defaultRoleAccess[role] || [];
+      // Deduplicate + validate against allowed modules
+      updates[role] = Array.from(new Set(list.filter(m => allowedModules.includes(m))));
+    });
+
+    // Update or create each role
+    await Promise.all(
+      roles.map(async role => {
+        const record = await RoleAccess.findOne({ where: { role } });
+        if (record) {
+          record.set('modules', updates[role]);
+          record.changed('modules', true);
+          await record.save();
+        } else {
+          await RoleAccess.create({
+            role,
+            modules: updates[role],
+            version: 1
+          });
+        }
+      })
+    );
+
+    res.json({ success: true, roleAccess: updates });
+  } catch (error) {
+    console.error('Save role access error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 const getSystemStats = async (req, res) => {
   try {
@@ -354,5 +452,7 @@ module.exports = {
   resolveReport,
   getSystemLogs,
   backupDatabase,
-  restoreDatabase
+  restoreDatabase,
+  getRoleAccess,
+  saveRoleAccess
 };

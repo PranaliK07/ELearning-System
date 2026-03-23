@@ -13,7 +13,7 @@ const createDirectories = () => {
     './uploads/badges',
     './uploads/temp'
   ];
-  
+
   dirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -59,7 +59,7 @@ const imageStorage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedVideoTypes = process.env.ALLOWED_VIDEO_TYPES.split(',');
   const allowedImageTypes = process.env.ALLOWED_IMAGE_TYPES.split(',');
-  
+
   if (file.fieldname === 'video') {
     if (allowedVideoTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -96,8 +96,23 @@ const uploadAvatar = multer({
   fileFilter: fileFilter
 });
 
+const combinedStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'video') {
+      cb(null, './uploads/videos/');
+    } else {
+      cb(null, './uploads/thumbnails/');
+    }
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  }
+});
+
 const uploadMultiple = multer({
-  storage: videoStorage,
+  storage: combinedStorage,
   limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 104857600 },
   fileFilter: fileFilter
 }).fields([
@@ -105,23 +120,24 @@ const uploadMultiple = multer({
   { name: 'thumbnail', maxCount: 1 }
 ]);
 
+
 // Image optimization middleware
 const optimizeImage = async (req, res, next) => {
   if (!req.file) return next();
-  
+
   try {
     const filePath = req.file.path;
     const optimizedPath = filePath.replace(/(\.[^.]+)$/, '-optimized$1');
-    
+
     await sharp(filePath)
       .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 80 })
       .toFile(optimizedPath);
-    
+
     // Replace original with optimized
     fs.unlinkSync(filePath);
     fs.renameSync(optimizedPath, filePath);
-    
+
     next();
   } catch (error) {
     next(error);

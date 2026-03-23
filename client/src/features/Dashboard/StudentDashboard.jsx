@@ -28,7 +28,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import InstagramFeed from '../feed/InstagramFeed';
-import axios from 'axios';
+import axios from '../../utils/axios';
 
 
 const StudentDashboard = () => {
@@ -39,11 +39,7 @@ const StudentDashboard = () => {
   const [recommendedContent, setRecommendedContent] = useState([]);
   const [achievements, setAchievements] = useState([]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  async function fetchDashboardData() {
     try {
       const [activitiesRes, contentRes, achievementsRes] = await Promise.all([
         axios.get('/api/progress/recent', {
@@ -63,7 +59,11 @@ const StudentDashboard = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const gradeProgress = getGradeProgress(user?.grade);
 
@@ -207,7 +207,7 @@ const StudentDashboard = () => {
                         />
                       </Box>
                       <Box display="flex" justifyContent="flex-end" mt={1}>
-                        <IconButton size="small" color="primary" onClick={() => navigate(`/play/${activity.Content?.id}`)}>
+                        <IconButton size="small" color="primary" onClick={() => navigate(`/play/video/${activity.Content?.id}`)}>
                           <PlayCircle />
                         </IconButton>
                       </Box>
@@ -260,7 +260,7 @@ const StudentDashboard = () => {
                             <Button
                               variant="contained"
                               size="small"
-                              onClick={() => navigate(`/play/${item.id}`)}
+                              onClick={() => navigate(`/play/video/${item.id}`)}
                             >
                               Start
                             </Button>

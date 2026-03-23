@@ -6,11 +6,13 @@ import {
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Brightness4 as DarkIcon,
-  Brightness7 as LightIcon
+  Brightness7 as LightIcon,
+  Home as HomeIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import BottomNav from './BottomNav';
+import ErrorBoundary from '../common/ErrorBoundary';
 import Sidebar from './Sidebar';
 
 const MainLayout = () => {
@@ -83,6 +85,10 @@ const MainLayout = () => {
             🎓 Kids Learn
           </Typography>
 
+          <IconButton color="inherit" onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
+            <HomeIcon />
+          </IconButton>
+
           <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 1 }}>
             {mode === 'light' ? <DarkIcon /> : <LightIcon />}
           </IconButton>
@@ -133,7 +139,9 @@ const MainLayout = () => {
           p: 3
         }}
       >
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </Box>
 
       <BottomNav />

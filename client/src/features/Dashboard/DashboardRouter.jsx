@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import StudentDashboard from './StudentDashboard';
+import StudentHome from './StudentHome';
 import TeacherDashboard from './TeacherDashboard';
 import AdminDashboard from './AdminDashboard';
 import { CircularProgress, Box } from '@mui/material';
@@ -17,13 +17,13 @@ const DashboardRouter = () => {
     }
 
     switch (user?.role) {
-        case 'admin':
-            return <AdminDashboard />;
-        case 'teacher':
-            return <TeacherDashboard />;
-        case 'student':
-        default:
-            return <StudentDashboard />;
+      case 'admin':
+        return <AdminDashboard />;
+      case 'teacher':
+        return <TeacherDashboard />;
+      case 'student':
+      default:
+            return <StudentHome />;
     }
 };
 

@@ -1,31 +1,43 @@
-const { Content, Topic, User, Progress, Comment, Like, Bookmark } = require('../models');
+const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject } = require('../models');
 const { Op } = require('sequelize');
 
 const getContents = async (req, res) => {
   try {
-    const { topicId, type, page = 1, limit = 10 } = req.query;
+    const { topicId, subjectId, gradeId, type, page = 1, limit = 10 } = req.query;
     const where = {};
+    const parsedLimit = Math.max(1, Math.min(parseInt(limit, 10) || 10, 100));
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
 
     if (topicId) where.TopicId = topicId;
+    if (subjectId) where.SubjectId = subjectId;
+    if (gradeId) where.GradeId = gradeId;
     if (type) where.type = type;
 
     const contents = await Content.findAndCountAll({
       where,
-      include: [{
-        model: Topic,
-        include: [Subject]
-      }],
-
-      limit: parseInt(limit),
-      offset: (page - 1) * limit,
-      order: [['order', 'ASC']]
+      include: [
+        {
+          model: Topic,
+          include: [Subject]
+        },
+        { model: Subject },
+        { model: Grade },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'avatar']
+        }
+      ],
+      limit: parsedLimit,
+      offset: (parsedPage - 1) * parsedLimit,
+      order: [['order', 'ASC'], ['createdAt', 'DESC']]
     });
 
     res.json({
       contents: contents.rows,
       total: contents.count,
-      page: parseInt(page),
-      totalPages: Math.ceil(contents.count / limit)
+      page: parsedPage,
+      totalPages: Math.ceil(contents.count / parsedLimit)
     });
   } catch (error) {
     console.error('Get contents error:', error);
@@ -41,7 +53,8 @@ const getContent = async (req, res) => {
           model: Topic,
           include: [Subject]
         },
-
+        { model: Subject },
+        { model: Grade },
         {
           model: User,
           as: 'creator',
@@ -68,35 +81,70 @@ const createContent = async (req, res) => {
       type,
       description,
       videoUrl,
+      videoFile,
+      thumbnail,
       readingMaterial,
       duration,
       isPremium,
       topicId,
       TopicId,
       order,
-      tags
+      tags,
+      metadata,
+      gradeId,
+      GradeId,
+      subjectId,
+      SubjectId,
+      isPublished
     } = req.body;
 
-    const finalTopicId = topicId || TopicId;
+    const finalTopicId = Number(topicId || TopicId || 0);
+    if (!finalTopicId) {
+      return res.status(400).json({ message: 'Topic is required' });
+    }
 
     const topic = await Topic.findByPk(finalTopicId);
     if (!topic) {
       return res.status(404).json({ message: 'Topic not found (id: ' + finalTopicId + ')' });
     }
 
+    const finalSubjectId = Number(subjectId || SubjectId || topic.SubjectId || 0) || null;
+    const finalGradeId = Number(gradeId || GradeId || 0) || null;
+
+    if (finalSubjectId) {
+      const subject = await Subject.findByPk(finalSubjectId);
+      if (!subject) {
+        return res.status(404).json({ message: `Subject not found (id: ${finalSubjectId})` });
+      }
+      if (subject.id !== topic.SubjectId) {
+        return res.status(400).json({ message: 'Topic does not belong to selected subject' });
+      }
+    }
+
+    if (finalGradeId) {
+      const grade = await Grade.findByPk(finalGradeId);
+      if (!grade) {
+        return res.status(404).json({ message: `Grade not found (id: ${finalGradeId})` });
+      }
+    }
 
     const content = await Content.create({
       title,
       type,
       description,
       videoUrl,
+      videoFile,
+      thumbnail,
       readingMaterial,
       duration,
       isPremium,
       order,
       tags,
+      metadata,
       TopicId: finalTopicId,
-
+      SubjectId: finalSubjectId,
+      GradeId: finalGradeId,
+      isPublished: isPublished !== undefined ? isPublished : true,
       createdBy: req.user.id
     });
 
@@ -128,18 +176,54 @@ const updateContent = async (req, res) => {
       isPremium,
       isPublished,
       order,
-      tags
+      tags,
+      metadata,
+      topicId,
+      TopicId,
+      gradeId,
+      GradeId,
+      subjectId,
+      SubjectId
     } = req.body;
 
-    if (title) content.title = title;
-    if (description) content.description = description;
-    if (videoUrl) content.videoUrl = videoUrl;
-    if (readingMaterial) content.readingMaterial = readingMaterial;
-    if (duration) content.duration = duration;
+    const nextTopicId = topicId !== undefined || TopicId !== undefined
+      ? Number(topicId || TopicId || 0) || null
+      : content.TopicId;
+    const nextSubjectId = subjectId !== undefined || SubjectId !== undefined
+      ? Number(subjectId || SubjectId || 0) || null
+      : content.SubjectId;
+    const nextGradeId = gradeId !== undefined || GradeId !== undefined
+      ? Number(gradeId || GradeId || 0) || null
+      : content.GradeId;
+
+    if (nextTopicId) {
+      const topic = await Topic.findByPk(nextTopicId);
+      if (!topic) {
+        return res.status(404).json({ message: `Topic not found (id: ${nextTopicId})` });
+      }
+      if (nextSubjectId && topic.SubjectId !== nextSubjectId) {
+        return res.status(400).json({ message: 'Topic does not belong to selected subject' });
+      }
+      content.TopicId = nextTopicId;
+      content.SubjectId = nextSubjectId || topic.SubjectId;
+    } else if (nextSubjectId !== undefined) {
+      content.SubjectId = nextSubjectId;
+    }
+
+    if (nextGradeId !== undefined) {
+      content.GradeId = nextGradeId;
+    }
+
+    if (title !== undefined) content.title = title;
+    if (description !== undefined) content.description = description;
+    if (videoUrl !== undefined) content.videoUrl = videoUrl;
+    if (readingMaterial !== undefined) content.readingMaterial = readingMaterial;
+    if (duration !== undefined) content.duration = duration;
     if (isPremium !== undefined) content.isPremium = isPremium;
     if (isPublished !== undefined) content.isPublished = isPublished;
-    if (order) content.order = order;
-    if (tags) content.tags = tags;
+    if (order !== undefined) content.order = order;
+    if (tags !== undefined) content.tags = tags;
+    if (metadata !== undefined) content.metadata = { ...content.metadata, ...metadata };
 
     await content.save();
 
@@ -339,7 +423,8 @@ const getRecommendedContent = async (req, res) => {
         model: Topic,
         include: [{
           model: Subject,
-          where: { GradeId: user.grade }
+          required: false,
+          where: user.grade ? { GradeId: user.grade } : undefined
         }]
       }],
       limit: 10,
@@ -357,6 +442,12 @@ const getTrendingContent = async (req, res) => {
   try {
     const trending = await Content.findAll({
       where: { isPublished: true },
+      include: [
+        { model: Topic, include: [Subject] },
+        { model: Subject },
+        { model: Grade },
+        { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] }
+      ],
       limit: 10,
       order: [
         ['views', 'DESC'],
@@ -386,7 +477,7 @@ const searchContent = async (req, res) => {
       },
       include: [{
         model: Topic,
-        include: ['Subject']
+        include: [Subject]
       }],
       limit: 20
     });
@@ -394,6 +485,57 @@ const searchContent = async (req, res) => {
     res.json(contents);
   } catch (error) {
     console.error('Search content error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getClassVideos = async (req, res) => {
+  try {
+    const gradeInput = Number(req.params.grade || req.user.grade || 0) || null;
+    let gradeId = null;
+
+    if (gradeInput) {
+      const grade = await Grade.findOne({
+        where: {
+          [Op.or]: [{ id: gradeInput }, { level: gradeInput }]
+        }
+      });
+      gradeId = grade?.id || null;
+    }
+
+    const videos = await Content.findAll({
+      where: {
+        type: 'video',
+        isPublished: true
+      },
+      include: [
+        { model: Grade },
+        { model: Subject },
+        { model: Topic, include: [Subject] },
+        { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 50
+    });
+
+    const filtered = videos.filter((video) => {
+      if (!gradeId) return true;
+      const byContent = !video.GradeId || video.GradeId === gradeId;
+      const subjectGrade = video.Subject?.GradeId || video.Topic?.Subject?.GradeId || null;
+      const bySubject = !subjectGrade || subjectGrade === gradeId;
+      return byContent && bySubject;
+    });
+
+    const normalized = filtered.slice(0, 12).map((video) => ({
+      ...video.toJSON(),
+      subjectName: video.Subject?.name || video.Topic?.Subject?.name || 'General',
+      topicName: video.Topic?.name || 'General',
+      thumbnail: video.thumbnail || video.Topic?.thumbnail || null
+    }));
+
+    res.json(normalized);
+  } catch (error) {
+    console.error('Get class videos error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -413,5 +555,6 @@ module.exports = {
   toggleBookmark,
   getRecommendedContent,
   getTrendingContent,
-  searchContent
+  searchContent,
+  getClassVideos
 };

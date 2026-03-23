@@ -12,6 +12,9 @@ const Comment = require('./Comment');
 const Like = require('./Like');
 const Bookmark = require('./Bookmark');
 const Notification = require('./Notification');
+const Assignment = require('./Assignment');
+const Submission = require('./Submission');
+const RoleAccess = require('./RoleAccess');
 
 // Grade Associations
 Grade.hasMany(Subject, { onDelete: 'CASCADE' });
@@ -45,6 +48,10 @@ Content.hasMany(WatchTime, { onDelete: 'CASCADE' });
 Content.hasMany(Comment, { onDelete: 'CASCADE' });
 Content.hasMany(Like, { onDelete: 'CASCADE' });
 Content.hasMany(Bookmark, { onDelete: 'CASCADE' });
+Content.belongsTo(Grade, { foreignKey: 'GradeId' });
+Content.belongsTo(Subject, { foreignKey: 'SubjectId' });
+Grade.hasMany(Content, { foreignKey: 'GradeId' });
+Subject.hasMany(Content, { foreignKey: 'SubjectId' });
 
 // Quiz Associations
 Quiz.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
@@ -79,8 +86,17 @@ Bookmark.belongsTo(Content);
 Notification.belongsTo(User, { as: 'recipient', foreignKey: 'userId' });
 Notification.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
 
-// Announcement Associations
 Announcement.belongsTo(User, { as: 'author' });
+
+// Assignment Associations
+Assignment.belongsTo(User, { as: 'teacher', foreignKey: 'teacherId' });
+Assignment.belongsTo(Subject, { foreignKey: 'subjectId' });
+Assignment.belongsTo(Grade, { foreignKey: 'gradeId' });
+Assignment.hasMany(Submission, { foreignKey: 'assignmentId', onDelete: 'CASCADE' });
+
+// Submission Associations
+Submission.belongsTo(Assignment, { foreignKey: 'assignmentId' });
+Submission.belongsTo(User, { as: 'student', foreignKey: 'studentId' });
 
 module.exports = {
   User,
@@ -96,5 +112,8 @@ module.exports = {
   Comment,
   Like,
   Bookmark,
-  Notification
+  Notification,
+  Assignment,
+  Submission,
+  RoleAccess
 };

@@ -2,7 +2,7 @@ const sequelize = require('./config/database');
 const {
     Grade, Subject, Topic, User, Content, Quiz,
     Progress, Achievement, WatchTime, Announcement,
-    Comment, Like, Bookmark, Notification
+    Comment, Like, Bookmark, Notification, Assignment, Submission
 } = require('./models');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
@@ -69,7 +69,6 @@ async function rebuild() {
         });
         console.log(`✅ Admin user created: ${adminEmail}`);
 
-        // Create default Achievements
         await Achievement.create({
             name: 'First Steps',
             description: 'Create your account',
@@ -77,6 +76,31 @@ async function rebuild() {
             points: 10,
             criteria: JSON.stringify({ type: 'registration' })
         });
+
+        // Create default Teacher
+        const teacherEmail = 'teacher@elearning.com';
+        await User.create({
+            name: 'John Teacher',
+            email: teacherEmail,
+            password: 'Teacher@123',
+            role: 'teacher',
+            isActive: true,
+            emailVerified: true
+        });
+        console.log(`✅ Teacher user created: ${teacherEmail}`);
+
+        // Create default Student
+        const studentEmail = 'student@elearning.com';
+        await User.create({
+            name: 'Jane Student',
+            email: studentEmail,
+            password: 'Student@123',
+            role: 'student',
+            gradeId: grades[0].id,
+            isActive: true,
+            emailVerified: true
+        });
+        console.log(`✅ Student user created: ${studentEmail}`);
 
         console.log('👍 Database sync and seed complete!');
     } catch (err) {

@@ -1,4 +1,4 @@
-const { Subject, Grade, Topic, Content } = require('../models');
+const { Subject, Grade, Topic, Content, Quiz } = require('../models');
 
 const getSubjects = async (req, res) => {
   try {
@@ -9,7 +9,7 @@ const getSubjects = async (req, res) => {
 
     const subjects = await Subject.findAll({
       where,
-      include: [Grade],
+      include: [Grade, Topic],
       order: [['order', 'ASC']]
     });
 
@@ -76,11 +76,11 @@ const updateSubject = async (req, res) => {
 
     const { name, description, icon, color, order, isActive } = req.body;
 
-    if (name) subject.name = name;
-    if (description) subject.description = description;
-    if (icon) subject.icon = icon;
-    if (color) subject.color = color;
-    if (order) subject.order = order;
+    if (name !== undefined) subject.name = name;
+    if (description !== undefined) subject.description = description;
+    if (icon !== undefined) subject.icon = icon;
+    if (color !== undefined) subject.color = color;
+    if (order !== undefined) subject.order = order;
     if (isActive !== undefined) subject.isActive = isActive;
 
     await subject.save();
@@ -118,7 +118,7 @@ const getSubjectTopics = async (req, res) => {
     const subject = await Subject.findByPk(req.params.id, {
       include: [{
         model: Topic,
-        include: [Content]
+        include: [Content, Quiz]
       }]
     });
 
