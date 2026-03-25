@@ -14,9 +14,9 @@ import {
   TableHead,
   TableRow,
   Button,
+  ButtonGroup,
 } from '@mui/material';
 import {
-  BarChart,
   GetApp,
   People,
   Assignment,
@@ -49,49 +49,101 @@ ChartJS.register(
 );
 
 const Reports = () => {
+  const [period, setPeriod] = useState('daily');
   const [reportData, setReportData] = useState({
+    summary: {},
     studentProgress: [],
     weeklyActivity: [],
-    performanceMetrics: {},
+    performanceMetrics: {
+      avgScore: 0,
+      completionRate: '0%',
+      totalHours: 0,
+    },
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [period]);
 
   const fetchReportData = async () => {
     try {
-      // In a real app, these would be dedicated reporting endpoints
-      // For now, we'll simulate with what we have or mock
-      const response = await axios.get('/api/dashboard/teacher');
-      // Assuming the dashboard returns some stats, but we'll mock for the premium look
+      setLoading(true);
+      let response;
+      const endpoints = [
+        `/api/reports?period=${period}`,
+        '/api/reports',
+        `/api/reports/${period}`
+      ];
+
+      let lastError;
+      for (const endpoint of endpoints) {
+        try {
+          response = await axios.get(endpoint);
+          break;
+        } catch (err) {
+          lastError = err;
+          if (err?.response?.status !== 404) {
+            throw err;
+          }
+        }
+      }
+
+      if (!response) {
+        throw lastError || new Error('No report endpoint is available');
+      }
+
       setReportData({
-        studentProgress: [
-          { name: 'John Doe', score: 85, progress: 90 },
-          { name: 'Jane Smith', score: 92, progress: 95 },
-          { name: 'Bob Johnson', score: 78, progress: 80 },
-          { name: 'Alice Brown', score: 95, progress: 100 },
-          { name: 'Charlie Wilson', score: 88, progress: 85 },
-        ],
-        weeklyActivity: [
-          { day: 'Mon', active: 32 },
-          { day: 'Tue', active: 45 },
-          { day: 'Wed', active: 28 },
-          { day: 'Thu', active: 55 },
-          { day: 'Fri', active: 40 },
-          { day: 'Sat', active: 15 },
-          { day: 'Sun', active: 10 },
-        ],
-        performanceMetrics: {
-          avgScore: 87.6,
-          completionRate: '82%',
-          totalHours: 145,
+        summary: response.data?.summary || {},
+        studentProgress: response.data?.studentProgress || [],
+        weeklyActivity: response.data?.weeklyActivity || [],
+        performanceMetrics: response.data?.performanceMetrics || {
+          avgScore: 0,
+          completionRate: '0%',
+          totalHours: 0,
         },
       });
     } catch (error) {
-      toast.error('Failed to load report data');
+      const apiMessage = error?.response?.data?.message;
+      toast.error(apiMessage || 'Failed to load report data');
+      setReportData({
+        summary: {},
+        studentProgress: [],
+        weeklyActivity: [],
+        performanceMetrics: {
+          avgScore: 0,
+          completionRate: '0%',
+          totalHours: 0,
+        },
+      });
+    } finally {
+      setLoading(false);
     }
   };
+
+  const summaryMap = {
+    daily: [
+      { label: 'Active Students Today', value: reportData.summary.activeStudentsToday ?? 0 },
+      { label: 'Videos Watched Today', value: reportData.summary.videosWatchedToday ?? 0 },
+      { label: 'Topics Completed Today', value: reportData.summary.topicsCompletedToday ?? 0 },
+      { label: 'New Enrollments Today', value: reportData.summary.newEnrollmentsToday ?? 0 },
+    ],
+    weekly: [
+      { label: 'Total Active Users (Week)', value: reportData.summary.totalActiveUsersThisWeek ?? 0 },
+      { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
+      { label: 'Average Progress / Student', value: `${reportData.summary.averageProgressPerStudent ?? 0}%` },
+      { label: 'Most Active Subject', value: reportData.summary.mostActiveSubject || 'N/A' },
+    ],
+    monthly: [
+      { label: 'Total Users', value: reportData.summary.totalUsers ?? 0 },
+      { label: 'Total Completed Topics', value: reportData.summary.totalCompletedTopics ?? 0 },
+      { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
+      { label: 'Top Performing Students', value: reportData.summary.topPerformingStudents?.length ?? 0 },
+      { label: 'Overall Progress', value: `${reportData.summary.overallProgressPercentage ?? 0}%` },
+    ],
+  };
+
+  const selectedSummary = summaryMap[period] || [];
 
   const barData = {
     labels: reportData.studentProgress.map(s => s.name),
@@ -145,7 +197,7 @@ const Reports = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Learning Analytics Reports
@@ -154,13 +206,22 @@ const Reports = () => {
             Insights and performance tracking for your classes
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<GetApp />}
-          onClick={exportCSV}
-        >
-          Export CSV
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
+          <ButtonGroup variant="outlined" size="small">
+            <Button variant={period === 'daily' ? 'contained' : 'outlined'} onClick={() => setPeriod('daily')} disabled={loading}>
+              Daily
+            </Button>
+            <Button variant={period === 'weekly' ? 'contained' : 'outlined'} onClick={() => setPeriod('weekly')} disabled={loading}>
+              Weekly
+            </Button>
+            <Button variant={period === 'monthly' ? 'contained' : 'outlined'} onClick={() => setPeriod('monthly')} disabled={loading}>
+              Monthly
+            </Button>
+          </ButtonGroup>
+          <Button variant="outlined" startIcon={<GetApp />} onClick={exportCSV}>
+            Export CSV
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -170,8 +231,8 @@ const Reports = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <EmojiEvents fontSize="large" />
                 <Box>
-                  <Typography variant="subtitle2">Average Score</Typography>
-                  <Typography variant="h4">{reportData.performanceMetrics.avgScore}%</Typography>
+                  <Typography variant="subtitle2">{selectedSummary[0]?.label || 'Metric 1'}</Typography>
+                  <Typography variant="h4">{selectedSummary[0]?.value ?? 0}</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -183,8 +244,8 @@ const Reports = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Assignment fontSize="large" />
                 <Box>
-                  <Typography variant="subtitle2">Completion Rate</Typography>
-                  <Typography variant="h4">{reportData.performanceMetrics.completionRate}</Typography>
+                  <Typography variant="subtitle2">{selectedSummary[1]?.label || 'Metric 2'}</Typography>
+                  <Typography variant="h4">{selectedSummary[1]?.value ?? 0}</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -196,14 +257,20 @@ const Reports = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <People fontSize="large" />
                 <Box>
-                  <Typography variant="subtitle2">Total Learning Hours</Typography>
-                  <Typography variant="h4">{reportData.performanceMetrics.totalHours}h</Typography>
+                  <Typography variant="subtitle2">{selectedSummary[2]?.label || 'Metric 3'}</Typography>
+                  <Typography variant="h4">{selectedSummary[2]?.value ?? 0}</Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+
+      <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+        <Typography variant="body2" color="textSecondary">
+          {selectedSummary.slice(3).map((item) => `${item.label}: ${item.value}`).join(' | ') || `Average Score: ${reportData.performanceMetrics.avgScore}% | Completion Rate: ${reportData.performanceMetrics.completionRate} | Total Learning Hours: ${reportData.performanceMetrics.totalHours}h`}
+        </Typography>
+      </Paper>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
@@ -216,7 +283,7 @@ const Reports = () => {
         </Grid>
         <Grid item xs={12} md={5}>
           <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" gutterBottom>Weekly Student Activity</Typography>
+            <Typography variant="h6" gutterBottom>{period === 'monthly' ? 'Monthly Student Activity' : period === 'daily' ? 'Daily Student Activity' : 'Weekly Student Activity'}</Typography>
             <Box sx={{ height: 300 }}>
               <Line data={lineData} options={{ maintainAspectRatio: false }} />
             </Box>
@@ -244,7 +311,7 @@ const Reports = () => {
                   </TableCell>
                   <TableCell align="center">{row.score}%</TableCell>
                   <TableCell align="center">{row.progress}%</TableCell>
-                  <TableCell align="center">Today</TableCell>
+                  <TableCell align="center">{row.lastActive ? new Date(row.lastActive).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell align="right">
                     <Typography color={row.score > 80 ? 'success.main' : 'warning.main'} fontWeight="bold">
                       {row.score > 80 ? 'Excellent' : 'On Track'}

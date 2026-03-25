@@ -6,7 +6,6 @@ import {
   Button,
   Typography,
   Box,
-  Alert,
   IconButton,
   InputAdornment
 } from '@mui/material';
@@ -25,12 +24,16 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState('idle');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (e.target.name === 'password') {
+      setPasswordStatus('idle');
+    }
     // Clear error for this field
     if (errors[e.target.name]) {
       setErrors({
@@ -62,11 +65,21 @@ const Login = () => {
     }
 
     setLoading(true);
+    setPasswordStatus('idle');
     const result = await login(formData.email, formData.password);
     setLoading(false);
     
     if (result.success) {
+      setErrors({});
+      setPasswordStatus('success');
+      await new Promise((resolve) => setTimeout(resolve, 400));
       navigate('/dashboard');
+    } else {
+      setPasswordStatus('error');
+      setErrors((prev) => ({
+        ...prev,
+        password: result.error || 'Incorrect password'
+      }));
     }
   };
 
@@ -138,10 +151,37 @@ const Login = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleChange}
-                error={!!errors.password}
-                helperText={errors.password}
+                error={!!errors.password || passwordStatus === 'error'}
+                helperText={
+                  passwordStatus === 'success'
+                    ? 'Password is correct'
+                    : errors.password
+                }
+                FormHelperTextProps={{
+                  sx: {
+                    color: passwordStatus === 'success' ? '#2e7d32' : undefined
+                  }
+                }}
                 margin="normal"
                 variant="outlined"
+                sx={{
+                  ...(passwordStatus === 'success' && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: '#2e7d32' },
+                      '&:hover fieldset': { borderColor: '#2e7d32' },
+                      '&.Mui-focused fieldset': { borderColor: '#2e7d32' }
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#2e7d32' }
+                  }),
+                  ...(passwordStatus === 'error' && {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: '#d32f2f' },
+                      '&:hover fieldset': { borderColor: '#d32f2f' },
+                      '&.Mui-focused fieldset': { borderColor: '#d32f2f' }
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#d32f2f' }
+                  })
+                }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">

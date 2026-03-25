@@ -19,6 +19,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -123,7 +124,7 @@ const EditProfile = () => {
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
               <Box sx={{ position: 'relative' }}>
                 <Avatar
-                  src={previewUrl || (user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined)}
+                  src={previewUrl || resolveAvatarSrc(user?.avatar)}
                   sx={{
                     width: 120,
                     height: 120,

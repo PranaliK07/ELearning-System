@@ -40,6 +40,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -130,7 +131,7 @@ const TeacherDashboard = () => {
         transition={{ duration: 0.5 }}
       >
         {/* Header Section */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
           <Box>
             <Typography variant="h4" fontWeight="bold" gutterBottom>
               Welcome back, {user?.name}! 👨‍🏫
@@ -247,7 +248,7 @@ const TeacherDashboard = () => {
                   {data.recentSubmissions.map((sub) => (
                     <Box key={sub.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Avatar src={sub.student?.avatar} sx={{ width: 32, height: 32, mr: 1 }} />
+                        <Avatar src={resolveAvatarSrc(sub.student?.avatar)} sx={{ width: 32, height: 32, mr: 1 }} />
                         <Typography variant="subtitle2">{sub.student?.name}</Typography>
                       </Box>
                       <Typography variant="caption" color="textSecondary" display="block">
@@ -287,7 +288,7 @@ const TeacherDashboard = () => {
                       </InputAdornment>
                     )
                   }}
-                  sx={{ width: 200 }}
+                  sx={{ width: { xs: '100%', sm: 200 } }}
                 />
               </Box>
 
@@ -306,7 +307,7 @@ const TeacherDashboard = () => {
                       <TableRow key={student.id} hover>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }} src={student.avatar}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }} src={resolveAvatarSrc(student.avatar)}>
                               {student.name.charAt(0)}
                             </Avatar>
                             <Box>

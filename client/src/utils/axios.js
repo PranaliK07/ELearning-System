@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { getApiBaseUrl } from './media';
 
 const instance = axios.create({
-  baseURL: '/',
+  baseURL: getApiBaseUrl(),
 });
 
 // Add a request interceptor to add the auth token to every request

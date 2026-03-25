@@ -24,6 +24,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack, Grade, Visibility } from '@mui/icons-material';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const SubmissionsList = () => {
   const { assignmentId } = useParams();
@@ -93,7 +94,7 @@ const SubmissionsList = () => {
                 <TableRow key={sub.id} hover>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2 }} src={sub.student?.avatar}>{sub.student?.name?.charAt(0)}</Avatar>
+                      <Avatar sx={{ mr: 2 }} src={resolveAvatarSrc(sub.student?.avatar)}>{sub.student?.name?.charAt(0)}</Avatar>
                       <Box>
                         <Typography fontWeight="medium">{sub.student?.name}</Typography>
                         <Typography variant="caption" color="textSecondary">{sub.student?.email}</Typography>

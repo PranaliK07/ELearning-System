@@ -25,11 +25,13 @@ import {
   Assignment as AssignmentIcon,
   BarChart as ReportsIcon,
   Settings as SettingsIcon,
-  Tune as BusinessSettingsIcon
+  Tune as BusinessSettingsIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/axios';
 import { useState, useEffect } from 'react';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const drawerWidth = 240;
 
@@ -68,7 +70,7 @@ const loadRoleAccess = (_version = 0) => {
 const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [accessVersion, setAccessVersion] = useState(0);
 
   useEffect(() => {
@@ -128,6 +130,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return true;
   });
 
+  const handleLogoutClick = () => {
+    const shouldLogout = window.confirm('Are you sure you want to logout?');
+    if (!shouldLogout) return;
+    logout();
+    navigate('/login');
+    if (mobileOpen) handleDrawerToggle();
+  };
+
   const drawer = (
     <div>
       <Toolbar>
@@ -139,7 +149,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
               margin: '10px auto',
               border: '3px solid #3f51b5'
             }}
-            src={user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined}
+            src={resolveAvatarSrc(user?.avatar)}
           >
             {user?.name?.charAt(0).toUpperCase()}
           </Avatar>
@@ -202,6 +212,26 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             </ListItemButton>
           </ListItem>
         ))}
+        <Divider sx={{ my: 1 }} />
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleLogoutClick}
+            sx={{
+              color: 'error.main',
+              '& .MuiListItemIcon-root': {
+                color: 'error.main'
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(211, 47, 47, 0.08)'
+              }
+            }}
+          >
+            <ListItemIcon>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText primary="Logout" />
+          </ListItemButton>
+        </ListItem>
       </List>
     </div>
   );

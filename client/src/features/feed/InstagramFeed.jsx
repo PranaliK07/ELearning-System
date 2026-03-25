@@ -21,8 +21,9 @@ import {
     Pause
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import axios from '../../utils/axios.js';
 import { formatDistanceToNow } from 'date-fns';
+import { resolveAvatarSrc, resolveUploadSrc } from '../../utils/media';
 
 const FeedItem = ({ content }) => {
     const [liked, setLiked] = useState(false);
@@ -72,7 +73,7 @@ const FeedItem = ({ content }) => {
             <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar
-                        src={content.creator?.avatar}
+                        src={resolveAvatarSrc(content.creator?.avatar)}
                         sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
                     >
                         {content.creator?.name?.charAt(0)}
@@ -103,7 +104,7 @@ const FeedItem = ({ content }) => {
             >
                 <video
                     ref={videoRef}
-                    src={content.videoUrl || content.videoFile}
+                    src={resolveUploadSrc(content.videoUrl || content.videoFile)}
                     style={{
                         position: 'absolute',
                         top: 0,

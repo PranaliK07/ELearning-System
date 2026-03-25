@@ -14,6 +14,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import BottomNav from './BottomNav';
 import ErrorBoundary from '../common/ErrorBoundary';
 import Sidebar from './Sidebar';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
@@ -36,6 +37,8 @@ const MainLayout = () => {
 
   const handleLogout = () => {
     handleMenuClose();
+    const shouldLogout = window.confirm('Are you sure you want to logout?');
+    if (!shouldLogout) return;
     logout();
     navigate('/login');
   };
@@ -102,7 +105,7 @@ const MainLayout = () => {
           <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
             <Avatar 
               alt={user?.name} 
-              src={user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined}
+              src={resolveAvatarSrc(user?.avatar)}
               sx={{ 
                 width: 40, 
                 height: 40,
@@ -134,9 +137,9 @@ const MainLayout = () => {
           flexGrow: 1,
           width: { sm: `calc(100% - 240px)` },
           ml: { sm: '240px' },
-          mt: '64px',
+          mt: { xs: '56px', sm: '64px' },
           mb: { xs: '56px', sm: 0 },
-          p: 3
+          p: { xs: 2, sm: 3 }
         }}
       >
         <ErrorBoundary>

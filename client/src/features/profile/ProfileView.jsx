@@ -31,6 +31,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
+import { resolveAvatarSrc } from '../../utils/media';
 
 const ProfileView = () => {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ const ProfileView = () => {
                     borderColor: 'primary.main',
                     fontSize: '3rem'
                   }}
-                  src={user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined}
+                  src={resolveAvatarSrc(user?.avatar)}
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>
