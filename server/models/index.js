@@ -15,6 +15,7 @@ const Notification = require('./Notification');
 const Assignment = require('./Assignment');
 const Submission = require('./Submission');
 const RoleAccess = require('./RoleAccess');
+const ClassCommunication = require('./ClassCommunication');
 
 // Grade Associations
 Grade.hasMany(Subject, { onDelete: 'CASCADE' });
@@ -32,6 +33,10 @@ Quiz.belongsTo(Topic);
 
 // User Associations
 User.belongsTo(Grade);
+Grade.hasMany(User, { foreignKey: 'GradeId', onDelete: 'SET NULL' });
+User.belongsTo(User, { as: 'parent', foreignKey: 'ParentId' });
+User.hasMany(User, { as: 'children', foreignKey: 'ParentId' });
+User.hasMany(ClassCommunication, { as: 'sentCommunications', foreignKey: 'teacherId', onDelete: 'CASCADE' });
 User.hasMany(Progress, { onDelete: 'CASCADE' });
 User.belongsToMany(Achievement, { through: 'UserAchievements' });
 User.hasMany(WatchTime, { onDelete: 'CASCADE' });
@@ -98,6 +103,11 @@ Assignment.hasMany(Submission, { foreignKey: 'assignmentId', onDelete: 'CASCADE'
 Submission.belongsTo(Assignment, { foreignKey: 'assignmentId' });
 Submission.belongsTo(User, { as: 'student', foreignKey: 'studentId' });
 
+// Class communication associations
+ClassCommunication.belongsTo(User, { as: 'teacher', foreignKey: 'teacherId' });
+ClassCommunication.belongsTo(Grade, { foreignKey: 'gradeId' });
+Grade.hasMany(ClassCommunication, { foreignKey: 'gradeId' });
+
 module.exports = {
   User,
   Grade,
@@ -115,5 +125,6 @@ module.exports = {
   Notification,
   Assignment,
   Submission,
-  RoleAccess
+  RoleAccess,
+  ClassCommunication
 };

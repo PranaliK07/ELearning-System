@@ -3,6 +3,59 @@ const router = express.Router();
 const { Assignment, Submission, User, Subject, Grade } = require('../models');
 const { protect, authorize } = require('../middleware/auth');
 
+const ALLOWED_STATUSES = new Set(['active', 'draft', 'closed']);
+
+const normalizeAssignmentPayload = (body = {}, { isUpdate = false } = {}) => {
+  const payload = {};
+
+  if (!isUpdate || body.title !== undefined) {
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    if (!title) {
+      return { error: 'Assignment title is required' };
+    }
+    payload.title = title;
+  }
+
+  if (!isUpdate || body.description !== undefined) {
+    payload.description = body.description ? String(body.description).trim() : null;
+  }
+
+  if (!isUpdate || body.dueDate !== undefined) {
+    if (!body.dueDate) {
+      return { error: 'Due date is required' };
+    }
+    const dueDate = new Date(body.dueDate);
+    if (Number.isNaN(dueDate.getTime())) {
+      return { error: 'Invalid due date' };
+    }
+    payload.dueDate = dueDate;
+  }
+
+  if (body.subjectId !== undefined) {
+    payload.subjectId = body.subjectId ? Number(body.subjectId) : null;
+    if (body.subjectId && Number.isNaN(payload.subjectId)) {
+      return { error: 'Invalid subject' };
+    }
+  }
+
+  if (body.gradeId !== undefined) {
+    payload.gradeId = body.gradeId ? Number(body.gradeId) : null;
+    if (body.gradeId && Number.isNaN(payload.gradeId)) {
+      return { error: 'Invalid grade' };
+    }
+  }
+
+  if (body.status !== undefined) {
+    const status = String(body.status).trim().toLowerCase();
+    if (!ALLOWED_STATUSES.has(status)) {
+      return { error: 'Invalid assignment status' };
+    }
+    payload.status = status;
+  }
+
+  return { payload };
+};
+
 // Get all assignments (filtered by teacher if applicable)
 router.get('/', protect, async (req, res) => {
   try {
@@ -71,13 +124,61 @@ router.get('/:id', protect, async (req, res) => {
 // Create assignment
 router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
   try {
+    const { payload, error } = normalizeAssignmentPayload(req.body);
+    if (error) {
+      return res.status(400).json({ message: error });
+    }
+
     const assignment = await Assignment.create({
-      ...req.body,
+      ...payload,
       teacherId: req.user.id
     });
     res.status(201).json(assignment);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Update assignment
+router.put('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const assignment = await Assignment.findByPk(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    if (req.user.role === 'teacher' && assignment.teacherId !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { payload, error } = normalizeAssignmentPayload(req.body, { isUpdate: true });
+    if (error) {
+      return res.status(400).json({ message: error });
+    }
+
+    await assignment.update(payload);
+    res.json(assignment);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete assignment
+router.delete('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const assignment = await Assignment.findByPk(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    if (req.user.role === 'teacher' && assignment.teacherId !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    await assignment.destroy();
+    res.json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -153,11 +254,26 @@ router.get('/:id/my-submission', protect, authorize('student'), async (req, res)
 router.put('/submissions/:submissionId/grade', protect, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { grade, feedback } = req.body;
-    const submission = await Submission.findByPk(req.params.submissionId);
+    const submission = await Submission.findByPk(req.params.submissionId, {
+      include: [{ model: Assignment, attributes: ['id', 'teacherId'] }]
+    });
     if (!submission) return res.status(404).json({ message: 'Submission not found' });
 
-    submission.grade = grade;
-    submission.feedback = feedback;
+    if (
+      req.user.role === 'teacher' &&
+      submission.Assignment &&
+      submission.Assignment.teacherId !== req.user.id
+    ) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const numericGrade = Number(grade);
+    if (Number.isNaN(numericGrade) || numericGrade < 0 || numericGrade > 100) {
+      return res.status(400).json({ message: 'Grade must be between 0 and 100' });
+    }
+
+    submission.grade = numericGrade;
+    submission.feedback = feedback ? String(feedback).trim() : null;
     submission.status = 'graded';
     await submission.save();
 

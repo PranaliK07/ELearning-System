@@ -1,6 +1,70 @@
 const { Quiz, Progress, User, Topic } = require('../models');
 const { Op } = require('sequelize');
 
+const normalizeQuestions = (questions) => {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return { error: 'At least one question is required' };
+  }
+
+  const normalized = [];
+
+  for (let i = 0; i < questions.length; i += 1) {
+    const raw = questions[i] || {};
+    const questionText = String(raw.question || '').trim();
+    const rawOptions = Array.isArray(raw.options) ? raw.options : [];
+    const options = rawOptions.map((opt) => String(opt || '').trim()).filter(Boolean);
+
+    if (!questionText) {
+      return { error: `Question ${i + 1} text is required` };
+    }
+    if (options.length < 2) {
+      return { error: `Question ${i + 1} must have at least 2 options` };
+    }
+
+    const rawAnswer = raw.correctAnswer;
+    let correctAnswer = null;
+
+    if (rawAnswer !== undefined && rawAnswer !== null) {
+      const answerText = String(rawAnswer).trim();
+
+      // First priority: if it exactly matches an option, use it as option text.
+      // This avoids treating numeric options like "4" as index values.
+      if (answerText && options.includes(answerText)) {
+        correctAnswer = answerText;
+      } else if (/^[A-Za-z]$/.test(answerText)) {
+        const alphaIndex = answerText.toUpperCase().charCodeAt(0) - 65;
+        if (alphaIndex < 0 || alphaIndex >= options.length) {
+          return { error: `Question ${i + 1} has invalid correct answer index` };
+        }
+        correctAnswer = options[alphaIndex];
+      } else if (/^\d+$/.test(answerText)) {
+        const numeric = Number(answerText);
+        const index = numeric > 0 ? numeric - 1 : numeric; // support 1-based and 0-based
+        if (index < 0 || index >= options.length) {
+          return { error: `Question ${i + 1} has invalid correct answer index` };
+        }
+        correctAnswer = options[index];
+      } else if (answerText) {
+        return { error: `Question ${i + 1} correct answer must match one option` };
+      }
+    }
+
+    if (!correctAnswer) {
+      return { error: `Question ${i + 1} correct answer is required` };
+    }
+
+    normalized.push({
+      id: raw.id || i + 1,
+      question: questionText,
+      options,
+      correctAnswer,
+      type: raw.type || 'single'
+    });
+  }
+
+  return { questions: normalized };
+};
+
 const getQuizzes = async (req, res) => {
   try {
     const { topicId, page = 1, limit = 10 } = req.query;
@@ -71,10 +135,15 @@ const createQuiz = async (req, res) => {
       return res.status(404).json({ message: 'Topic not found' });
     }
 
+    const { questions: normalizedQuestions, error: questionError } = normalizeQuestions(questions);
+    if (questionError) {
+      return res.status(400).json({ message: questionError });
+    }
+
     const quiz = await Quiz.create({
       title,
       description,
-      questions,
+      questions: normalizedQuestions,
       timeLimit,
       passingScore,
       maxAttempts,
@@ -101,6 +170,10 @@ const updateQuiz = async (req, res) => {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
+    if (req.user.role === 'teacher' && quiz.createdBy !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const {
       title,
       description,
@@ -111,12 +184,18 @@ const updateQuiz = async (req, res) => {
       isPublished
     } = req.body;
 
-    if (title) quiz.title = title;
-    if (description) quiz.description = description;
-    if (questions) quiz.questions = questions;
-    if (timeLimit) quiz.timeLimit = timeLimit;
-    if (passingScore) quiz.passingScore = passingScore;
-    if (maxAttempts) quiz.maxAttempts = maxAttempts;
+    if (title !== undefined) quiz.title = title;
+    if (description !== undefined) quiz.description = description;
+    if (questions !== undefined) {
+      const { questions: normalizedQuestions, error: questionError } = normalizeQuestions(questions);
+      if (questionError) {
+        return res.status(400).json({ message: questionError });
+      }
+      quiz.questions = normalizedQuestions;
+    }
+    if (timeLimit !== undefined) quiz.timeLimit = timeLimit;
+    if (passingScore !== undefined) quiz.passingScore = passingScore;
+    if (maxAttempts !== undefined) quiz.maxAttempts = maxAttempts;
     if (isPublished !== undefined) quiz.isPublished = isPublished;
 
     await quiz.save();
@@ -138,6 +217,10 @@ const deleteQuiz = async (req, res) => {
 
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    if (req.user.role === 'teacher' && quiz.createdBy !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     await quiz.destroy();
@@ -210,14 +293,20 @@ const submitQuiz = async (req, res) => {
     const results = [];
 
     quiz.questions.forEach((q, index) => {
-      const isCorrect = q.correctAnswer === answers[index];
+      const submitted = answers[index] !== undefined && answers[index] !== null
+        ? String(answers[index]).trim()
+        : '';
+      const expected = q.correctAnswer !== undefined && q.correctAnswer !== null
+        ? String(q.correctAnswer).trim()
+        : '';
+      const isCorrect = expected && submitted === expected;
       if (isCorrect) score++;
       
       results.push({
         question: q.question,
         correct: isCorrect,
         correctAnswer: q.correctAnswer,
-        userAnswer: answers[index]
+        userAnswer: answers[index] ?? null
       });
     });
 
@@ -236,11 +325,13 @@ const submitQuiz = async (req, res) => {
     });
 
     // Update quiz stats
-    await Quiz.increment('attempts', { by: 1, where: { id: quizId } });
-    
-    // Update average score
-    const avgScore = ((quiz.avgScore * (quiz.attempts - 1)) + percentage) / quiz.attempts;
-    await Quiz.update({ avgScore }, { where: { id: quizId } });
+    const previousAttempts = quiz.attempts || 0;
+    const nextAttempts = previousAttempts + 1;
+    const nextAvgScore = ((quiz.avgScore || 0) * previousAttempts + percentage) / nextAttempts;
+    await Quiz.update(
+      { attempts: nextAttempts, avgScore: nextAvgScore },
+      { where: { id: quizId } }
+    );
 
     res.json({
       success: true,

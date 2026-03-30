@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -19,8 +19,7 @@ import {
   Flag
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { useTimer } from '../../hooks/useTimer';
 
 const QuizRunner = () => {
@@ -37,6 +36,17 @@ const QuizRunner = () => {
   const timer = useTimer(timeLeft, () => handleTimeUp());
 
   useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const response = await axios.get(`/api/quiz/${quizId}/questions`);
+        setQuiz(response.data);
+      } catch (error) {
+        console.error('Error fetching quiz:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchQuiz();
   }, [quizId]);
 
@@ -47,19 +57,6 @@ const QuizRunner = () => {
       setFlagged(new Array(quiz.questions.length).fill(false));
     }
   }, [quiz]);
-
-  const fetchQuiz = async () => {
-    try {
-      const response = await axios.get(`/api/quiz/${quizId}/questions`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setQuiz(response.data);
-    } catch (error) {
-      console.error('Error fetching quiz:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleTimeUp = () => {
     submitQuiz();
@@ -96,8 +93,6 @@ const QuizRunner = () => {
     try {
       const response = await axios.post(`/api/quiz/${quizId}/submit`, {
         answers
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
       navigate(`/quiz/${quizId}/result`, { state: { result: response.data } });
@@ -125,11 +120,7 @@ const QuizRunner = () => {
 
   return (
     <Container maxWidth="lg">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+      <div>
         <Paper sx={{ p: 3, borderRadius: 4 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -165,14 +156,7 @@ const QuizRunner = () => {
           />
 
           {/* Question */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentQuestion}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-            >
+          <div key={currentQuestion}>
               <Paper sx={{ p: 4, bgcolor: 'background.default', borderRadius: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   {question.question}
@@ -212,8 +196,7 @@ const QuizRunner = () => {
                   </RadioGroup>
                 </FormControl>
               </Paper>
-            </motion.div>
-          </AnimatePresence>
+            </div>
 
           {/* Navigation */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
@@ -255,7 +238,7 @@ const QuizRunner = () => {
             </Box>
           </Box>
         </Paper>
-      </motion.div>
+      </div>
     </Container>
   );
 };

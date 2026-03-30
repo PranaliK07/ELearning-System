@@ -155,6 +155,83 @@ const ContentManagement = () => {
         }
     };
 
+    const parseQuizDescription = (text = '') => {
+        const lines = String(text)
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        let current = null;
+        const questions = [];
+        let timeLimit = null;
+        let passingScore = null;
+        let maxAttempts = null;
+
+        const flushCurrent = () => {
+            if (!current) return;
+            if (current.question && current.options.length >= 2 && current.correctAnswer) {
+                questions.push(current);
+            }
+            current = null;
+        };
+
+        const parseMetaLine = (label, line) => {
+            if (!line.toLowerCase().startsWith(label)) return null;
+            const rawValue = line.split(':').slice(1).join(':').trim();
+            const numeric = Number(rawValue);
+            return Number.isFinite(numeric) ? numeric : null;
+        };
+
+        for (const line of lines) {
+            const parsedTimeLimit = parseMetaLine('time limit', line);
+            if (parsedTimeLimit !== null) {
+                timeLimit = parsedTimeLimit;
+                continue;
+            }
+
+            const parsedPassingScore = parseMetaLine('passing score', line);
+            if (parsedPassingScore !== null) {
+                passingScore = parsedPassingScore;
+                continue;
+            }
+
+            const parsedMaxAttempts = parseMetaLine('max attempts', line);
+            if (parsedMaxAttempts !== null) {
+                maxAttempts = parsedMaxAttempts;
+                continue;
+            }
+
+            if (/^q[:.)-]/i.test(line)) {
+                flushCurrent();
+                current = {
+                    question: line.replace(/^q[:.)-]\s*/i, '').trim(),
+                    options: [],
+                    correctAnswer: ''
+                };
+                continue;
+            }
+
+            if (/^[a-z][).:-]\s+/i.test(line) && current) {
+                current.options.push(line.replace(/^[a-z][).:-]\s+/i, '').trim());
+                continue;
+            }
+
+            if (/^answer[:.)-]/i.test(line) && current) {
+                const answerToken = line.replace(/^answer[:.)-]\s*/i, '').trim();
+                if (/^[a-z]$/i.test(answerToken)) {
+                    const optionIndex = answerToken.toUpperCase().charCodeAt(0) - 65;
+                    current.correctAnswer = current.options[optionIndex] || '';
+                } else {
+                    current.correctAnswer = answerToken;
+                }
+            }
+        }
+
+        flushCurrent();
+
+        return { questions, timeLimit, passingScore, maxAttempts };
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!videoFile && formData.type === 'video') {
@@ -163,6 +240,31 @@ const ContentManagement = () => {
 
         try {
             setLoading(true);
+
+            if (formData.type === 'quiz') {
+                if (!formData.topicId) {
+                    throw new Error('Please select a topic for quiz');
+                }
+
+                const parsedQuiz = parseQuizDescription(formData.description);
+                if (!parsedQuiz.questions.length) {
+                    throw new Error('Enter quiz in format: Q:, options A)/B)/..., and Answer:');
+                }
+
+                await axios.post('/api/quiz', {
+                    title: formData.title,
+                    description: formData.description,
+                    topicId: parseInt(formData.topicId, 10),
+                    questions: parsedQuiz.questions,
+                    timeLimit: parsedQuiz.timeLimit || 10,
+                    passingScore: parsedQuiz.passingScore || 70,
+                    maxAttempts: parsedQuiz.maxAttempts || 3
+                });
+
+                toast.success('Quiz created successfully!');
+                navigate('/dashboard');
+                return;
+            }
 
             const uploadData = new FormData();
             if (videoFile) uploadData.append('video', videoFile);
@@ -199,7 +301,7 @@ const ContentManagement = () => {
             navigate('/dashboard');
         } catch (error) {
             console.error(error);
-            toast.error(error.response?.data?.message || 'Upload failed');
+            toast.error(error.response?.data?.message || error.message || 'Upload failed');
         } finally {
             setLoading(false);
             setUploadProgress(0);

@@ -11,7 +11,8 @@ const {
   getClassProgress,
   getSubjectProgress,
   createAnnouncement,
-  getPendingReviews
+  getPendingReviews,
+  sendClassCommunication
 } = require('../controllers/teacherController');
 
 // All routes require teacher authentication
@@ -35,5 +36,8 @@ router.post('/announcements', createAnnouncement);
 
 // Reviews
 router.get('/pending-reviews', getPendingReviews);
+
+// Class communication
+router.post('/communications', sendClassCommunication);
 
 module.exports = router;

@@ -24,6 +24,7 @@ import {
   Star as StarIcon,
   Assignment as AssignmentIcon,
   BarChart as ReportsIcon,
+  Campaign as CampaignIcon,
   Settings as SettingsIcon,
   Tune as BusinessSettingsIcon,
   Logout as LogoutIcon
@@ -39,6 +40,7 @@ const configuredModules = new Set([
   'dashboard',
   'subjects',
   'assignments',
+  'communications',
   'content',
   'users',
   'reports',
@@ -48,12 +50,12 @@ const configuredModules = new Set([
 ]);
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'business-settings']),
-  teacher: new Set(['dashboard', 'subjects', 'assignments', 'reports']),
+  admin: new Set(['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'communications', 'business-settings']),
+  teacher: new Set(['dashboard', 'subjects', 'assignments', 'reports', 'communications']),
   student: new Set(['dashboard', 'subjects', 'assignments'])
 };
 
-const loadRoleAccess = (_version = 0) => {
+const loadRoleAccess = () => {
   try {
     const saved = localStorage.getItem('roleAccess');
     if (!saved) return defaultRoleAccess;
@@ -90,7 +92,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         }
       } catch (err) {
         // Silently ignore if user isn't allowed; defaults/local cache will be used
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta?.env?.DEV) {
           console.warn('Role access fetch skipped', err?.response?.status);
         }
       }
@@ -102,8 +104,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const roleAccess = loadRoleAccess(accessVersion);
   const allowed = roleAccess[role] || defaultRoleAccess[role] || defaultRoleAccess.student;
 
+  const currentPath = `${location.pathname}${location.search || ''}`;
+  const currentTab = new URLSearchParams(location.search).get('tab');
+
   const items = [
     { key: 'dashboard', text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { key: 'users', text: 'User Management', icon: <ProfileIcon />, path: '/admin/users' },
+    { key: 'content', text: 'Content Overview', icon: <StudyIcon />, path: '/admin/content' },
     { key: 'subjects', text: 'Study', icon: <StudyIcon />, path: '/study' },
     { key: 'play', text: 'Play', icon: <PlayIcon />, path: '/play' },
     { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
@@ -111,10 +118,21 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
     { key: 'assignments', text: 'Assignments', icon: <AssignmentIcon />, path: '/assignments/create' },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
+    { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
     { key: 'content', text: 'Content', icon: <StudyIcon />, path: '/content/create' },
     { key: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/profile/edit' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/dashboard?tab=business' },
   ];
+
+  const isSelected = (item) => {
+    if (item.key === 'dashboard') {
+      return location.pathname === '/dashboard' && !currentTab;
+    }
+    if (item.path.startsWith('/dashboard?tab=')) {
+      return location.pathname === '/dashboard' && currentPath === item.path;
+    }
+    return location.pathname === item.path;
+  };
 
   const displayItems = items.filter(({ key }) => {
     // If the module is part of configuredModules, show only if allowed. Otherwise leave unchanged.
@@ -124,7 +142,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return true;
   }).filter(({ key }) => {
     // Basic role guards: students don't see teacher/admin only links when not allowed
-    if (key === 'assignments' || key === 'reports' || key === 'content' || key === 'business-settings') {
+    if (key === 'assignments' || key === 'reports' || key === 'content' || key === 'business-settings' || key === 'communications') {
       return role === 'teacher' || role === 'admin' || allowed.has(key);
     }
     return true;
@@ -151,7 +169,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             }}
             src={resolveAvatarSrc(user?.avatar)}
           >
-            {user?.name?.charAt(0).toUpperCase()}
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
           </Avatar>
           <Typography variant="h6" noWrap>
             {user?.name}
@@ -170,13 +188,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         {displayItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
-              selected={
-                item.key === 'business-settings'
-                  ? location.pathname === '/dashboard' && location.search.includes('tab=business')
-                  : item.key === 'dashboard'
-                    ? location.pathname === '/dashboard' && !location.search.includes('tab=business')
-                    : location.pathname === item.path
-              }
+              selected={isSelected(item)}
               onClick={() => {
                 navigate(item.path);
                 if (mobileOpen) handleDrawerToggle();
@@ -197,11 +209,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
               <ListItemIcon
                 sx={{
                   color:
-                    (item.key === 'business-settings'
-                      ? location.pathname === '/dashboard' && location.search.includes('tab=business')
-                      : item.key === 'dashboard'
-                        ? location.pathname === '/dashboard' && !location.search.includes('tab=business')
-                        : location.pathname === item.path)
+                    isSelected(item)
                       ? 'white'
                       : 'inherit'
                 }}

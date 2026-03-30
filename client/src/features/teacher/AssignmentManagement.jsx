@@ -43,6 +43,7 @@ const AssignmentManagement = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
   async function fetchAssignments() {
     try {
@@ -74,6 +75,13 @@ const AssignmentManagement = () => {
     setOpen(true);
   };
 
+  const closeDialog = (force = false) => {
+    if (saving && !force) return;
+    setOpen(false);
+    setEditing(null);
+    setFormData(emptyForm);
+  };
+
   const openEdit = (assignment) => {
     setEditing(assignment);
     setFormData({
@@ -87,25 +95,52 @@ const AssignmentManagement = () => {
   };
 
   const handleSubmit = async () => {
+    const title = formData.title.trim();
+    if (!title) {
+      toast.error('Assignment title is required');
+      return;
+    }
+    if (!formData.dueDate) {
+      toast.error('Due date is required');
+      return;
+    }
+
     try {
+      setSaving(true);
       const payload = {
         ...formData,
+        title,
         subjectId: formData.subjectId ? Number(formData.subjectId) : null,
         gradeId: formData.gradeId ? Number(formData.gradeId) : null
       };
 
       if (editing) {
-        toast.error('Edit API is not available yet. Create a new assignment instead.');
-        return;
+        await axios.put(`/api/assignments/${editing.id}`, payload);
+        toast.success('Assignment updated successfully');
+      } else {
+        await axios.post('/api/assignments', payload);
+        toast.success('Assignment created successfully');
       }
 
-      await axios.post('/api/assignments', payload);
-      toast.success('Assignment created successfully');
-      setOpen(false);
-      setFormData(emptyForm);
-      fetchAssignments();
+      closeDialog(true);
+      await fetchAssignments();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save assignment');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (assignment) => {
+    const confirmed = window.confirm(`Delete assignment "${assignment.title}"?`);
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`/api/assignments/${assignment.id}`);
+      toast.success('Assignment deleted successfully');
+      await fetchAssignments();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete assignment');
     }
   };
 
@@ -149,7 +184,7 @@ const AssignmentManagement = () => {
                         <IconButton color="info" onClick={() => openEdit(assignment)}><Edit /></IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton color="error" disabled><Delete /></IconButton>
+                        <IconButton color="error" onClick={() => handleDelete(assignment)}><Delete /></IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
@@ -168,7 +203,7 @@ const AssignmentManagement = () => {
         </TableContainer>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={closeDialog} maxWidth="sm" fullWidth>
         <DialogTitle>{editing ? 'Edit Assignment' : 'Create New Assignment'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
@@ -190,8 +225,8 @@ const AssignmentManagement = () => {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>Save</Button>
+          <Button onClick={closeDialog} disabled={saving}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmit} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
         </DialogActions>
       </Dialog>
     </Container>

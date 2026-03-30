@@ -1,4 +1,4 @@
-const { User, Content, Quiz, Achievement, Announcement, RoleAccess, sequelize } = require('../models');
+const { User, Content, Quiz, Achievement, Announcement, RoleAccess, sequelize, Grade, ClassCommunication, Notification } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -7,6 +7,7 @@ const allowedModules = [
   'dashboard',
   'subjects',
   'assignments',
+  'communications',
   'content',
   'users',
   'reports',
@@ -16,10 +17,12 @@ const allowedModules = [
 ];
 
 const defaultRoleAccess = {
-  admin: ['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'business-settings'],
-  teacher: ['dashboard', 'subjects', 'assignments', 'reports'],
+  admin: ['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'communications', 'business-settings'],
+  teacher: ['dashboard', 'subjects', 'assignments', 'reports', 'communications'],
   student: ['dashboard', 'subjects', 'assignments']
 };
+
+const ROLE_ACCESS_VERSION = 2;
 
 // --- Business settings: role-based sidebar access ---
 const getRoleAccess = async (req, res) => {
@@ -38,19 +41,26 @@ const getRoleAccess = async (req, res) => {
       return res.json(Object.fromEntries(created.map(r => [r.role, r.modules])));
     }
 
-    const sanitized = Object.fromEntries(
-      records.map(rec => {
-        let mods = rec.modules;
-        if (typeof mods === 'string') {
-          try { mods = JSON.parse(mods); } catch(e) { mods = []; }
-        }
-        if (!Array.isArray(mods)) mods = [];
-        return [
-          rec.role,
-          mods.filter(m => allowedModules.includes(m))
-        ];
-      })
-    );
+    const sanitized = {};
+    for (const rec of records) {
+      let mods = rec.modules;
+      if (typeof mods === 'string') {
+        try { mods = JSON.parse(mods); } catch (e) { mods = []; }
+      }
+      if (!Array.isArray(mods)) mods = [];
+
+      // Lightweight migration: only add newly introduced modules without overriding admin choices.
+      if ((rec.version || 1) < ROLE_ACCESS_VERSION) {
+        const next = new Set(mods);
+        if (rec.role === 'admin' || rec.role === 'teacher') next.add('communications');
+        rec.set('modules', Array.from(next));
+        rec.set('version', ROLE_ACCESS_VERSION);
+        await rec.save();
+        mods = rec.modules;
+      }
+
+      sanitized[rec.role] = mods.filter(m => allowedModules.includes(m));
+    }
 
     // Fill any missing role with defaults to keep UI stable
     roles.forEach(role => {
@@ -88,7 +98,7 @@ const saveRoleAccess = async (req, res) => {
           await RoleAccess.create({
             role,
             modules: updates[role],
-            version: 1
+            version: ROLE_ACCESS_VERSION
           });
         }
       })
@@ -238,6 +248,136 @@ const getPlatformMetrics = async (req, res) => {
     res.json(metrics);
   } catch (error) {
     console.error('Get platform metrics error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// --- Admin: Class Communication ---
+const getClassCommunications = async (req, res) => {
+  try {
+    const where = {};
+
+    if (req.query.teacherId) where.teacherId = Number(req.query.teacherId);
+    if (req.query.gradeId) where.gradeId = Number(req.query.gradeId);
+    if (req.query.audience && ['students', 'parents', 'both'].includes(req.query.audience)) {
+      where.audience = req.query.audience;
+    }
+
+    const communications = await ClassCommunication.findAll({
+      where,
+      include: [
+        { model: Grade, attributes: ['id', 'name', 'level'], required: false },
+        { model: User, as: 'teacher', attributes: ['id', 'name', 'email', 'avatar', 'role'], required: false }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: req.query.limit ? Math.min(Number(req.query.limit) || 50, 200) : 50
+    });
+
+    res.json(communications);
+  } catch (error) {
+    console.error('Get admin class communications error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const sendClassCommunication = async (req, res) => {
+  try {
+    const { title, message, audience = 'both', gradeId, senderId } = req.body;
+
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ message: 'Message is required' });
+    }
+    if (!['students', 'parents', 'both'].includes(audience)) {
+      return res.status(400).json({ message: 'Invalid audience value' });
+    }
+
+    let grade = null;
+    if (gradeId) {
+      grade = await Grade.findByPk(Number(gradeId));
+      if (!grade) {
+        return res.status(404).json({ message: 'Class not found' });
+      }
+    }
+
+    let sender = req.user;
+    if (senderId) {
+      const teacher = await User.findByPk(Number(senderId), { attributes: ['id', 'role', 'isActive'] });
+      if (!teacher || teacher.role !== 'teacher' || !teacher.isActive) {
+        return res.status(400).json({ message: 'Invalid sender teacher' });
+      }
+      sender = teacher;
+    }
+
+    const studentWhere = { role: 'student', isActive: true };
+    if (grade) {
+      studentWhere[Op.or] = [
+        { GradeId: grade.id },
+        { grade: grade.level }
+      ];
+    }
+
+    const students = await User.findAll({
+      where: studentWhere,
+      attributes: ['id', 'ParentId']
+    });
+
+    const recipientIds = new Set();
+    if (audience === 'students' || audience === 'both') {
+      students.forEach((student) => recipientIds.add(student.id));
+    }
+
+    if (audience === 'parents' || audience === 'both') {
+      const parentIds = [...new Set(students.map((student) => student.ParentId).filter(Boolean))];
+      if (parentIds.length) {
+        const parents = await User.findAll({
+          where: {
+            id: { [Op.in]: parentIds },
+            role: 'parent',
+            isActive: true
+          },
+          attributes: ['id']
+        });
+        parents.forEach((parent) => recipientIds.add(parent.id));
+      }
+    }
+
+    const communication = await ClassCommunication.create({
+      title: String(title).trim(),
+      message: String(message).trim(),
+      audience,
+      teacherId: sender.id,
+      gradeId: grade ? grade.id : null,
+      recipientCount: recipientIds.size
+    });
+
+    const notifications = [...recipientIds].map((recipientId) => ({
+      userId: recipientId,
+      type: 'announcement',
+      title: communication.title,
+      message: communication.message,
+      data: {
+        source: 'class_communication',
+        communicationId: communication.id,
+        audience: communication.audience,
+        class: grade ? grade.name : 'All Classes'
+      }
+    }));
+
+    if (notifications.length) {
+      await Notification.bulkCreate(notifications);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Class communication sent successfully',
+      communication,
+      recipients: notifications.length
+    });
+  } catch (error) {
+    console.error('Send admin class communication error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -445,6 +585,8 @@ module.exports = {
   getUserAnalytics,
   getContentAnalytics,
   getPlatformMetrics,
+  getClassCommunications,
+  sendClassCommunication,
   manageUser,
   manageContent,
   createAnnouncement,
