@@ -28,6 +28,7 @@ import {
   People,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
+import LinearProgress from '@mui/material/LinearProgress';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -117,6 +118,16 @@ const ProfileView = () => {
   }, [quickStats, teacherStats, user, watchTimeStats]);
 
   const achievements = user?.Achievements || user?.achievements || [];
+
+  if (!user) {
+    return (
+      <Container maxWidth="lg">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <Typography color="textSecondary">Loading profile...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">

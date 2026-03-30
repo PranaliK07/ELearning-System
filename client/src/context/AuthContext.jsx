@@ -33,7 +33,14 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
-      logout();
+      const status = error?.response?.status;
+      // Only force logout on explicit auth failures
+      if (status === 401 || status === 403) {
+        logout();
+      } else {
+        // Keep the session for transient/server errors
+        toast.error('Unable to verify session. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -85,7 +92,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.put('/api/auth/profile', userData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUser(response.data);
+      setUser(response.data?.user || response.data);
       toast.success('Profile updated successfully!');
       return { success: true };
     } catch (error) {

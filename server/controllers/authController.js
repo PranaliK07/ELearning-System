@@ -14,7 +14,7 @@ const register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, role, grade } = req.body;
+    const { name, email, password, role, grade, parentPhone, parentEmail } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ where: { email } });
@@ -32,7 +32,9 @@ const register = async (req, res) => {
       password,
       role: role || 'student',
       grade,
-      verificationToken
+      verificationToken,
+      parentPhone: parentPhone || null,
+      parentEmail: parentEmail || null
     });
 
     // Send verification email
@@ -148,7 +150,7 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, grade, bio } = req.body;
+    const { name, grade, bio, parentPhone, parentEmail } = req.body;
     const user = await User.findByPk(req.user.id);
 
     if (typeof name === 'string' && name.length > 0) user.name = name;

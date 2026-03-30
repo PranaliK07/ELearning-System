@@ -8,17 +8,24 @@ import {
   Box,
   CircularProgress
 } from '@mui/material';
+import {
+  LooksOne,
+  LooksTwo,
+  Looks3,
+  Looks4,
+  Looks5
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 
 const gradeStyles = {
-  1: { color: '#FF6B6B', icon: '??', description: 'Beginner Level' },
-  2: { color: '#4ECDC4', icon: '??', description: 'Foundation' },
-  3: { color: '#45B7D1', icon: '??', description: 'Building Skills' },
-  4: { color: '#96CEB4', icon: '??', description: 'Intermediate' },
-  5: { color: '#FFEAA7', icon: '??', description: 'Advanced' }
+  1: { color: '#FF6B6B', icon: <LooksOne sx={{ fontSize: 64, color: 'white' }} />, description: 'Beginner Level' },
+  2: { color: '#4ECDC4', icon: <LooksTwo sx={{ fontSize: 64, color: 'white' }} />, description: 'Foundation' },
+  3: { color: '#45B7D1', icon: <Looks3 sx={{ fontSize: 64, color: 'white' }} />, description: 'Building Skills' },
+  4: { color: '#96CEB4', icon: <Looks4 sx={{ fontSize: 64, color: 'white' }} />, description: 'Intermediate' },
+  5: { color: '#FFEAA7', icon: <Looks5 sx={{ fontSize: 64, color: 'white' }} />, description: 'Advanced' }
 };
 
 const GradeSelect = () => {
@@ -26,18 +33,29 @@ const GradeSelect = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [gradeData, setGradeData] = useState([]);
+  const isStudent = user?.role === 'student';
 
   useEffect(() => {
     fetchGrades();
   }, []);
 
+  useEffect(() => {
+    if (user?.role === 'student' && user?.grade) {
+      navigate(`/study/grade/${user.grade}`, { replace: true });
+    }
+  }, [user?.role, user?.grade, navigate]);
+
   const fetchGrades = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/grades');
-      const grades = (Array.isArray(response.data) ? response.data : []).map((g) => ({
+      const allGrades = Array.isArray(response.data) ? response.data : [];
+      const visibleGrades = user?.role === 'student' && user?.grade
+        ? allGrades.filter((g) => Number(g.level) === Number(user.grade))
+        : allGrades;
+      const grades = visibleGrades.map((g) => ({
         ...g,
-        ...(gradeStyles[g.level] || { color: '#45B7D1', icon: '??', description: `Class ${g.level}` })
+        ...(gradeStyles[g.level] || { color: '#45B7D1', icon: <LooksOne sx={{ fontSize: 64, color: 'white' }} />, description: `Class ${g.level}` })
       }));
       setGradeData(grades);
     } catch (error) {
@@ -60,15 +78,26 @@ const GradeSelect = () => {
     );
   }
 
+  if (isStudent) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="60vh" textAlign="center" gap={2}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ fontFamily: '"Comic Neue", cursive', fontWeight: 'bold' }}>
+          Getting your lessons ready...
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Container maxWidth="lg">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontFamily: '"Comic Neue", cursive', fontWeight: 'bold', color: 'primary.main' }}>
-            Choose Your Class ??
+            Choose a Class
           </Typography>
           <Typography variant="h6" color="textSecondary">
-            Select the grade you want to study
+            Select a grade to view subjects and topics
           </Typography>
         </Box>
 
@@ -90,7 +119,7 @@ const GradeSelect = () => {
                   }}
                 >
                   <Box sx={{ height: 140, backgroundColor: grade.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography variant="h1" component="div">{grade.icon}</Typography>
+                    {grade.icon}
                   </Box>
                   <CardContent>
                     <Typography gutterBottom variant="h5" component="h2" sx={{ fontFamily: '"Comic Neue", cursive', fontWeight: 'bold' }}>

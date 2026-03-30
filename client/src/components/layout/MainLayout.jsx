@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, AppBar, Toolbar, IconButton, Typography, Avatar, Menu, MenuItem, Badge } from '@mui/material';
+import { Box, AppBar, Toolbar, IconButton, Typography, Avatar, Menu, MenuItem, Badge, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   Menu as MenuIcon,
@@ -15,13 +15,23 @@ import BottomNav from './BottomNav';
 import ErrorBoundary from '../common/ErrorBoundary';
 import Sidebar from './Sidebar';
 import { resolveAvatarSrc } from '../../utils/media';
+import { useNotification } from '../../context/notificationContext';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const { mode, setMode } = React.useContext(ThemeContext);
+  const { 
+    notifications, 
+    unreadCount, 
+    loadingNotifications, 
+    fetchNotifications, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotification();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -29,6 +39,21 @@ const MainLayout = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationsOpen = (event) => {
+    setNotificationsAnchorEl(event.currentTarget);
+    fetchNotifications();
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchorEl(null);
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification?.isRead) {
+      markAsRead(notification.id);
+    }
   };
 
   const handleDrawerToggle = () => {
@@ -96,8 +121,8 @@ const MainLayout = () => {
             {mode === 'light' ? <DarkIcon /> : <LightIcon />}
           </IconButton>
 
-          <IconButton color="inherit" sx={{ mr: 1 }}>
-            <Badge badgeContent={3} color="error">
+          <IconButton color="inherit" sx={{ mr: 1 }} onClick={handleNotificationsOpen}>
+            <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon />
             </Badge>
           </IconButton>
@@ -125,6 +150,64 @@ const MainLayout = () => {
           >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
+          </Menu>
+
+          <Menu
+            anchorEl={notificationsAnchorEl}
+            open={Boolean(notificationsAnchorEl)}
+            onClose={handleNotificationsClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            PaperProps={{ sx: { width: 340, maxWidth: '90vw' } }}
+          >
+            <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Notifications
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ cursor: 'pointer', color: 'primary.main', fontWeight: 600 }}
+                onClick={markAllAsRead}
+              >
+                Mark all read
+              </Typography>
+            </Box>
+            <Divider />
+            {loadingNotifications && (
+              <Box sx={{ px: 2, py: 2 }}>
+                <Typography variant="body2" color="textSecondary">
+                  Loading notifications...
+                </Typography>
+              </Box>
+            )}
+            {!loadingNotifications && notifications.length === 0 && (
+              <Box sx={{ px: 2, py: 2 }}>
+                <Typography variant="body2" color="textSecondary">
+                  No notifications yet.
+                </Typography>
+              </Box>
+            )}
+            {!loadingNotifications && notifications.map((item) => (
+              <MenuItem
+                key={item.id}
+                onClick={() => handleNotificationClick(item)}
+                sx={{
+                  alignItems: 'flex-start',
+                  whiteSpace: 'normal',
+                  gap: 1,
+                  bgcolor: item.isRead ? 'transparent' : 'rgba(63,81,181,0.08)'
+                }}
+              >
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: item.isRead ? 500 : 700 }}>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {item.message}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
           </Menu>
         </Toolbar>
       </AppBar>

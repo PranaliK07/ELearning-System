@@ -30,7 +30,9 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     role: 'student',
-    grade: ''
+    grade: '',
+    parentPhone: '',
+    parentEmail: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -80,6 +82,18 @@ const Register = () => {
     if (activeStep === 2) {
       if (!formData.grade && formData.role === 'student') {
         newErrors.grade = 'Grade is required for students';
+      }
+      if (formData.role === 'student') {
+        if (!formData.parentPhone) {
+          newErrors.parentPhone = 'Parent mobile is required';
+        } else if (!/^[+\d][\d\s()-]{6,19}$/.test(formData.parentPhone)) {
+          newErrors.parentPhone = 'Enter a valid parent mobile number';
+        }
+        if (!formData.parentEmail) {
+          newErrors.parentEmail = 'Parent email is required';
+        } else if (!/^\S+@\S+\.\S+$/.test(formData.parentEmail)) {
+          newErrors.parentEmail = 'Enter a valid parent email';
+        }
       }
     }
     
@@ -242,6 +256,38 @@ const Register = () => {
                 <MenuItem value={4}>Class 4</MenuItem>
                 <MenuItem value={5}>Class 5</MenuItem>
               </TextField>
+            )}
+
+            {formData.role === 'student' && (
+              <TextField
+                fullWidth
+                label="Parent Mobile"
+                name="parentPhone"
+                value={formData.parentPhone}
+                onChange={handleChange}
+                error={!!errors.parentPhone}
+                helperText={errors.parentPhone || 'Required for assignment reminders'}
+                margin="normal"
+                variant="outlined"
+                placeholder="+1 555 123 4567"
+                required
+              />
+            )}
+
+            {formData.role === 'student' && (
+              <TextField
+                fullWidth
+                label="Parent Email"
+                name="parentEmail"
+                value={formData.parentEmail}
+                onChange={handleChange}
+                error={!!errors.parentEmail}
+                helperText={errors.parentEmail || 'Required for assignment reminders'}
+                margin="normal"
+                variant="outlined"
+                placeholder="parent@example.com"
+                required
+              />
             )}
           </Box>
         );

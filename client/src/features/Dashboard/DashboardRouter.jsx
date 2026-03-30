@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import StudentHome from './StudentHome';
+import VideosHome from './VideosHome';
 import TeacherDashboard from './TeacherDashboard';
 import AdminDashboard from './AdminDashboard';
 import { CircularProgress, Box } from '@mui/material';
@@ -23,7 +23,7 @@ const DashboardRouter = () => {
         return <TeacherDashboard />;
       case 'student':
       default:
-            return <StudentHome />;
+            return <VideosHome />;
     }
 };
 

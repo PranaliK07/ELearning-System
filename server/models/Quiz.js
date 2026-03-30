@@ -68,6 +68,14 @@ const Quiz = sequelize.define('Quiz', {
       model: 'Users',
       key: 'id'
     }
+  },
+  LessonId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Lessons',
+      key: 'id'
+    }
   }
 });
 
