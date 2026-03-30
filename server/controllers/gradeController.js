@@ -1,7 +1,25 @@
 const { Grade, Subject, User } = require('../models');
 
+const ensureDefaultGrades = async () => {
+  const existing = await Grade.findAll({ attributes: ['level'] });
+  const existingLevels = new Set(existing.map((g) => g.level));
+  const defaults = [
+    { level: 1, name: 'Class 1', description: 'Beginner Level - Foundation', icon: '📚', color: '#FF6B6B', order: 1 },
+    { level: 2, name: 'Class 2', description: 'Building Basic Concepts', icon: '🌟', color: '#4ECDC4', order: 2 },
+    { level: 3, name: 'Class 3', description: 'Intermediate Learning', icon: '🎨', color: '#45B7D1', order: 3 },
+    { level: 4, name: 'Class 4', description: 'Advanced Concepts', icon: '📚', color: '#96CEB4', order: 4 },
+    { level: 5, name: 'Class 5', description: 'Mastery Level', icon: '🚀', color: '#FFEAA7', order: 5 }
+  ];
+
+  const missing = defaults.filter((g) => !existingLevels.has(g.level));
+  if (missing.length > 0) {
+    await Grade.bulkCreate(missing);
+  }
+};
+
 const getGrades = async (req, res) => {
   try {
+    await ensureDefaultGrades();
     const grades = await Grade.findAll({
       order: [['level', 'ASC']],
       include: [{

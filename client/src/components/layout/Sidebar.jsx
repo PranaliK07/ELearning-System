@@ -34,10 +34,12 @@ import { useState, useEffect } from 'react';
 import { resolveAvatarSrc } from '../../utils/media';
 
 const drawerWidth = 240;
+const appBarHeights = { xs: 56, sm: 64 };
 
 const configuredModules = new Set([
   'dashboard',
   'subjects',
+  'homework',
   'assignments',
   'content',
   'users',
@@ -50,7 +52,7 @@ const configuredModules = new Set([
 const defaultRoleAccess = {
   admin: new Set(['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'business-settings']),
   teacher: new Set(['dashboard', 'subjects', 'assignments', 'reports']),
-  student: new Set(['dashboard', 'subjects', 'assignments'])
+  student: new Set(['dashboard', 'subjects', 'homework'])
 };
 
 const loadRoleAccess = (_version = 0) => {
@@ -79,7 +81,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return () => window.removeEventListener('roleAccessUpdated', handler);
   }, []);
 
-  // Sync sidebar permissions from server once per session
   useEffect(() => {
     const syncAccess = async () => {
       try {
@@ -89,7 +90,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
           window.dispatchEvent(new Event('roleAccessUpdated'));
         }
       } catch (err) {
-        // Silently ignore if user isn't allowed; defaults/local cache will be used
         if (process.env.NODE_ENV === 'development') {
           console.warn('Role access fetch skipped', err?.response?.status);
         }
@@ -104,28 +104,28 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
 
   const items = [
     { key: 'dashboard', text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { key: 'subjects', text: 'Study', icon: <StudyIcon />, path: '/study' },
-    { key: 'play', text: 'Play', icon: <PlayIcon />, path: '/play' },
-    { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
-    { key: 'achievements', text: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
-    { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
+    { key: 'subjects', text: 'Subjects', icon: <StudyIcon />, path: '/study' },
+    { key: 'homework', text: 'Assignments', icon: <AssignmentIcon />, path: '/homework' },
     { key: 'assignments', text: 'Assignments', icon: <AssignmentIcon />, path: '/assignments/create' },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
     { key: 'content', text: 'Content', icon: <StudyIcon />, path: '/content/create' },
+    { key: 'play', text: 'Quize', icon: <PlayIcon />, path: '/play' },
+    { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
+    { key: 'achievements', text: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
+    { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
     { key: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/profile/edit' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/dashboard?tab=business' },
   ];
 
   const displayItems = items.filter(({ key }) => {
-    // If the module is part of configuredModules, show only if allowed. Otherwise leave unchanged.
+    if (role === 'student' && key === 'assignments') {
+      return false;
+    }
+    if (role === 'student' && key === 'homework') {
+      return true;
+    }
     if (configuredModules.has(key)) {
       return allowed.has(key);
-    }
-    return true;
-  }).filter(({ key }) => {
-    // Basic role guards: students don't see teacher/admin only links when not allowed
-    if (key === 'assignments' || key === 'reports' || key === 'content' || key === 'business-settings') {
-      return role === 'teacher' || role === 'admin' || allowed.has(key);
     }
     return true;
   });
@@ -141,7 +141,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const drawer = (
     <div>
       <Toolbar>
-        <Box sx={{ textAlign: 'center', width: '100%' }}>
+        <Box
+          sx={{ textAlign: 'center', width: '100%', cursor: 'pointer' }}
+          onClick={() => {
+            navigate('/profile');
+            if (mobileOpen) handleDrawerToggle();
+          }}
+        >
           <Avatar
             sx={{
               width: 80,
@@ -168,7 +174,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       <Divider />
       <List>
         {displayItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.key} disablePadding>
             <ListItemButton
               selected={
                 item.key === 'business-settings'
@@ -246,11 +252,16 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
         }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            mt: `${appBarHeights.xs}px`,
+            height: `calc(100% - ${appBarHeights.xs}px)`
+          },
         }}
       >
         {drawer}
@@ -259,7 +270,12 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            mt: `${appBarHeights.sm}px`,
+            height: `calc(100% - ${appBarHeights.sm}px)`
+          },
         }}
         open
       >

@@ -1,16 +1,17 @@
-const { Quiz, Progress, User, Topic } = require('../models');
+const { Quiz, Progress, User, Topic, Lesson } = require('../models');
 const { Op } = require('sequelize');
 
 const getQuizzes = async (req, res) => {
   try {
-    const { topicId, page = 1, limit = 10 } = req.query;
-    const where = {};
-    
-    if (topicId) where.TopicId = topicId;
+  const { topicId, lessonId, page = 1, limit = 10 } = req.query;
+  const where = {};
+  
+  if (topicId) where.TopicId = topicId;
+  if (lessonId) where.LessonId = lessonId;
 
     const quizzes = await Quiz.findAndCountAll({
       where,
-      include: [Topic],
+      include: [Topic, Lesson],
       limit: parseInt(limit),
       offset: (page - 1) * limit,
       order: [['createdAt', 'DESC']]
@@ -31,7 +32,7 @@ const getQuizzes = async (req, res) => {
 const getQuiz = async (req, res) => {
   try {
     const quiz = await Quiz.findByPk(req.params.id, {
-      include: [Topic]
+      include: [Topic, Lesson]
     });
 
     if (!quiz) {
@@ -63,7 +64,8 @@ const createQuiz = async (req, res) => {
       timeLimit,
       passingScore,
       maxAttempts,
-      topicId
+      topicId,
+      lessonId
     } = req.body;
 
     const topic = await Topic.findByPk(topicId);
@@ -79,6 +81,7 @@ const createQuiz = async (req, res) => {
       passingScore,
       maxAttempts,
       TopicId: topicId,
+      LessonId: lessonId || null,
       createdBy: req.user.id
     });
 
@@ -108,7 +111,8 @@ const updateQuiz = async (req, res) => {
       timeLimit,
       passingScore,
       maxAttempts,
-      isPublished
+      isPublished,
+      lessonId
     } = req.body;
 
     if (title) quiz.title = title;
@@ -118,6 +122,7 @@ const updateQuiz = async (req, res) => {
     if (passingScore) quiz.passingScore = passingScore;
     if (maxAttempts) quiz.maxAttempts = maxAttempts;
     if (isPublished !== undefined) quiz.isPublished = isPublished;
+    if (lessonId !== undefined) quiz.LessonId = lessonId || null;
 
     await quiz.save();
 

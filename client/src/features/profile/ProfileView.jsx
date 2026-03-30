@@ -27,6 +27,7 @@ import {
   People,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
+import LinearProgress from '@mui/material/LinearProgress';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -56,6 +57,16 @@ const ProfileView = () => {
     { activity: 'Earned Quick Learner Badge', points: '+10', date: '2 days ago' },
     { activity: 'Completed Science Lesson', topic: 'Plants', date: '3 days ago' }
   ];
+
+  if (!user) {
+    return (
+      <Container maxWidth="lg">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <Typography color="textSecondary">Loading profile...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">

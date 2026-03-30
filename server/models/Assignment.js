@@ -22,6 +22,14 @@ const Assignment = sequelize.define('Assignment', {
   status: {
     type: DataTypes.ENUM('active', 'draft', 'closed'),
     defaultValue: 'active'
+  },
+  LessonId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Lessons',
+      key: 'id'
+    }
   }
 });
 

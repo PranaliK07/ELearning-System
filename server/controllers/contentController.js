@@ -1,5 +1,19 @@
-const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject } = require('../models');
+const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject, Lesson } = require('../models');
 const { Op } = require('sequelize');
+
+const resolveStudentGradeId = async (user) => {
+  if (!user) return null;
+  if (user.GradeId) return user.GradeId;
+  if (user.grade) {
+    const grade = await Grade.findOne({
+      where: {
+        [Op.or]: [{ id: user.grade }, { level: user.grade }]
+      }
+    });
+    return grade?.id || null;
+  }
+  return null;
+};
 
 const getContents = async (req, res) => {
   try {
@@ -13,6 +27,15 @@ const getContents = async (req, res) => {
     if (gradeId) where.GradeId = gradeId;
     if (type) where.type = type;
 
+    if (req.user?.role === 'student') {
+      const studentGradeId = await resolveStudentGradeId(req.user);
+      if (studentGradeId) {
+        where.GradeId = {
+          [Op.or]: [{ [Op.eq]: studentGradeId }, { [Op.is]: null }]
+        };
+      }
+    }
+
     const contents = await Content.findAndCountAll({
       where,
       include: [
@@ -20,6 +43,7 @@ const getContents = async (req, res) => {
           model: Topic,
           include: [Subject]
         },
+        { model: Lesson },
         { model: Subject },
         { model: Grade },
         {
@@ -53,6 +77,7 @@ const getContent = async (req, res) => {
           model: Topic,
           include: [Subject]
         },
+        { model: Lesson },
         { model: Subject },
         { model: Grade },
         {
@@ -65,6 +90,13 @@ const getContent = async (req, res) => {
 
     if (!content) {
       return res.status(404).json({ message: 'Content not found' });
+    }
+
+    if (req.user?.role === 'student') {
+      const studentGradeId = await resolveStudentGradeId(req.user);
+      if (studentGradeId && content.GradeId && content.GradeId !== studentGradeId) {
+        return res.status(403).json({ message: 'Not authorized to access this content' });
+      }
     }
 
     res.json(content);
@@ -88,6 +120,8 @@ const createContent = async (req, res) => {
       isPremium,
       topicId,
       TopicId,
+      lessonId,
+      LessonId,
       order,
       tags,
       metadata,
@@ -128,6 +162,18 @@ const createContent = async (req, res) => {
       }
     }
 
+    const finalLessonId = Number(lessonId || LessonId || 0) || null;
+
+    if (finalLessonId) {
+      const lesson = await Lesson.findByPk(finalLessonId);
+      if (!lesson) {
+        return res.status(404).json({ message: `Lesson not found (id: ${finalLessonId})` });
+      }
+      if (lesson.TopicId && lesson.TopicId !== finalTopicId) {
+        return res.status(400).json({ message: 'Lesson does not belong to selected topic' });
+      }
+    }
+
     const content = await Content.create({
       title,
       type,
@@ -144,6 +190,7 @@ const createContent = async (req, res) => {
       TopicId: finalTopicId,
       SubjectId: finalSubjectId,
       GradeId: finalGradeId,
+      LessonId: finalLessonId,
       isPublished: isPublished !== undefined ? isPublished : true,
       createdBy: req.user.id
     });
@@ -180,6 +227,8 @@ const updateContent = async (req, res) => {
       metadata,
       topicId,
       TopicId,
+      lessonId,
+      LessonId,
       gradeId,
       GradeId,
       subjectId,
@@ -208,6 +257,20 @@ const updateContent = async (req, res) => {
       content.SubjectId = nextSubjectId || topic.SubjectId;
     } else if (nextSubjectId !== undefined) {
       content.SubjectId = nextSubjectId;
+    }
+
+    if (lessonId !== undefined || LessonId !== undefined) {
+      const nextLessonId = Number(lessonId || LessonId || 0) || null;
+      if (nextLessonId) {
+        const lesson = await Lesson.findByPk(nextLessonId);
+        if (!lesson) {
+          return res.status(404).json({ message: `Lesson not found (id: ${nextLessonId})` });
+        }
+        if (content.TopicId && lesson.TopicId && lesson.TopicId !== content.TopicId) {
+          return res.status(400).json({ message: 'Lesson does not belong to selected topic' });
+        }
+      }
+      content.LessonId = nextLessonId;
     }
 
     if (nextGradeId !== undefined) {
@@ -416,9 +479,17 @@ const getRecommendedContent = async (req, res) => {
   try {
     // Get content based on user's grade and watch history
     const user = await User.findByPk(req.user.id);
+    const studentGradeId = req.user?.role === 'student'
+      ? await resolveStudentGradeId(req.user)
+      : null;
 
     const recommended = await Content.findAll({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        ...(studentGradeId ? {
+          [Op.or]: [{ GradeId: studentGradeId }, { GradeId: null }]
+        } : {})
+      },
       include: [{
         model: Topic,
         include: [{
@@ -440,8 +511,16 @@ const getRecommendedContent = async (req, res) => {
 
 const getTrendingContent = async (req, res) => {
   try {
+    const studentGradeId = req.user?.role === 'student'
+      ? await resolveStudentGradeId(req.user)
+      : null;
     const trending = await Content.findAll({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        ...(studentGradeId ? {
+          [Op.or]: [{ GradeId: studentGradeId }, { GradeId: null }]
+        } : {})
+      },
       include: [
         { model: Topic, include: [Subject] },
         { model: Subject },
@@ -465,6 +544,9 @@ const getTrendingContent = async (req, res) => {
 const searchContent = async (req, res) => {
   try {
     const { q } = req.query;
+    const studentGradeId = req.user?.role === 'student'
+      ? await resolveStudentGradeId(req.user)
+      : null;
 
     const contents = await Content.findAll({
       where: {
@@ -473,7 +555,10 @@ const searchContent = async (req, res) => {
           { description: { [Op.like]: `%${q}%` } },
           { tags: { [Op.like]: `%${q}%` } }
         ],
-        isPublished: true
+        isPublished: true,
+        ...(studentGradeId ? {
+          [Op.or]: [{ GradeId: studentGradeId }, { GradeId: null }]
+        } : {})
       },
       include: [{
         model: Topic,

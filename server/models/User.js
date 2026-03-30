@@ -77,6 +77,17 @@ const User = sequelize.define('User', {
   },
   resetPasswordExpire: {
     type: DataTypes.DATE
+  },
+  parentPhone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  parentEmail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true
+    }
   }
 }, {
   hooks: {
@@ -110,7 +121,9 @@ User.prototype.getPublicProfile = function() {
     points: this.points,
     totalWatchTime: this.totalWatchTime,
     streak: this.streak,
-    lastActive: this.lastActive
+    lastActive: this.lastActive,
+    parentPhone: this.parentPhone,
+    parentEmail: this.parentEmail
   };
 };
 

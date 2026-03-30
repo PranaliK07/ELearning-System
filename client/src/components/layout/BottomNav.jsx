@@ -2,9 +2,9 @@ import React from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  MenuBook as StudyIcon,
   PlayCircle as PlayIcon,
-  Timeline as ProgressIcon
+  MenuBook as StudyIcon,
+  Home as HomeIcon
 } from '@mui/icons-material';
 
 const BottomNav = () => {
@@ -12,10 +12,10 @@ const BottomNav = () => {
   const location = useLocation();
   
   const getValue = () => {
-    if (location.pathname.startsWith('/study')) return 0;
-    if (location.pathname.startsWith('/play')) return 1;
-    if (location.pathname.startsWith('/progress')) return 2;
-    return 0;
+    if (location.pathname.startsWith('/play')) return 0;
+    if (location.pathname.startsWith('/study')) return 1;
+    if (location.pathname.startsWith('/dashboard')) return 2;
+    return 2;
   };
 
   return (
@@ -36,22 +36,22 @@ const BottomNav = () => {
         onChange={(event, newValue) => {
           switch(newValue) {
             case 0:
-              navigate('/study');
-              break;
-            case 1:
               navigate('/play');
               break;
+            case 1:
+              navigate('/study');
+              break;
             case 2:
-              navigate('/progress');
+              navigate('/dashboard');
               break;
             default:
               break;
           }
         }}
       >
+        <BottomNavigationAction label="Quize" icon={<PlayIcon />} />
         <BottomNavigationAction label="Study" icon={<StudyIcon />} />
-        <BottomNavigationAction label="Play" icon={<PlayIcon />} />
-        <BottomNavigationAction label="Progress" icon={<ProgressIcon />} />
+        <BottomNavigationAction label="Home" icon={<HomeIcon />} />
       </BottomNavigation>
     </Paper>
   );

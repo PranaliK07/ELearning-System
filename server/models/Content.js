@@ -95,6 +95,14 @@ const Content = sequelize.define('Content', {
       key: 'id'
     }
   },
+  LessonId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Lessons',
+      key: 'id'
+    }
+  },
 
   createdBy: {
     type: DataTypes.INTEGER,

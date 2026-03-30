@@ -6,6 +6,7 @@ const { exec } = require('child_process');
 const allowedModules = [
   'dashboard',
   'subjects',
+  'homework',
   'assignments',
   'content',
   'users',
@@ -18,7 +19,7 @@ const allowedModules = [
 const defaultRoleAccess = {
   admin: ['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'business-settings'],
   teacher: ['dashboard', 'subjects', 'assignments', 'reports'],
-  student: ['dashboard', 'subjects', 'assignments']
+  student: ['dashboard', 'subjects', 'homework', 'assignments']
 };
 
 // --- Business settings: role-based sidebar access ---
@@ -56,6 +57,11 @@ const getRoleAccess = async (req, res) => {
     roles.forEach(role => {
       if (!sanitized[role]) sanitized[role] = defaultRoleAccess[role] || [];
     });
+
+    // Backward-compat: ensure students can see homework in sidebar
+    if (sanitized.student && !sanitized.student.includes('homework')) {
+      sanitized.student = [...sanitized.student, 'homework'];
+    }
 
     res.json(sanitized);
   } catch (error) {
