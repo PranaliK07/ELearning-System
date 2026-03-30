@@ -22,6 +22,7 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Menu,
   MenuItem,
   Select,
   FormControl,
@@ -52,10 +53,17 @@ import {
   Warning,
   BarChart,
   Settings,
-  Refresh
+  Refresh,
+  Download,
+  ExpandMore
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, TextRun, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
 import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -72,13 +80,17 @@ const AdminDashboard = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [serverAccessAvailable, setServerAccessAvailable] = useState(true);
   const [openUserDialog, setOpenUserDialog] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const exportOpen = Boolean(exportAnchorEl);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     role: 'student',
     grade: '',
+    studentEmail: '',
     status: 'active'
   });
   const [roleAccess, setRoleAccess] = useState({
@@ -236,6 +248,109 @@ const AdminDashboard = () => {
     setTabValue(newValue);
   };
 
+  const handleExportClick = (event) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
+
+  const exportRows = reports.map((report) => ({
+    type: report.type || 'general',
+    title: report.title || 'Untitled',
+    reportedBy: report.user || report.reportedBy || 'Anonymous',
+    date: report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A',
+    status: report.status || 'pending'
+  }));
+
+  const exportCSV = () => {
+    handleExportClose();
+    const headers = ['Type', 'Title', 'Reported By', 'Date', 'Status'];
+    const rows = exportRows.map((row) => [row.type, row.title, row.reportedBy, row.date, row.status]);
+    const csvContent = `data:text/csv;charset=utf-8,${headers.join(',')}\n${rows.map((r) => r.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n')}`;
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', 'reports_issues.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Reports exported as CSV');
+  };
+
+  const exportExcel = () => {
+    handleExportClose();
+    const worksheet = XLSX.utils.json_to_sheet(exportRows.map((row) => ({
+      Type: row.type,
+      Title: row.title,
+      'Reported By': row.reportedBy,
+      Date: row.date,
+      Status: row.status
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reports');
+    XLSX.writeFile(workbook, 'reports_issues.xlsx');
+    toast.success('Reports exported as Excel');
+  };
+
+  const exportPDF = () => {
+    handleExportClose();
+    const doc = new jsPDF();
+    doc.text('Reports & Issues', 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['Type', 'Title', 'Reported By', 'Date', 'Status']],
+      body: exportRows.map((row) => [row.type, row.title, row.reportedBy, row.date, row.status])
+    });
+    doc.save('reports_issues.pdf');
+    toast.success('Reports exported as PDF');
+  };
+
+  const exportWord = () => {
+    handleExportClose();
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'Reports & Issues', bold: true, size: 32 })],
+            spacing: { after: 400 }
+          }),
+          new DocxTable({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE
+            },
+            rows: [
+              new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Type', bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Title', bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Reported By', bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date', bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Status', bold: true })] })] })
+                ]
+              }),
+              ...exportRows.map((row) => new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph(row.type)] }),
+                  new DocxTableCell({ children: [new Paragraph(row.title)] }),
+                  new DocxTableCell({ children: [new Paragraph(row.reportedBy)] }),
+                  new DocxTableCell({ children: [new Paragraph(row.date)] }),
+                  new DocxTableCell({ children: [new Paragraph(row.status)] })
+                ]
+              }))
+            ]
+          })
+        ]
+      }]
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      saveAs(blob, 'reports_issues.docx');
+      toast.success('Reports exported as Word');
+    });
+  };
+
   const filteredUsers = (Array.isArray(users) ? users : []).filter(user => {
     const matchesSearch = (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -359,12 +474,12 @@ const AdminDashboard = () => {
         {/* Users Management Tab */}
         {tabValue === 0 && (
           <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
               <Typography variant="h6">
                 User Management
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
                   <InputLabel>Filter by Role</InputLabel>
                   <Select
                     value={filterRole}
@@ -374,6 +489,7 @@ const AdminDashboard = () => {
                     <MenuItem value="all">All Roles</MenuItem>
                     <MenuItem value="student">Students</MenuItem>
                     <MenuItem value="teacher">Teachers</MenuItem>
+                    <MenuItem value="parent">Parents</MenuItem>
                     <MenuItem value="admin">Admins</MenuItem>
                   </Select>
                 </FormControl>
@@ -389,12 +505,17 @@ const AdminDashboard = () => {
                       </InputAdornment>
                     )
                   }}
-                  sx={{ width: 250 }}
+                  sx={{ width: { xs: '100%', sm: 250 } }}
                 />
                 <Button
                   variant="contained"
                   startIcon={<Add />}
-                  onClick={() => setOpenUserDialog(true)}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  onClick={() => {
+                    setEditingUserId(null);
+                    setNewUser({ name: '', email: '', role: 'student', grade: '', studentEmail: '', status: 'active' });
+                    setOpenUserDialog(true);
+                  }}
                 >
                   Add User
                 </Button>
@@ -438,6 +559,11 @@ const AdminDashboard = () => {
                                 <Typography variant="caption" color="textSecondary">
                                   {user.email || 'No email'}
                                 </Typography>
+                                {user.role === 'student' && user.parent && (
+                                  <Typography variant="caption" color="textSecondary" display="block">
+                                    Parent: {user.parent.name} ({user.parent.email})
+                                  </Typography>
+                                )}
                               </Box>
                             </Box>
                           </TableCell>
@@ -447,7 +573,8 @@ const AdminDashboard = () => {
                               size="small"
                               color={
                                 user.role === 'admin' ? 'error' :
-                                  user.role === 'teacher' ? 'warning' : 'primary'
+                                  user.role === 'teacher' ? 'warning' :
+                                    user.role === 'parent' ? 'secondary' : 'primary'
                               }
                             />
                           </TableCell>
@@ -461,7 +588,21 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>{user.lastLogin || 'Never'}</TableCell>
                           <TableCell align="right">
-                            <IconButton size="small" onClick={() => navigate(`/admin/users/${user.id || user._id}`)}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingUserId(user.id || user._id);
+                                setNewUser({
+                                  name: user.name || '',
+                                  email: user.email || '',
+                                  role: user.role || 'student',
+                                  grade: user.grade || '',
+                                  studentEmail: '',
+                                  status: (user.status === 'inactive' || user.isActive === false) ? 'inactive' : 'active'
+                                });
+                                setOpenUserDialog(true);
+                              }}
+                            >
                               <Edit />
                             </IconButton>
                             <IconButton
@@ -653,9 +794,31 @@ const AdminDashboard = () => {
         {/* Reports Tab */}
         {tabValue === 2 && (
           <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Reports & Issues
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+              <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+                Reports & Issues
+              </Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<Download />}
+                endIcon={<ExpandMore />}
+                onClick={handleExportClick}
+                disabled={reports.length === 0}
+              >
+                Export Reports
+              </Button>
+              <Menu
+                anchorEl={exportAnchorEl}
+                open={exportOpen}
+                onClose={handleExportClose}
+              >
+                <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
+                <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
+                <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
+                <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+              </Menu>
+            </Box>
 
             <TableContainer>
               <Table>
@@ -693,7 +856,7 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>{report.title || 'Untitled'}</TableCell>
                         <TableCell>{report.user || report.reportedBy || 'Anonymous'}</TableCell>
-                        <TableCell>{report.date || report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : (report.date || 'N/A')}</TableCell>
                         <TableCell>
                           <Chip
                             label={report.status || 'pending'}
@@ -722,8 +885,16 @@ const AdminDashboard = () => {
         )}
 
         {/* Add / Edit User Dialog */}
-        <Dialog open={openUserDialog} onClose={() => setOpenUserDialog(false)} fullWidth maxWidth="sm">
-          <DialogTitle>Add New User</DialogTitle>
+        <Dialog
+          open={openUserDialog}
+          onClose={() => {
+            setOpenUserDialog(false);
+            setEditingUserId(null);
+          }}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>{editingUserId ? 'Edit User' : 'Add New User'}</DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
               <Grid item xs={12} sm={6}>
@@ -749,10 +920,11 @@ const AdminDashboard = () => {
                   <Select
                     label="Role"
                     value={newUser.role}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value, studentEmail: '' }))}
                   >
                     <MenuItem value="student">Student</MenuItem>
                     <MenuItem value="teacher">Teacher</MenuItem>
+                    <MenuItem value="parent">Parent</MenuItem>
                     <MenuItem value="admin">Admin</MenuItem>
                   </Select>
                 </FormControl>
@@ -766,6 +938,17 @@ const AdminDashboard = () => {
                   disabled={newUser.role !== 'student'}
                 />
               </Grid>
+              {newUser.role === 'parent' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Student Email to Link"
+                    value={newUser.studentEmail}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, studentEmail: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
@@ -782,28 +965,73 @@ const AdminDashboard = () => {
             </Grid>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setOpenUserDialog(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                setOpenUserDialog(false);
+                setEditingUserId(null);
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               variant="contained"
-              onClick={() => {
+              onClick={async () => {
                 if (!newUser.name.trim() || !newUser.email.trim()) {
                   toast.error('Please fill in all required fields');
                   return;
                 }
-                setUsers(prev => ([
-                  ...prev,
-                  {
-                    ...newUser,
-                    id: Date.now(),
-                    lastLogin: 'Just now'
+
+                try {
+                  const payload = {
+                    name: newUser.name.trim(),
+                    email: newUser.email.trim(),
+                    role: newUser.role,
+                    grade: newUser.role === 'student' && newUser.grade ? Number(newUser.grade) : null,
+                    isActive: newUser.status === 'active',
+                    studentEmail: newUser.role === 'parent' && newUser.studentEmail ? newUser.studentEmail.trim() : undefined
+                  };
+
+                  let response;
+
+                  if (editingUserId) {
+                    response = await api.put(`/api/users/${editingUserId}`, payload);
+                    await fetchAdminData();
+                  } else {
+                    try {
+                      response = await api.post('/api/users', payload);
+                    } catch (postErr) {
+                      if (postErr?.response?.status === 404) {
+                        // Compatibility fallback for deployments that expose admin-managed user creation under /api/admin/users
+                        response = await api.post('/api/admin/users', payload);
+                      } else {
+                        throw postErr;
+                      }
+                    }
+                    const createdUser = response?.data?.user;
+
+                    if (createdUser) {
+                      setUsers(prev => [{ ...createdUser, status: createdUser.isActive ? 'active' : 'inactive' }, ...prev]);
+                    } else {
+                      await fetchAdminData();
+                    }
                   }
-                ]));
-                setNewUser({ name: '', email: '', role: 'student', grade: '', status: 'active' });
-                setOpenUserDialog(false);
-                toast.success('User added successfully');
+
+                  setNewUser({ name: '', email: '', role: 'student', grade: '', studentEmail: '', status: 'active' });
+                  setOpenUserDialog(false);
+                  setEditingUserId(null);
+
+                  const tempPassword = response?.data?.temporaryPassword;
+                  if (!editingUserId && tempPassword) {
+                    toast.success(`User added. Temporary password: ${tempPassword}`);
+                  } else {
+                    toast.success(response?.data?.message || (editingUserId ? 'User updated successfully' : 'User added successfully'));
+                  }
+                } catch (err) {
+                  toast.error(err?.response?.data?.message || (editingUserId ? 'Failed to update user' : 'Failed to add user'));
+                }
               }}
             >
-              Save User
+              {editingUserId ? 'Update User' : 'Save User'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -858,7 +1086,7 @@ const AdminDashboard = () => {
                       {role} access
                     </Typography>
                     <Divider sx={{ mb: 1 }} />
-                    {['dashboard', 'subjects', 'assignments', 'content', 'users', 'reports', 'analytics', 'settings', 'business-settings'].map((module) => (
+                    {['dashboard', 'subjects', 'assignments', 'communications', 'content', 'users', 'reports', 'analytics', 'settings', 'business-settings'].map((module) => (
                       <FormControlLabel
                         key={module}
                         control={

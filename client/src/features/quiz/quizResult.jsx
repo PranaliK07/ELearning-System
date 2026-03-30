@@ -11,7 +11,8 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  LinearProgress
+  LinearProgress,
+  Grid
 } from '@mui/material';
 import {
   CheckCircle,
@@ -22,17 +23,25 @@ import {
   Share
 } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 
 const QuizResult = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { result } = location.state || { result: { score: 0, total: 0, passed: false, answers: [] } };
+  const { result } = location.state || { result: { score: 0, total: 0, passed: false, answers: [], results: [] } };
 
-  const percentage = Math.round((result.score / result.total) * 100);
-  const passed = percentage >= 70;
+  const safeTotal = result.total || 0;
+  const percentage = safeTotal ? Math.round((result.score / safeTotal) * 100) : 0;
+  const passed = result.passed !== undefined ? result.passed : percentage >= 70;
+  const reviewedAnswers = Array.isArray(result.answers) && result.answers.length > 0
+    ? result.answers
+    : (Array.isArray(result.results)
+      ? result.results.map((item) => ({
+          correct: item.correct,
+          selected: item.userAnswer
+        }))
+      : []);
 
   const handleRetry = () => {
     navigate(`/quiz/${quizId}/run`);
@@ -51,24 +60,16 @@ const QuizResult = () => {
       {passed && <Confetti recycle={false} numberOfPieces={200} />}
       
       <Container maxWidth="md">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div>
           <Paper sx={{ p: 4, borderRadius: 4, textAlign: 'center' }}>
             {/* Result Icon */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring' }}
-            >
+            <div>
               {passed ? (
                 <EmojiEvents sx={{ fontSize: 100, color: 'warning.main' }} />
               ) : (
                 <Cancel sx={{ fontSize: 100, color: 'error.main' }} />
               )}
-            </motion.div>
+            </div>
 
             <Typography variant="h3" gutterBottom sx={{ mt: 2 }}>
               {passed ? 'Congratulations! 🎉' : 'Better Luck Next Time! 📚'}
@@ -163,7 +164,7 @@ const QuizResult = () => {
                 Question Review
               </Typography>
               <List>
-                {result.answers?.map((answer, index) => (
+                {reviewedAnswers.map((answer, index) => (
                   <ListItem key={index} sx={{ px: 0 }}>
                     <ListItemIcon>
                       {answer.correct ? (
@@ -216,7 +217,7 @@ const QuizResult = () => {
               </Button>
             </Box>
           </Paper>
-        </motion.div>
+        </div>
       </Container>
     </>
   );

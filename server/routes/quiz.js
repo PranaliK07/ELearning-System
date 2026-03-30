@@ -21,6 +21,7 @@ router.use(protect);
 // Public quiz routes
 router.get('/', getQuizzes);
 router.get('/:id', getQuiz);
+router.get('/:id/questions', getQuiz);
 router.get('/:id/results', getQuizResults);
 router.get('/:id/leaderboard', getQuizLeaderboard);
 router.get('/:id/stats', getQuizStats);

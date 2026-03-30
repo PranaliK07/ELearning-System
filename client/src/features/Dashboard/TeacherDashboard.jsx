@@ -20,7 +20,15 @@ import {
   Avatar,
   TextField,
   InputAdornment,
-  Tooltip
+  Select,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Switch,
+  Divider,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   People,
@@ -33,8 +41,15 @@ import {
   Email,
   Download,
   BarChart,
-  Person
+  Person,
+  ExpandMore,
+  Campaign,
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, TextRun, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -58,6 +73,16 @@ const TeacherDashboard = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const exportOpen = Boolean(exportAnchorEl);
+
+  const handleExportClick = (event) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -85,7 +110,8 @@ const TeacherDashboard = () => {
     }
   };
 
-  const exportData = () => {
+  const exportCSV = () => {
+    handleExportClose();
     const headers = ['Name', 'Email', 'Grade', 'Last Active'];
     const rows = data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]);
     
@@ -99,7 +125,84 @@ const TeacherDashboard = () => {
     link.setAttribute("download", "teacher_data.csv");
     document.body.appendChild(link);
     link.click();
-    toast.success('Data exported successfully');
+    toast.success('Data exported as CSV');
+  };
+
+  const exportExcel = () => {
+    handleExportClose();
+    const exportRows = data.students.map(s => ({
+      'Name': s.name,
+      'Email': s.email,
+      'Grade': s.Grade?.name || 'N/A',
+      'Last Active': new Date(s.updatedAt).toLocaleDateString()
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, "teacher_data.xlsx");
+    toast.success('Data exported as Excel');
+  };
+
+  const exportPDF = () => {
+    handleExportClose();
+    const doc = new jsPDF();
+    doc.text("Students Overview Report", 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['Name', 'Email', 'Grade', 'Last Active']],
+      body: data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]),
+    });
+    doc.save("teacher_data.pdf");
+    toast.success('Data exported as PDF');
+  };
+
+  const exportWord = () => {
+    handleExportClose();
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Students Overview Report",
+                bold: true,
+                size: 32,
+              }),
+            ],
+            spacing: { after: 400 },
+          }),
+          new DocxTable({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            rows: [
+              new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Name", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Email", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Grade", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Last Active", bold: true })] })] }),
+                ],
+              }),
+              ...data.students.map(s => new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph(s.name)] }),
+                  new DocxTableCell({ children: [new Paragraph(s.email)] }),
+                  new DocxTableCell({ children: [new Paragraph(s.Grade?.name || 'N/A')] }),
+                  new DocxTableCell({ children: [new Paragraph(new Date(s.updatedAt).toLocaleDateString())] }),
+                ],
+              })),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      saveAs(blob, "teacher_data.docx");
+      toast.success('Data exported as Word');
+    });
   };
 
   const filteredStudents = data.students.filter(student =>
@@ -184,7 +287,7 @@ const TeacherDashboard = () => {
             Quick Management
           </Typography>
             <Grid container spacing={2}>
-              <Grid item>
+              <Grid item xs={12} sm="auto">
                 <Button
                   variant="contained"
                   startIcon={<Add />}
@@ -193,17 +296,17 @@ const TeacherDashboard = () => {
                   New Lesson
                 </Button>
               </Grid>
-              <Grid item>
+              <Grid item xs={12} sm="auto">
                 <Button
                   variant="outlined"
                   color="primary"
                   startIcon={<Add />}
                   onClick={() => navigate('/topics/manage')}
                 >
-                  Add Topic
+                  Add Subject and Topic
                 </Button>
               </Grid>
-              <Grid item>
+              <Grid item xs={12} sm="auto">
                 <Button
                   variant="outlined"
                   color="secondary"
@@ -213,7 +316,7 @@ const TeacherDashboard = () => {
                 Add Assignment
               </Button>
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm="auto">
               <Button
                 variant="outlined"
                 color="info"
@@ -223,16 +326,37 @@ const TeacherDashboard = () => {
                 View Analytics
               </Button>
             </Grid>
-            <Grid item>
+            <Grid item xs={12} sm="auto">
               <Button
                 variant="outlined"
-                color="success"
-                startIcon={<Download />}
-                onClick={exportData}
+                color="warning"
+                startIcon={<Campaign />}
+                onClick={() => navigate('/class-communication')}
               >
-                Export Data
+                Class Communication
               </Button>
             </Grid>
+              <Grid item xs={12} sm="auto">
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<Download />}
+                  endIcon={<ExpandMore />}
+                  onClick={handleExportClick}
+                >
+                  Export Data
+                </Button>
+                <Menu
+                  anchorEl={exportAnchorEl}
+                  open={exportOpen}
+                  onClose={handleExportClose}
+                >
+                  <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
+                  <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
+                  <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
+                  <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+                </Menu>
+              </Grid>
           </Grid>
         </Paper>
 

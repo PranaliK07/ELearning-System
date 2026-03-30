@@ -15,13 +15,21 @@ import {
   TableRow,
   Button,
   ButtonGroup,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   GetApp,
   People,
   Assignment,
   EmojiEvents,
+  ExpandMore,
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, TextRun, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -53,14 +61,26 @@ const Reports = () => {
   const [reportData, setReportData] = useState({
     summary: {},
     studentProgress: [],
+    classPerformance: [],
     weeklyActivity: [],
     performanceMetrics: {
       avgScore: 0,
       completionRate: '0%',
+      assignmentCompletionRate: '0%',
       totalHours: 0,
     },
   });
   const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleExportClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setAnchorEl(null);
+  };
 
   useEffect(() => {
     fetchReportData();
@@ -96,10 +116,12 @@ const Reports = () => {
       setReportData({
         summary: response.data?.summary || {},
         studentProgress: response.data?.studentProgress || [],
+        classPerformance: response.data?.classPerformance || [],
         weeklyActivity: response.data?.weeklyActivity || [],
         performanceMetrics: response.data?.performanceMetrics || {
           avgScore: 0,
           completionRate: '0%',
+          assignmentCompletionRate: '0%',
           totalHours: 0,
         },
       });
@@ -109,10 +131,12 @@ const Reports = () => {
       setReportData({
         summary: {},
         studentProgress: [],
+        classPerformance: [],
         weeklyActivity: [],
         performanceMetrics: {
           avgScore: 0,
           completionRate: '0%',
+          assignmentCompletionRate: '0%',
           totalHours: 0,
         },
       });
@@ -127,12 +151,14 @@ const Reports = () => {
       { label: 'Videos Watched Today', value: reportData.summary.videosWatchedToday ?? 0 },
       { label: 'Topics Completed Today', value: reportData.summary.topicsCompletedToday ?? 0 },
       { label: 'New Enrollments Today', value: reportData.summary.newEnrollmentsToday ?? 0 },
+      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
     ],
     weekly: [
       { label: 'Total Active Users (Week)', value: reportData.summary.totalActiveUsersThisWeek ?? 0 },
       { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
       { label: 'Average Progress / Student', value: `${reportData.summary.averageProgressPerStudent ?? 0}%` },
       { label: 'Most Active Subject', value: reportData.summary.mostActiveSubject || 'N/A' },
+      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
     ],
     monthly: [
       { label: 'Total Users', value: reportData.summary.totalUsers ?? 0 },
@@ -140,6 +166,7 @@ const Reports = () => {
       { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
       { label: 'Top Performing Students', value: reportData.summary.topPerformingStudents?.length ?? 0 },
       { label: 'Overall Progress', value: `${reportData.summary.overallProgressPercentage ?? 0}%` },
+      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
     ],
   };
 
@@ -180,8 +207,9 @@ const Reports = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['Student Name', 'Score', 'Progress'];
-    const rows = reportData.studentProgress.map(s => [s.name, s.score, s.progress]);
+    handleExportClose();
+    const headers = ['Student Name', 'Class', 'Score', 'Progress', 'Assignment Completion'];
+    const rows = reportData.studentProgress.map(s => [s.name, s.className || 'Unassigned', s.score, s.progress, s.assignmentCompletion ?? 0]);
     let csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + rows.map(e => e.join(",")).join("\n");
@@ -189,10 +217,90 @@ const Reports = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "student_report.csv");
+    link.setAttribute("download", `student_report_${period}.csv`);
     document.body.appendChild(link);
     link.click();
-    toast.success('Report exported successfully');
+    toast.success('CSV Report exported');
+  };
+
+  const exportExcel = () => {
+    handleExportClose();
+    const data = reportData.studentProgress.map(s => ({
+      'Student Name': s.name,
+      'Class': s.className || 'Unassigned',
+      'Score (%)': s.score,
+      'Progress (%)': s.progress,
+      'Assignment Completion (%)': s.assignmentCompletion ?? 0
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, `student_report_${period}.xlsx`);
+    toast.success('Excel Report exported');
+  };
+
+  const exportPDF = () => {
+    handleExportClose();
+    const doc = new jsPDF();
+    doc.text(`Student Performance Report - ${period.toUpperCase()}`, 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['Student Name', 'Class', 'Score (%)', 'Progress (%)', 'Assignment Completion (%)']],
+      body: reportData.studentProgress.map(s => [s.name, s.className || 'Unassigned', `${s.score}%`, `${s.progress}%`, `${s.assignmentCompletion ?? 0}%`]),
+    });
+    doc.save(`student_report_${period}.pdf`);
+    toast.success('PDF Report exported');
+  };
+
+  const exportWord = () => {
+    handleExportClose();
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Student Performance Report - ${period.toUpperCase()}`,
+                bold: true,
+                size: 32,
+              }),
+            ],
+            spacing: { after: 400 },
+          }),
+          new DocxTable({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            rows: [
+              new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Student Name", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Class", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Score", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Progress", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Assignment Completion", bold: true })] })] }),
+                ],
+              }),
+              ...reportData.studentProgress.map(s => new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph(s.name)] }),
+                  new DocxTableCell({ children: [new Paragraph(s.className || 'Unassigned')] }),
+                  new DocxTableCell({ children: [new Paragraph(s.score.toString() + "%")] }),
+                  new DocxTableCell({ children: [new Paragraph(s.progress.toString() + "%")] }),
+                  new DocxTableCell({ children: [new Paragraph((s.assignmentCompletion ?? 0).toString() + "%")] }),
+                ],
+              })),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      saveAs(blob, `student_report_${period}.docx`);
+      toast.success('Word Report exported');
+    });
   };
 
   return (
@@ -218,9 +326,24 @@ const Reports = () => {
               Monthly
             </Button>
           </ButtonGroup>
-          <Button variant="outlined" startIcon={<GetApp />} onClick={exportCSV}>
-            Export CSV
+          <Button 
+            variant="outlined" 
+            startIcon={<GetApp />} 
+            endIcon={<ExpandMore />}
+            onClick={handleExportClick}
+          >
+            Export Report
           </Button>
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleExportClose}
+          >
+            <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
+            <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
+            <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
+            <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+          </Menu>
         </Box>
       </Box>
 
@@ -268,7 +391,12 @@ const Reports = () => {
 
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Typography variant="body2" color="textSecondary">
-          {selectedSummary.slice(3).map((item) => `${item.label}: ${item.value}`).join(' | ') || `Average Score: ${reportData.performanceMetrics.avgScore}% | Completion Rate: ${reportData.performanceMetrics.completionRate} | Total Learning Hours: ${reportData.performanceMetrics.totalHours}h`}
+          {[
+            ...selectedSummary.slice(3).map((item) => `${item.label}: ${item.value}`),
+            reportData.classPerformance.length
+              ? `Top Class: ${reportData.classPerformance[0].className} (${reportData.classPerformance[0].avgScore}% score, ${reportData.classPerformance[0].assignmentCompletion}% assignment completion)`
+              : null
+          ].filter(Boolean).join(' | ') || `Average Score: ${reportData.performanceMetrics.avgScore}% | Completion Rate: ${reportData.performanceMetrics.completionRate} | Assignment Completion: ${reportData.performanceMetrics.assignmentCompletionRate || '0%'} | Total Learning Hours: ${reportData.performanceMetrics.totalHours}h`}
         </Typography>
       </Paper>
 
@@ -297,8 +425,10 @@ const Reports = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Student Name</TableCell>
+                <TableCell align="center">Class</TableCell>
                 <TableCell align="center">Quiz Performance</TableCell>
                 <TableCell align="center">Lessons Completed</TableCell>
+                <TableCell align="center">Assignment Completion</TableCell>
                 <TableCell align="center">Last Active</TableCell>
                 <TableCell align="right">Status</TableCell>
               </TableRow>
@@ -309,8 +439,10 @@ const Reports = () => {
                   <TableCell component="th" scope="row">
                     {row.name}
                   </TableCell>
+                  <TableCell align="center">{row.className || 'Unassigned'}</TableCell>
                   <TableCell align="center">{row.score}%</TableCell>
                   <TableCell align="center">{row.progress}%</TableCell>
+                  <TableCell align="center">{row.assignmentCompletion ?? 0}%</TableCell>
                   <TableCell align="center">{row.lastActive ? new Date(row.lastActive).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell align="right">
                     <Typography color={row.score > 80 ? 'success.main' : 'warning.main'} fontWeight="bold">

@@ -1,0 +1,21 @@
+Executing (default): SELECT 1+1 AS result
+[32minfo[39m: ✅ Database connected successfully {"service":"elearning-api","timestamp":"2026-03-29 12:07:29"}
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Grades' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Grades`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Grades' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `level` `level` INTEGER NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Grades` CHANGE `thumbnail` `thumbnail` VARCHAR(255);
+Executing (default): ALTER TABLE `Grades` CHANGE `icon` `icon` VARCHAR(255) DEFAULT '📚';
+Executing (default): ALTER TABLE `Grades` CHANGE `color` `color` VARCHAR(255) DEFAULT '#3f51b5';
+Executing (default): ALTER TABLE `Grades` CHANGE `order` `order` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Grades` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): SHOW INDEX FROM `Grades`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Users' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Users`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Users' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `email` `email` VARCHAR(255) NOT NULL UNIQUE;
+[31merror[39m: ❌ Unable to connect to database: Too many keys specified; max 64 keys allowed {"name":"SequelizeDatabaseError","original":{"code":"ER_TOO_MANY_KEYS","errno":1069,"sql":"ALTER TABLE `Users` CHANGE `email` `email` VARCHAR(255) NOT NULL UNIQUE;","sqlMessage":"Too many keys specified; max 64 keys allowed","sqlState":"42000"},"parameters":{},"parent":{"code":"ER_TOO_MANY_KEYS","errno":1069,"sql":"ALTER TABLE `Users` CHANGE `email` `email` VARCHAR(255) NOT NULL UNIQUE;","sqlMessage":"Too many keys specified; max 64 keys allowed","sqlState":"42000"},"service":"elearning-api","sql":"ALTER TABLE `Users` CHANGE `email` `email` VARCHAR(255) NOT NULL UNIQUE;","stack":"Error\n    at Query.run (C:\\code\\Elearning1\\server\\node_modules\\sequelize\\lib\\dialects\\mysql\\query.js:52:25)\n    at C:\\code\\Elearning1\\server\\node_modules\\sequelize\\lib\\sequelize.js:315:28\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async User.sync (C:\\code\\Elearning1\\server\\node_modules\\sequelize\\lib\\model.js:984:11)\n    at async Sequelize.sync (C:\\code\\Elearning1\\server\\node_modules\\sequelize\\lib\\sequelize.js:377:9)","timestamp":"2026-03-29 12:07:29"}

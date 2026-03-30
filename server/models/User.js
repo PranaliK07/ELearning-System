@@ -28,8 +28,12 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('student', 'teacher', 'admin'),
+    type: DataTypes.ENUM('student', 'teacher', 'admin', 'parent'),
     defaultValue: 'student'
+  },
+  ParentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
   grade: {
     type: DataTypes.INTEGER,
@@ -116,6 +120,7 @@ User.prototype.getPublicProfile = function() {
     email: this.email,
     role: this.role,
     grade: this.grade,
+    ParentId: this.ParentId,
     avatar: this.avatar,
     bio: this.bio,
     points: this.points,

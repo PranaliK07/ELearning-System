@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Container,
   Paper,
@@ -13,7 +13,8 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  IconButton
+  CircularProgress,
+  LinearProgress
 } from '@mui/material';
 import {
   Edit,
@@ -33,30 +34,90 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { resolveAvatarSrc } from '../../utils/media';
+import axios from '../../utils/axios';
 
 const ProfileView = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { watchTimeStats } = useProgress();
 
-  const stats = user?.role === 'student' ? [
-    { label: 'Total Watch Time', value: `${Math.round((watchTimeStats?.totalWatchTime || 0) / 60)}h`, icon: <AccessTime /> },
-    { label: 'Points Earned', value: user?.points || 0, icon: <Star /> },
-    { label: 'Achievements', value: '12', icon: <EmojiEvents /> },
-    { label: 'Days Active', value: '45', icon: <CalendarToday /> }
-  ] : [
-    { label: 'Students Managed', value: '45', icon: <People /> },
-    { label: 'Assignments Created', value: '24', icon: <AssignmentIcon /> },
-    { label: 'Classes', value: '6', icon: <School /> },
-    { label: 'Days Active', value: '120', icon: <CalendarToday /> }
-  ];
+  const [quickStats, setQuickStats] = useState(null);
+  const [teacherStats, setTeacherStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [loadingRecent, setLoadingRecent] = useState(false);
 
-  const recentActivities = [
-    { activity: 'Completed Mathematics Quiz', score: '85%', date: '2 hours ago' },
-    { activity: 'Watched Introduction to Numbers', duration: '15 min', date: 'Yesterday' },
-    { activity: 'Earned Quick Learner Badge', points: '+10', date: '2 days ago' },
-    { activity: 'Completed Science Lesson', topic: 'Plants', date: '3 days ago' }
-  ];
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchQuickStats = async () => {
+      try {
+        setLoadingStats(true);
+        const response = await axios.get('/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setQuickStats(response.data);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    const fetchTeacherStats = async () => {
+      if (user?.role !== 'teacher') return;
+      try {
+        const response = await axios.get('/api/dashboard/teacher', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTeacherStats(response.data?.stats || null);
+      } catch (error) {
+        console.error('Error fetching teacher dashboard:', error);
+      }
+    };
+
+    const fetchRecentActivity = async () => {
+      try {
+        setLoadingRecent(true);
+        const response = await axios.get('/api/dashboard/recent-activity', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setRecentActivity(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        setRecentActivity([]);
+      } finally {
+        setLoadingRecent(false);
+      }
+    };
+
+    fetchQuickStats();
+    fetchTeacherStats();
+    fetchRecentActivity();
+  }, [token, user?.role]);
+
+  const stats = useMemo(() => {
+    if (user?.role === 'teacher') {
+      return [
+        { label: 'Students Managed', value: teacherStats?.totalStudents ?? '-', icon: <People /> },
+        { label: 'Assignments Created', value: teacherStats?.assignments ?? '-', icon: <AssignmentIcon /> },
+        { label: 'Active Classes', value: teacherStats?.activeClasses ?? '-', icon: <School /> },
+        { label: 'Streak', value: quickStats?.streak ?? user?.streak ?? 0, icon: <CalendarToday /> }
+      ];
+    }
+
+    const resolvedWatchTimeMinutes = quickStats?.watchTime ?? watchTimeStats?.totalWatchTime ?? user?.totalWatchTime ?? 0;
+    const watchTimeHours = Math.round(Number(resolvedWatchTimeMinutes || 0) / 60);
+
+    return [
+      { label: 'Total Watch Time', value: `${watchTimeHours}h`, icon: <AccessTime /> },
+      { label: 'Points Earned', value: quickStats?.points ?? user?.points ?? 0, icon: <Star /> },
+      { label: 'Achievements', value: quickStats?.achievements ?? (user?.Achievements?.length ?? user?.achievements?.length ?? 0), icon: <EmojiEvents /> },
+      { label: 'Completed Lessons', value: quickStats?.completedLessons ?? 0, icon: <TrendingUp /> }
+    ];
+  }, [quickStats, teacherStats, user, watchTimeStats]);
+
+  const achievements = user?.Achievements || user?.achievements || [];
 
   if (!user) {
     return (
@@ -94,7 +155,7 @@ const ProfileView = () => {
                   }}
                   src={resolveAvatarSrc(user?.avatar)}
                 >
-                  {user?.name?.charAt(0).toUpperCase()}
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
                 </Avatar>
               </motion.div>
               
@@ -168,6 +229,8 @@ const ProfileView = () => {
           </Grid>
         </Paper>
 
+        {(loadingStats || loadingRecent) && <LinearProgress sx={{ mb: 2, borderRadius: 2 }} />}
+
         {/* Stats Grid */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           {stats.map((stat, index) => (
@@ -194,93 +257,97 @@ const ProfileView = () => {
           ))}
         </Grid>
 
-        {/* Recent Activity & Progress */}
+        {/* Recent Activity & Achievements */}
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3, borderRadius: 4 }}>
               <Typography variant="h5" gutterBottom>
                 Recent Activity
               </Typography>
-              <List>
-                {recentActivities.map((activity, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem>
-                      <ListItemIcon>
-                        <TrendingUp color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={activity.activity}
-                        secondary={
-                          <Box component="span">
-                            <Typography variant="caption" color="textSecondary">
-                              {activity.score || activity.duration || activity.topic} • {activity.date}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                      {activity.points && (
-                        <Chip
-                          label={activity.points}
-                          size="small"
-                          color="success"
-                        />
-                      )}
-                    </ListItem>
-                    {index < recentActivities.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-              </List>
+
+              {loadingRecent ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : recentActivity.length === 0 ? (
+                <Typography variant="body2" color="textSecondary">
+                  No recent activity yet.
+                </Typography>
+              ) : (
+                <List>
+                  {recentActivity.map((item, index) => {
+                    const title = item?.Content?.title || 'Activity';
+                    const updatedAt = item?.updatedAt ? new Date(item.updatedAt).toLocaleString() : '';
+                    const status = item?.completed ? 'Completed' : 'In progress';
+                    return (
+                      <React.Fragment key={item?.id || index}>
+                        <ListItem>
+                          <ListItemIcon>
+                            <TrendingUp color="primary" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={title}
+                            secondary={
+                              <Typography variant="caption" color="textSecondary">
+                                {status}{updatedAt ? ` • ${updatedAt}` : ''}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                        {index < recentActivity.length - 1 && <Divider />}
+                      </React.Fragment>
+                    );
+                  })}
+                </List>
+              )}
             </Paper>
           </Grid>
 
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3, borderRadius: 4 }}>
               <Typography variant="h5" gutterBottom>
-                Learning Stats
+                Achievements
               </Typography>
-              
-              <Box sx={{ mt: 2 }}>
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Mathematics</Typography>
-                    <Typography variant="body2" fontWeight="bold">75%</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={75} sx={{ height: 8, borderRadius: 4 }} />
-                </Box>
 
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Science</Typography>
-                    <Typography variant="body2" fontWeight="bold">60%</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={60} sx={{ height: 8, borderRadius: 4 }} />
-                </Box>
+              {achievements.length === 0 ? (
+                <Typography variant="body2" color="textSecondary">
+                  No achievements unlocked yet.
+                </Typography>
+              ) : (
+                <List>
+                  {achievements.slice(0, 10).map((achievement, index) => (
+                    <React.Fragment key={achievement?.id || index}>
+                      <ListItem>
+                        <ListItemIcon>
+                          <EmojiEvents color="secondary" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={achievement?.name || 'Achievement'}
+                          secondary={
+                            achievement?.description ? (
+                              <Typography variant="caption" color="textSecondary">
+                                {achievement.description}
+                              </Typography>
+                            ) : null
+                          }
+                        />
+                      </ListItem>
+                      {index < Math.min(achievements.length, 10) - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
 
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">English</Typography>
-                    <Typography variant="body2" fontWeight="bold">85%</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={85} sx={{ height: 8, borderRadius: 4 }} />
-                </Box>
-
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Hindi</Typography>
-                    <Typography variant="body2" fontWeight="bold">45%</Typography>
-                  </Box>
-                  <LinearProgress variant="determinate" value={45} sx={{ height: 8, borderRadius: 4 }} />
-                </Box>
-              </Box>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => navigate('/progress')}
-                sx={{ mt: 2 }}
-              >
-                View Detailed Progress
-              </Button>
+              {user?.role === 'student' && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => navigate('/progress')}
+                  sx={{ mt: 2 }}
+                >
+                  View Detailed Progress
+                </Button>
+              )}
             </Paper>
           </Grid>
         </Grid>
