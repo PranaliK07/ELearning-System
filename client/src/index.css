@@ -36,6 +36,18 @@ svg {
   margin: 16px;
 }
 
+@media (max-width: 600px) {
+  .MuiTableCell-root {
+    padding: 8px;
+  }
+
+  .MuiTableCell-root,
+  .MuiTypography-root {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

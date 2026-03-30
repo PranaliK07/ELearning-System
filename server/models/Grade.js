@@ -10,7 +10,6 @@ const Grade = sequelize.define('Grade', {
   level: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: true,
     validate: {
       min: 1,
       max: 5

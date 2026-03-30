@@ -1,10 +1,10 @@
-const { User, Progress, Content, Assignment, Submission, Grade, Announcement } = require('../models');
+const { User, Progress, Content, Assignment, Submission, Grade, Announcement, Notification, ClassCommunication } = require('../models');
 const { Op } = require('sequelize');
 
 const getMyClasses = async (req, res) => {
   try {
     const classes = await Grade.findAll({
-      include: [{ model: User, where: { role: 'student' }, required: false, attributes: ['id', 'name', 'avatar', 'grade'] }],
+      attributes: ['id', 'name', 'level'],
       order: [['level', 'ASC']]
     });
     res.json(classes);
@@ -208,6 +208,125 @@ const getPendingReviews = async (req, res) => {
   }
 };
 
+const getClassCommunications = async (req, res) => {
+  try {
+    const where = { teacherId: req.user.id };
+    if (req.query.gradeId) {
+      where.gradeId = Number(req.query.gradeId);
+    }
+    if (req.query.audience && ['students', 'parents', 'both'].includes(req.query.audience)) {
+      where.audience = req.query.audience;
+    }
+
+    const communications = await ClassCommunication.findAll({
+      where,
+      include: [
+        { model: Grade, attributes: ['id', 'name', 'level'], required: false }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: req.query.limit ? Math.min(Number(req.query.limit) || 50, 200) : 50
+    });
+
+    res.json(communications);
+  } catch (error) {
+    console.error('Get class communications error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const sendClassCommunication = async (req, res) => {
+  try {
+    const { title, message, audience = 'both', gradeId } = req.body;
+
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ message: 'Message is required' });
+    }
+    if (!['students', 'parents', 'both'].includes(audience)) {
+      return res.status(400).json({ message: 'Invalid audience value' });
+    }
+
+    let grade = null;
+    if (gradeId) {
+      grade = await Grade.findByPk(Number(gradeId));
+      if (!grade) {
+        return res.status(404).json({ message: 'Class not found' });
+      }
+    }
+
+    const studentWhere = { role: 'student', isActive: true };
+    if (grade) {
+      studentWhere[Op.or] = [
+        { GradeId: grade.id },
+        { grade: grade.level }
+      ];
+    }
+
+    const students = await User.findAll({
+      where: studentWhere,
+      attributes: ['id', 'name', 'email', 'ParentId']
+    });
+
+    const recipientIds = new Set();
+    if (audience === 'students' || audience === 'both') {
+      students.forEach((student) => recipientIds.add(student.id));
+    }
+
+    if (audience === 'parents' || audience === 'both') {
+      const parentIds = [...new Set(students.map((student) => student.ParentId).filter(Boolean))];
+      if (parentIds.length) {
+        const parents = await User.findAll({
+          where: {
+            id: { [Op.in]: parentIds },
+            role: 'parent',
+            isActive: true
+          },
+          attributes: ['id']
+        });
+        parents.forEach((parent) => recipientIds.add(parent.id));
+      }
+    }
+
+    const communication = await ClassCommunication.create({
+      title: String(title).trim(),
+      message: String(message).trim(),
+      audience,
+      teacherId: req.user.id,
+      gradeId: grade ? grade.id : null,
+      recipientCount: recipientIds.size
+    });
+
+    const notifications = [...recipientIds].map((recipientId) => ({
+      userId: recipientId,
+      type: 'announcement',
+      title: communication.title,
+      message: communication.message,
+      data: {
+        source: 'class_communication',
+        communicationId: communication.id,
+        audience: communication.audience,
+        class: grade ? grade.name : 'All Classes'
+      }
+    }));
+
+    if (notifications.length) {
+      await Notification.bulkCreate(notifications);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Class communication sent successfully',
+      communication,
+      recipients: notifications.length
+    });
+  } catch (error) {
+    console.error('Send class communication error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getMyClasses,
   getMyStudents,
@@ -218,5 +337,7 @@ module.exports = {
   getClassProgress,
   getSubjectProgress,
   createAnnouncement,
-  getPendingReviews
+  getPendingReviews,
+  getClassCommunications,
+  sendClassCommunication
 };

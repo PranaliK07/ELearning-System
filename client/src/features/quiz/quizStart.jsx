@@ -8,7 +8,8 @@ import {
   Chip,
   Divider,
   Alert,
-  Skeleton
+  Skeleton,
+  Grid
 } from '@mui/material';
 import {
   AccessTime,
@@ -17,8 +18,7 @@ import {
   ArrowForward
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import axios from '../../utils/axios';
 
 const QuizStart = () => {
   const { quizId } = useParams();
@@ -28,22 +28,20 @@ const QuizStart = () => {
   const [bestScore, setBestScore] = useState(null);
 
   useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const response = await axios.get(`/api/quiz/${quizId}`);
+        setQuiz(response.data);
+        setBestScore(response.data.bestScore);
+      } catch (error) {
+        console.error('Error fetching quiz:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchQuiz();
   }, [quizId]);
-
-  const fetchQuiz = async () => {
-    try {
-      const response = await axios.get(`/api/quiz/${quizId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setQuiz(response.data);
-      setBestScore(response.data.bestScore);
-    } catch (error) {
-      console.error('Error fetching quiz:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleStartQuiz = () => {
     navigate(`/quiz/${quizId}/run`);
@@ -62,11 +60,7 @@ const QuizStart = () => {
 
   return (
     <Container maxWidth="md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div>
         <Paper sx={{ p: 4, borderRadius: 4, textAlign: 'center' }}>
           <QuizIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
           
@@ -133,7 +127,7 @@ const QuizStart = () => {
             Start Quiz
           </Button>
         </Paper>
-      </motion.div>
+      </div>
     </Container>
   );
 };

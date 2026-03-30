@@ -1,0 +1,270 @@
+Executing (default): SELECT 1+1 AS result
+[32minfo[39m: ✅ Database connected successfully {"service":"elearning-api","timestamp":"2026-03-29 12:08:05"}
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Grades' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Grades`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Grades' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `level` `level` INTEGER NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Grades` CHANGE `thumbnail` `thumbnail` VARCHAR(255);
+Executing (default): ALTER TABLE `Grades` CHANGE `icon` `icon` VARCHAR(255) DEFAULT '📚';
+Executing (default): ALTER TABLE `Grades` CHANGE `color` `color` VARCHAR(255) DEFAULT '#3f51b5';
+Executing (default): ALTER TABLE `Grades` CHANGE `order` `order` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Grades` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Grades` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): SHOW INDEX FROM `Grades`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Users' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Users`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Users' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `email` `email` VARCHAR(255) NOT NULL UNIQUE;
+Executing (default): ALTER TABLE `Users` CHANGE `password` `password` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `role` `role` ENUM('student', 'teacher', 'admin') DEFAULT 'student';
+Executing (default): ALTER TABLE `Users` CHANGE `grade` `grade` INTEGER;
+Executing (default): ALTER TABLE `Users` CHANGE `avatar` `avatar` VARCHAR(255) DEFAULT 'default-avatar.png';
+Executing (default): ALTER TABLE `Users` CHANGE `bio` `bio` TEXT;
+Executing (default): ALTER TABLE `Users` CHANGE `points` `points` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Users` CHANGE `totalWatchTime` `totalWatchTime` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Users` CHANGE `streak` `streak` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Users` CHANGE `lastActive` `lastActive` DATETIME;
+Executing (default): ALTER TABLE `Users` CHANGE `isActive` `isActive` TINYINT(1) DEFAULT true;
+Executing (default): ALTER TABLE `Users` CHANGE `emailVerified` `emailVerified` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Users` CHANGE `verificationToken` `verificationToken` VARCHAR(255);
+Executing (default): ALTER TABLE `Users` CHANGE `resetPasswordToken` `resetPasswordToken` VARCHAR(255);
+Executing (default): ALTER TABLE `Users` CHANGE `resetPasswordExpire` `resetPasswordExpire` DATETIME;
+Executing (default): ALTER TABLE `Users` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Users` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Users` ADD FOREIGN KEY (`GradeId`) REFERENCES `Grades` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Users`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Subjects' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Subjects`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Subjects' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Subjects` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Subjects` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Subjects` CHANGE `icon` `icon` VARCHAR(255) DEFAULT '📖';
+Executing (default): ALTER TABLE `Subjects` CHANGE `color` `color` VARCHAR(255) DEFAULT '#3f51b5';
+Executing (default): ALTER TABLE `Subjects` CHANGE `order` `order` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Subjects` CHANGE `isActive` `isActive` TINYINT(1) DEFAULT true;
+Executing (default): ALTER TABLE `Subjects` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Subjects` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Subjects` ADD FOREIGN KEY (`GradeId`) REFERENCES `Grades` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Subjects`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Topics' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Topics`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Topics' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Topics` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Topics` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Topics` CHANGE `thumbnail` `thumbnail` VARCHAR(255);
+Executing (default): ALTER TABLE `Topics` CHANGE `order` `order` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Topics` CHANGE `isActive` `isActive` TINYINT(1) DEFAULT true;
+Executing (default): ALTER TABLE `Topics` CHANGE `estimatedTime` `estimatedTime` INTEGER DEFAULT 30;
+Executing (default): ALTER TABLE `Topics` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Topics` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Topics` ADD FOREIGN KEY (`SubjectId`) REFERENCES `Subjects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Topics`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Contents' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Contents`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Contents' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Contents` CHANGE `title` `title` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Contents` CHANGE `type` `type` ENUM('video', 'reading', 'quiz', 'activity') NOT NULL;
+Executing (default): ALTER TABLE `Contents` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Contents` CHANGE `videoUrl` `videoUrl` VARCHAR(255);
+Executing (default): ALTER TABLE `Contents` CHANGE `videoFile` `videoFile` VARCHAR(255);
+Executing (default): ALTER TABLE `Contents` CHANGE `thumbnail` `thumbnail` VARCHAR(255);
+Executing (default): ALTER TABLE `Contents` CHANGE `readingMaterial` `readingMaterial` TEXT;
+Executing (default): ALTER TABLE `Contents` CHANGE `duration` `duration` INTEGER DEFAULT 0 COMMENT 'Duration in minutes';
+Executing (default): ALTER TABLE `Contents` CHANGE `isPremium` `isPremium` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Contents` CHANGE `isPublished` `isPublished` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Contents` CHANGE `views` `views` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Contents` CHANGE `likes` `likes` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Contents` CHANGE `order` `order` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Contents` CHANGE `tags` `tags` TEXT;
+Executing (default): ALTER TABLE `Contents` CHANGE `metadata` `metadata` TEXT;
+Executing (default): ALTER TABLE `Contents` ADD FOREIGN KEY (`createdBy`) REFERENCES `Users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Contents` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Contents` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Contents` ADD FOREIGN KEY (`TopicId`) REFERENCES `Topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Contents` ADD FOREIGN KEY (`GradeId`) REFERENCES `Grades` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Contents` ADD FOREIGN KEY (`SubjectId`) REFERENCES `Subjects` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Contents`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Quizzes' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Quizzes`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Quizzes' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `title` `title` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `questions` `questions` JSON NOT NULL;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `timeLimit` `timeLimit` INTEGER DEFAULT 10 COMMENT 'Time limit in minutes';
+Executing (default): ALTER TABLE `Quizzes` CHANGE `passingScore` `passingScore` INTEGER DEFAULT 70;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `maxAttempts` `maxAttempts` INTEGER DEFAULT 3;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `attempts` `attempts` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `avgScore` `avgScore` FLOAT DEFAULT 0;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `isPublished` `isPublished` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Quizzes` ADD FOREIGN KEY (`createdBy`) REFERENCES `Users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Quizzes` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Quizzes` ADD FOREIGN KEY (`TopicId`) REFERENCES `Topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Quizzes`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Progresses' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Progresses`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Progresses' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Progresses` CHANGE `watchTime` `watchTime` INTEGER DEFAULT 0 COMMENT 'Watch time in seconds';
+Executing (default): ALTER TABLE `Progresses` CHANGE `lastWatched` `lastWatched` DATETIME;
+Executing (default): ALTER TABLE `Progresses` CHANGE `completed` `completed` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Progresses` CHANGE `completedAt` `completedAt` DATETIME;
+Executing (default): ALTER TABLE `Progresses` CHANGE `quizScore` `quizScore` INTEGER;
+Executing (default): ALTER TABLE `Progresses` CHANGE `quizAttempts` `quizAttempts` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Progresses` CHANGE `quizPassed` `quizPassed` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Progresses` CHANGE `lastQuizAttempt` `lastQuizAttempt` DATETIME;
+Executing (default): ALTER TABLE `Progresses` CHANGE `notes` `notes` TEXT;
+Executing (default): ALTER TABLE `Progresses` CHANGE `bookmarked` `bookmarked` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Progresses` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Progresses` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Progresses` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Progresses` ADD FOREIGN KEY (`ContentId`) REFERENCES `Contents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Progresses` ADD FOREIGN KEY (`QuizId`) REFERENCES `Quizzes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Progresses`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Achievements' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Achievements`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Achievements' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Achievements` CHANGE `name` `name` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Achievements` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Achievements` CHANGE `icon` `icon` VARCHAR(255) DEFAULT '🏆';
+Executing (default): ALTER TABLE `Achievements` CHANGE `badgeImage` `badgeImage` VARCHAR(255);
+Executing (default): ALTER TABLE `Achievements` CHANGE `criteria` `criteria` TEXT NOT NULL;
+Executing (default): ALTER TABLE `Achievements` CHANGE `points` `points` INTEGER DEFAULT 10;
+Executing (default): ALTER TABLE `Achievements` CHANGE `category` `category` ENUM('watch', 'quiz', 'streak', 'social', 'special') DEFAULT 'watch';
+Executing (default): ALTER TABLE `Achievements` CHANGE `rarity` `rarity` ENUM('common', 'rare', 'epic', 'legendary') DEFAULT 'common';
+Executing (default): ALTER TABLE `Achievements` CHANGE `isHidden` `isHidden` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Achievements` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Achievements` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): SHOW INDEX FROM `Achievements`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'WatchTimes' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `WatchTimes`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'WatchTimes' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `WatchTimes` CHANGE `date` `date` DATE;
+Executing (default): ALTER TABLE `WatchTimes` CHANGE `minutes` `minutes` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `WatchTimes` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `WatchTimes` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `WatchTimes` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `WatchTimes` ADD FOREIGN KEY (`ContentId`) REFERENCES `Contents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `WatchTimes`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Announcements' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Announcements`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Announcements' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Announcements` CHANGE `title` `title` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Announcements` CHANGE `content` `content` TEXT NOT NULL;
+Executing (default): ALTER TABLE `Announcements` CHANGE `priority` `priority` ENUM('low', 'medium', 'high') DEFAULT 'medium';
+Executing (default): ALTER TABLE `Announcements` CHANGE `targetRole` `targetRole` ENUM('all', 'students', 'teachers', 'admins') DEFAULT 'all';
+Executing (default): ALTER TABLE `Announcements` CHANGE `targetGrades` `targetGrades` JSON;
+Executing (default): ALTER TABLE `Announcements` CHANGE `pinned` `pinned` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Announcements` CHANGE `expiresAt` `expiresAt` DATETIME;
+Executing (default): ALTER TABLE `Announcements` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Announcements` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Announcements` ADD FOREIGN KEY (`authorId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Announcements`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Comments' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Comments`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Comments' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Comments` CHANGE `text` `text` TEXT NOT NULL;
+Executing (default): ALTER TABLE `Comments` CHANGE `likes` `likes` INTEGER DEFAULT 0;
+Executing (default): ALTER TABLE `Comments` ADD FOREIGN KEY (`parentId`) REFERENCES `Comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Comments` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Comments` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Comments` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Comments` ADD FOREIGN KEY (`ContentId`) REFERENCES `Contents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Comments`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Likes' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Likes`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Likes' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Likes` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Likes` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Likes` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Likes` ADD FOREIGN KEY (`ContentId`) REFERENCES `Contents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Likes`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Bookmarks' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Bookmarks`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Bookmarks' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Bookmarks` CHANGE `note` `note` VARCHAR(255);
+Executing (default): ALTER TABLE `Bookmarks` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Bookmarks` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Bookmarks` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Bookmarks` ADD FOREIGN KEY (`ContentId`) REFERENCES `Contents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Bookmarks`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Notifications' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Notifications`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Notifications' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Notifications` CHANGE `type` `type` ENUM('achievement', 'quiz_result', 'comment', 'like', 'announcement', 'reminder') NOT NULL;
+Executing (default): ALTER TABLE `Notifications` CHANGE `title` `title` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Notifications` CHANGE `message` `message` TEXT NOT NULL;
+Executing (default): ALTER TABLE `Notifications` CHANGE `data` `data` TEXT;
+Executing (default): ALTER TABLE `Notifications` CHANGE `isRead` `isRead` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Notifications` CHANGE `isDeleted` `isDeleted` TINYINT(1) DEFAULT false;
+Executing (default): ALTER TABLE `Notifications` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Notifications` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Notifications` ADD FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Notifications` ADD FOREIGN KEY (`senderId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Notifications`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Assignments' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Assignments`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Assignments' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Assignments` CHANGE `title` `title` VARCHAR(255) NOT NULL;
+Executing (default): ALTER TABLE `Assignments` CHANGE `description` `description` TEXT;
+Executing (default): ALTER TABLE `Assignments` CHANGE `dueDate` `dueDate` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Assignments` CHANGE `status` `status` ENUM('active', 'draft', 'closed') DEFAULT 'active';
+Executing (default): ALTER TABLE `Assignments` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Assignments` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Assignments` ADD FOREIGN KEY (`teacherId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Assignments` ADD FOREIGN KEY (`subjectId`) REFERENCES `Subjects` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Assignments` ADD FOREIGN KEY (`gradeId`) REFERENCES `Grades` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Assignments`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'Submissions' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `Submissions`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'Submissions' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `Submissions` CHANGE `content` `content` TEXT;
+Executing (default): ALTER TABLE `Submissions` CHANGE `fileUrl` `fileUrl` VARCHAR(255);
+Executing (default): ALTER TABLE `Submissions` CHANGE `grade` `grade` INTEGER;
+Executing (default): ALTER TABLE `Submissions` CHANGE `feedback` `feedback` TEXT;
+Executing (default): ALTER TABLE `Submissions` CHANGE `submittedAt` `submittedAt` DATETIME;
+Executing (default): ALTER TABLE `Submissions` CHANGE `status` `status` ENUM('submitted', 'graded', 'late') DEFAULT 'submitted';
+Executing (default): ALTER TABLE `Submissions` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Submissions` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `Submissions` ADD FOREIGN KEY (`assignmentId`) REFERENCES `Assignments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+Executing (default): ALTER TABLE `Submissions` ADD FOREIGN KEY (`studentId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+Executing (default): SHOW INDEX FROM `Submissions`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'RoleAccesses' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `RoleAccesses`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'RoleAccesses' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `RoleAccesses` CHANGE `role` `role` ENUM('admin', 'teacher', 'student') NOT NULL UNIQUE;
+Executing (default): ALTER TABLE `RoleAccesses` CHANGE `modules` `modules` JSON NOT NULL;
+Executing (default): ALTER TABLE `RoleAccesses` CHANGE `version` `version` INTEGER NOT NULL DEFAULT 1;
+Executing (default): ALTER TABLE `RoleAccesses` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `RoleAccesses` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): SHOW INDEX FROM `RoleAccesses`
+Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'UserAchievements' AND TABLE_SCHEMA = 'learning_db'
+Executing (default): SHOW FULL COLUMNS FROM `UserAchievements`;
+Executing (default): SELECT CONSTRAINT_NAME as constraint_name,CONSTRAINT_NAME as constraintName,CONSTRAINT_SCHEMA as constraintSchema,CONSTRAINT_SCHEMA as constraintCatalog,TABLE_NAME as tableName,TABLE_SCHEMA as tableSchema,TABLE_SCHEMA as tableCatalog,COLUMN_NAME as columnName,REFERENCED_TABLE_SCHEMA as referencedTableSchema,REFERENCED_TABLE_SCHEMA as referencedTableCatalog,REFERENCED_TABLE_NAME as referencedTableName,REFERENCED_COLUMN_NAME as referencedColumnName FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE where TABLE_NAME = 'UserAchievements' AND CONSTRAINT_NAME!='PRIMARY' AND CONSTRAINT_SCHEMA='learning_db' AND REFERENCED_TABLE_NAME IS NOT NULL;
+Executing (default): ALTER TABLE `UserAchievements` CHANGE `createdAt` `createdAt` DATETIME NOT NULL;
+Executing (default): ALTER TABLE `UserAchievements` CHANGE `updatedAt` `updatedAt` DATETIME NOT NULL;
+Executing (default): SHOW INDEX FROM `UserAchievements`
+node:events:485
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (C:\code\Elearning1\server\node_modules\express\lib\application.js:635:24)
+    at C:\code\Elearning1\server\server.js:116:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v24.4.1

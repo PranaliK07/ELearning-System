@@ -8,6 +8,8 @@ const {
   getUserAnalytics,
   getContentAnalytics,
   getPlatformMetrics,
+  getClassCommunications,
+  sendClassCommunication,
   manageUser,
   manageContent,
   createAnnouncement,
@@ -17,6 +19,7 @@ const {
   backupDatabase,
   restoreDatabase
 } = require('../controllers/adminController');
+const { createUser, linkParent } = require('../controllers/userController');
 
 router.use(protect);
 
@@ -33,8 +36,14 @@ router.get('/analytics/users', getUserAnalytics);
 router.get('/analytics/content', getContentAnalytics);
 router.get('/metrics', getPlatformMetrics);
 
+// Class communication (admin)
+router.get('/communications', getClassCommunications);
+router.post('/communications', sendClassCommunication);
+
 // User management
 router.post('/users/:id/manage', manageUser);
+router.post('/users', createUser);
+router.patch('/users/:id/link-parent', linkParent);
 
 // Content management
 router.post('/content/:id/manage', manageContent);

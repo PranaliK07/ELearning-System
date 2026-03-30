@@ -1,5 +1,6 @@
 const { User, Progress, Achievement, Grade } = require('../models');
 const { Op } = require('sequelize');
+const crypto = require('crypto');
 
 const getUsers = async (req, res) => {
   try {
@@ -18,7 +19,10 @@ const getUsers = async (req, res) => {
     const users = await User.findAndCountAll({
       where,
       attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken'] },
-      include: [{ model: Grade }],
+      include: [
+        { model: Grade },
+        { model: User, as: 'parent', attributes: ['id', 'name', 'email'], required: false }
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']]
@@ -42,7 +46,9 @@ const getUser = async (req, res) => {
       attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken'] },
       include: [
         { model: Grade },
-        { model: Achievement }
+        { model: Achievement },
+        { model: User, as: 'parent', attributes: ['id', 'name', 'email'], required: false },
+        { model: User, as: 'children', attributes: ['id', 'name', 'email', 'role'], required: false }
       ]
     });
 
@@ -57,9 +63,127 @@ const getUser = async (req, res) => {
   }
 };
 
+const createUser = async (req, res) => {
+  try {
+    const { name, email, role = 'student', grade, isActive, studentEmail, studentId } = req.body;
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const normalizedRole = String(role).trim().toLowerCase();
+    const allowedRoles = new Set(['student', 'teacher', 'admin', 'parent']);
+    if (!allowedRoles.has(normalizedRole)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    let existing = await User.findOne({ where: { email: String(email).trim().toLowerCase() } });
+
+    if (normalizedRole === 'parent' && existing && (studentEmail || studentId)) {
+      let student = null;
+      if (studentId) {
+        student = await User.findByPk(studentId);
+      } else if (studentEmail) {
+        student = await User.findOne({ where: { email: String(studentEmail).trim().toLowerCase(), role: 'student' } });
+      }
+
+      if (!student || student.role !== 'student') {
+        return res.status(404).json({ message: 'Student not found to link parent' });
+      }
+
+      student.ParentId = existing.id;
+      await student.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Existing parent linked to student successfully',
+        user: existing.getPublicProfile(),
+        linkedStudent: { id: student.id, name: student.name, email: student.email }
+      });
+    }
+
+    if (existing) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const temporaryPassword = crypto.randomBytes(6).toString('hex');
+    const user = await User.create({
+      name: String(name).trim(),
+      email: String(email).trim().toLowerCase(),
+      password: temporaryPassword,
+      role: normalizedRole,
+      grade: grade || null,
+      isActive: isActive === undefined ? true : Boolean(isActive)
+    });
+
+    if (normalizedRole === 'parent' && (studentEmail || studentId)) {
+      let student = null;
+      if (studentId) {
+        student = await User.findByPk(studentId);
+      } else if (studentEmail) {
+        student = await User.findOne({ where: { email: String(studentEmail).trim().toLowerCase(), role: 'student' } });
+      }
+
+      if (student && student.role === 'student') {
+        student.ParentId = user.id;
+        await student.save();
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      temporaryPassword,
+      user: user.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const linkParent = async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const { parentId, parentEmail } = req.body;
+
+    const student = await User.findByPk(studentId);
+    if (!student || student.role !== 'student') {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    let parent = null;
+    if (parentId) {
+      parent = await User.findByPk(parentId);
+    } else if (parentEmail) {
+      parent = await User.findOne({ where: { email: String(parentEmail).trim().toLowerCase(), role: 'parent' } });
+    }
+
+    if (!parent || parent.role !== 'parent') {
+      return res.status(404).json({ message: 'Parent not found' });
+    }
+
+    student.ParentId = parent.id;
+    await student.save();
+
+    return res.json({
+      success: true,
+      message: 'Parent linked successfully',
+      student: { id: student.id, name: student.name, email: student.email },
+      parent: { id: parent.id, name: parent.name, email: parent.email }
+    });
+  } catch (error) {
+    console.error('Link parent error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
-    const { name, role, grade, isActive } = req.body;
+    const { name, email, role, grade, isActive, parentEmail, parentId, clearParent } = req.body;
     const user = await User.findByPk(req.params.id);
 
     if (!user) {
@@ -67,9 +191,38 @@ const updateUser = async (req, res) => {
     }
 
     if (name) user.name = name;
+    if (email && String(email).trim().toLowerCase() !== user.email) {
+      const exists = await User.findOne({
+        where: {
+          email: String(email).trim().toLowerCase(),
+          id: { [Op.ne]: user.id }
+        }
+      });
+      if (exists) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+      user.email = String(email).trim().toLowerCase();
+    }
     if (role) user.role = role;
-    if (grade) user.grade = grade;
+    if (grade !== undefined) user.grade = grade;
     if (isActive !== undefined) user.isActive = isActive;
+
+    if (clearParent) {
+      user.ParentId = null;
+    } else if (parentId || parentEmail) {
+      let parent = null;
+      if (parentId) {
+        parent = await User.findByPk(parentId);
+      } else if (parentEmail) {
+        parent = await User.findOne({
+          where: { email: String(parentEmail).trim().toLowerCase(), role: 'parent' }
+        });
+      }
+      if (!parent || parent.role !== 'parent') {
+        return res.status(404).json({ message: 'Parent not found' });
+      }
+      user.ParentId = parent.id;
+    }
 
     await user.save();
 
@@ -224,6 +377,7 @@ const getStudents = async (req, res) => {
 };
 
 module.exports = {
+  createUser,
   getUsers,
   getUser,
   updateUser,
@@ -232,6 +386,7 @@ module.exports = {
   getUserProgress,
   getUserAchievements,
   toggleUserStatus,
+  linkParent,
   getTeachers,
   getStudents
 };

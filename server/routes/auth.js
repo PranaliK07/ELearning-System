@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const { uploadAvatar, optimizeImage, handleUploadError } = require('../middleware/upload');
 const {
   register,
   login,
@@ -25,7 +26,16 @@ router.get('/verify-email/:token', verifyEmail);
 
 // Protected routes
 router.get('/me', protect, getMe);
-router.put('/profile', protect, validate.profileUpdate, validate.handleValidationErrors, updateProfile);
+router.put(
+  '/profile',
+  protect,
+  uploadAvatar.single('avatar'),
+  optimizeImage,
+  handleUploadError,
+  validate.profileUpdate,
+  validate.handleValidationErrors,
+  updateProfile
+);
 router.post('/change-password', protect, changePassword);
 router.post('/logout', protect, logout);
 

@@ -137,7 +137,7 @@ const EditProfile = () => {
                     borderColor: 'primary.main'
                   }}
                 >
-                  {user?.name?.charAt(0).toUpperCase()}
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
                 </Avatar>
                 <IconButton
                   color="primary"

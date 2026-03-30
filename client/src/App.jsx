@@ -30,12 +30,14 @@ import ProfileView from './features/profile/ProfileView';
 import EditProfile from './features/profile/EditProfile';
 import InstagramFeed from './features/feed/InstagramFeed';
 import ContentManagement from './features/admin/ContentManagement';
+import UserManagement from './features/admin/UserManagement';
+import ContentOverview from './features/admin/ContentOverview';
 import AssignmentManagement from './features/teacher/AssignmentManagement';
 import Reports from './features/teacher/Reports';
 import SubmissionsList from './features/teacher/SubmissionsList';
 import StudentAssignmentView from './features/teacher/StudentAssignmentView';
 import TopicManager from './features/teacher/TopicManager';
-import HomeworkList from './features/homework/HomeworkList';
+import ClassCommunication from './features/teacher/ClassCommunication';
 import NotFound from './features/NotFound';
 
 
@@ -157,6 +159,18 @@ function App() {
                     <Route path="feed" element={<InstagramFeed />} />
 
                     {/* Admin/Teacher routes */}
+                    <Route path="admin/users" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <UserManagement />
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="admin/content" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <ContentOverview />
+                      </ProtectedRoute>
+                    } />
+
                     <Route path="content/create" element={
                       <ProtectedRoute roles={['admin', 'teacher']}>
                         <ContentManagement />
@@ -190,6 +204,12 @@ function App() {
                     <Route path="topics/manage" element={
                       <ProtectedRoute roles={['teacher', 'admin']}>
                         <TopicManager />
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="class-communication" element={
+                      <ProtectedRoute roles={['teacher', 'admin']}>
+                        <ClassCommunication />
                       </ProtectedRoute>
                     } />
 

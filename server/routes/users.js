@@ -5,6 +5,7 @@ const roleCheck = require('../middleware/roleCheck');
 const validate = require('../middleware/validate');
 const {
   getUsers,
+  createUser,
   getUser,
   updateUser,
   deleteUser,
@@ -12,6 +13,7 @@ const {
   getUserProgress,
   getUserAchievements,
   toggleUserStatus,
+  linkParent,
   getTeachers,
   getStudents
 } = require('../controllers/userController');
@@ -28,9 +30,11 @@ router.get('/achievements/:id', getUserAchievements);
 
 // Admin only routes
 router.get('/', authorize('admin'), getUsers);
+router.post('/', authorize('admin'), createUser);
 router.get('/:id', authorize('admin'), getUser);
 router.put('/:id', authorize('admin'), validate.profileUpdate, validate.handleValidationErrors, updateUser);
 router.delete('/:id', authorize('admin'), deleteUser);
 router.patch('/:id/status', authorize('admin'), toggleUserStatus);
+router.patch('/:id/link-parent', authorize('admin'), linkParent);
 
 module.exports = router;

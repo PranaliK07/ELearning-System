@@ -85,7 +85,8 @@ const validate = {
       .optional()
       .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
     body('grade')
-      .optional(),
+      .optional({ nullable: true, checkFalsy: true })
+      .isInt({ min: 1, max: 5 }).withMessage('Grade must be between 1 and 5'),
     body('bio')
       .optional()
       .isLength({ max: 500 }).withMessage('Bio too long')

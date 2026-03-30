@@ -153,17 +153,19 @@ const updateProfile = async (req, res) => {
     const { name, grade, bio, parentPhone, parentEmail } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    if (name) user.name = name;
-    if (grade) user.grade = grade;
-    if (bio) user.bio = bio;
-    if (parentPhone !== undefined) user.parentPhone = parentPhone || null;
-    if (parentEmail !== undefined) user.parentEmail = parentEmail || null;
+    if (typeof name === 'string' && name.length > 0) user.name = name;
 
-    if (user.role === 'student') {
-      if (!user.parentPhone || !user.parentEmail) {
-        return res.status(400).json({ message: 'Parent phone and email are required for students' });
+    if (grade !== undefined) {
+      const trimmedGrade = typeof grade === 'string' ? grade.trim() : grade;
+      if (trimmedGrade === '' || trimmedGrade === null) {
+        user.grade = null;
+      } else {
+        const parsedGrade = Number.parseInt(trimmedGrade, 10);
+        user.grade = Number.isNaN(parsedGrade) ? user.grade : parsedGrade;
       }
     }
+
+    if (typeof bio === 'string') user.bio = bio;
 
     // Handle avatar upload
     if (req.file) {
@@ -172,10 +174,17 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
-    res.json({
-      success: true,
-      user: user.getPublicProfile()
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken'] },
+      include: [
+        {
+          model: Achievement,
+          through: { attributes: [] }
+        }
+      ]
     });
+
+    res.json(updatedUser);
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });

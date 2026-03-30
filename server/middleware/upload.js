@@ -38,10 +38,10 @@ const videoStorage = multer.diskStorage({
 // Image storage (thumbnails, avatars, badges)
 const imageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const type = req.body.type || 'general';
-    if (type === 'avatar') {
+    const type = req.body.type || file.fieldname || 'general';
+    if (type === 'avatar' || file.fieldname === 'avatar') {
       cb(null, './uploads/avatars/');
-    } else if (type === 'badge') {
+    } else if (type === 'badge' || file.fieldname === 'badge') {
       cb(null, './uploads/badges/');
     } else {
       cb(null, './uploads/thumbnails/');
@@ -50,7 +50,7 @@ const imageStorage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    const type = req.body.type || 'img';
+    const type = req.body.type || file.fieldname || 'img';
     cb(null, `${type}-${uniqueSuffix}${ext}`);
   }
 });
@@ -129,10 +129,16 @@ const optimizeImage = async (req, res, next) => {
     const filePath = req.file.path;
     const optimizedPath = filePath.replace(/(\.[^.]+)$/, '-optimized$1');
 
-    await sharp(filePath)
-      .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toFile(optimizedPath);
+    const ext = path.extname(filePath).toLowerCase();
+    const pipeline = sharp(filePath).resize(800, 600, { fit: 'inside', withoutEnlargement: true });
+
+    if (ext === '.png') {
+      await pipeline.png({ quality: 80 }).toFile(optimizedPath);
+    } else if (ext === '.webp') {
+      await pipeline.webp({ quality: 80 }).toFile(optimizedPath);
+    } else {
+      await pipeline.jpeg({ quality: 80 }).toFile(optimizedPath);
+    }
 
     // Replace original with optimized
     fs.unlinkSync(filePath);

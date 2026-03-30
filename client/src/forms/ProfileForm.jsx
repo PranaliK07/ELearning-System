@@ -111,7 +111,7 @@ const ProfileForm = ({
                   borderColor: 'primary.main'
                 }}
               >
-                {formData.name?.charAt(0).toUpperCase()}
+                {formData.name?.charAt(0)?.toUpperCase() || 'U'}
               </Avatar>
               <IconButton
                 color="primary"

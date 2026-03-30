@@ -137,7 +137,7 @@ const MainLayout = () => {
                 border: '2px solid white'
               }}
             >
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Avatar>
           </IconButton>
 
