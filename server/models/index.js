@@ -2,6 +2,7 @@ const User = require('./User');
 const Grade = require('./Grade');
 const Subject = require('./Subject');
 const Topic = require('./Topic');
+const Lesson = require('./Lesson');
 const Content = require('./Content');
 const Quiz = require('./Quiz');
 const Progress = require('./Progress');
@@ -30,6 +31,16 @@ Topic.hasMany(Content, { onDelete: 'CASCADE' });
 Content.belongsTo(Topic);
 Topic.hasMany(Quiz, { onDelete: 'CASCADE' });
 Quiz.belongsTo(Topic);
+Topic.hasMany(Lesson, { onDelete: 'CASCADE' });
+Lesson.belongsTo(Topic);
+
+// Lesson Associations
+Lesson.hasMany(Content, { onDelete: 'CASCADE' });
+Content.belongsTo(Lesson);
+Lesson.hasMany(Quiz, { onDelete: 'CASCADE' });
+Quiz.belongsTo(Lesson);
+Lesson.hasMany(Assignment, { onDelete: 'CASCADE' });
+Assignment.belongsTo(Lesson);
 
 // User Associations
 User.belongsTo(Grade);
@@ -57,6 +68,12 @@ Content.belongsTo(Grade, { foreignKey: 'GradeId' });
 Content.belongsTo(Subject, { foreignKey: 'SubjectId' });
 Grade.hasMany(Content, { foreignKey: 'GradeId' });
 Subject.hasMany(Content, { foreignKey: 'SubjectId' });
+
+// Lesson grade/subject associations
+Lesson.belongsTo(Grade, { foreignKey: 'GradeId' });
+Lesson.belongsTo(Subject, { foreignKey: 'SubjectId' });
+Grade.hasMany(Lesson, { foreignKey: 'GradeId' });
+Subject.hasMany(Lesson, { foreignKey: 'SubjectId' });
 
 // Quiz Associations
 Quiz.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
@@ -113,6 +130,7 @@ module.exports = {
   Grade,
   Subject,
   Topic,
+  Lesson,
   Content,
   Quiz,
   Progress,

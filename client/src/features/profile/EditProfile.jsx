@@ -29,7 +29,9 @@ const EditProfile = () => {
     name: user?.name || '',
     email: user?.email || '',
     grade: user?.grade || '',
-    avatar: null
+    avatar: null,
+    parentPhone: user?.parentPhone || '',
+    parentEmail: user?.parentEmail || ''
   });
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -85,6 +87,8 @@ const EditProfile = () => {
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('grade', formData.grade);
+      formDataToSend.append('parentPhone', formData.parentPhone);
+      formDataToSend.append('parentEmail', formData.parentEmail);
       if (formData.avatar) {
         formDataToSend.append('avatar', formData.avatar);
       }
@@ -229,6 +233,34 @@ const EditProfile = () => {
               <MenuItem value={4}>Class 4</MenuItem>
               <MenuItem value={5}>Class 5</MenuItem>
             </TextField>
+
+            {user?.role === 'student' && (
+              <TextField
+                fullWidth
+                label="Parent Mobile"
+                name="parentPhone"
+                value={formData.parentPhone}
+                onChange={handleChange}
+                margin="normal"
+                variant="outlined"
+                placeholder="+1 555 123 4567"
+                required
+              />
+            )}
+
+            {user?.role === 'student' && (
+              <TextField
+                fullWidth
+                label="Parent Email"
+                name="parentEmail"
+                value={formData.parentEmail}
+                onChange={handleChange}
+                margin="normal"
+                variant="outlined"
+                placeholder="parent@example.com"
+                required
+              />
+            )}
 
             <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
               <Button

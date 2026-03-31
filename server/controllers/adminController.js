@@ -6,12 +6,16 @@ const { exec } = require('child_process');
 const allowedModules = [
   'dashboard',
   'subjects',
+<<<<<<< HEAD
   'play',
   'progress',
   'achievements',
   'profile',
   'new-lesson',
   'subject-topic',
+=======
+  'homework',
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
   'assignments',
   'communications',
   'content',
@@ -87,6 +91,11 @@ const getRoleAccess = async (req, res) => {
     roles.forEach(role => {
       if (!sanitized[role]) sanitized[role] = defaultRoleAccess[role] || [];
     });
+
+    // Backward-compat: ensure students can see homework in sidebar
+    if (sanitized.student && !sanitized.student.includes('homework')) {
+      sanitized.student = [...sanitized.student, 'homework'];
+    }
 
     res.json(sanitized);
   } catch (error) {

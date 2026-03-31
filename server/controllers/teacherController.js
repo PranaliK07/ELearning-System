@@ -57,13 +57,14 @@ const getStudentDetails = async (req, res) => {
 
 const createAssignment = async (req, res) => {
   try {
-    const { title, description, dueDate, subjectId, gradeId } = req.body;
+    const { title, description, dueDate, subjectId, gradeId, lessonId } = req.body;
     const assignment = await Assignment.create({
       title,
       description,
       dueDate,
       subjectId,
       gradeId,
+      lessonId: lessonId || null,
       teacherId: req.user.id
     });
 

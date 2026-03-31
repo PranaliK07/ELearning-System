@@ -38,16 +38,21 @@ import { useState, useEffect } from 'react';
 import { resolveAvatarSrc } from '../../utils/media';
 
 const drawerWidth = 240;
+const appBarHeights = { xs: 56, sm: 64 };
 
 const configuredModules = new Set([
   'dashboard',
   'subjects',
+<<<<<<< HEAD
   'play',
   'progress',
   'achievements',
   'profile',
   'new-lesson',
   'subject-topic',
+=======
+  'homework',
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
   'assignments',
   'communications',
   'content',
@@ -90,7 +95,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return () => window.removeEventListener('roleAccessUpdated', handler);
   }, []);
 
-  // Sync sidebar permissions from server once per session
   useEffect(() => {
     const syncAccess = async () => {
       try {
@@ -131,8 +135,18 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
     { key: 'reports-issues', text: 'Reports & Issues', icon: <ReportsIcon />, path: '/admin/reports' },
     { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
+<<<<<<< HEAD
     { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
+=======
+    { key: 'content', text: 'Content', icon: <StudyIcon />, path: '/content/create' },
+    { key: 'play', text: 'Quize', icon: <PlayIcon />, path: '/play' },
+    { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
+    { key: 'achievements', text: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
+    { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
+    { key: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/profile/edit' },
+    { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/dashboard?tab=business' },
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
   ];
 
   const isSelected = (item) => {
@@ -146,7 +160,12 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   };
 
   const displayItems = items.filter(({ key }) => {
-    // If the module is part of configuredModules, show only if allowed. Otherwise leave unchanged.
+    if (role === 'student' && key === 'assignments') {
+      return false;
+    }
+    if (role === 'student' && key === 'homework') {
+      return true;
+    }
     if (configuredModules.has(key)) {
       return allowed.has(key);
     }
@@ -170,7 +189,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const drawer = (
     <div>
       <Toolbar>
-        <Box sx={{ textAlign: 'center', width: '100%' }}>
+        <Box
+          sx={{ textAlign: 'center', width: '100%', cursor: 'pointer' }}
+          onClick={() => {
+            navigate('/profile');
+            if (mobileOpen) handleDrawerToggle();
+          }}
+        >
           <Avatar
             sx={{
               width: 80,
@@ -197,7 +222,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       <Divider />
       <List>
         {displayItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.key} disablePadding>
             <ListItemButton
               selected={isSelected(item)}
               onClick={() => {
@@ -265,11 +290,16 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
         }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            mt: `${appBarHeights.xs}px`,
+            height: `calc(100% - ${appBarHeights.xs}px)`
+          },
         }}
       >
         {drawer}
@@ -278,7 +308,12 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            mt: `${appBarHeights.sm}px`,
+            height: `calc(100% - ${appBarHeights.sm}px)`
+          },
         }}
         open
       >

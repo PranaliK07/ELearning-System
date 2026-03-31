@@ -18,6 +18,16 @@ const validate = {
       .isIn(['student', 'teacher']).withMessage('Role must be either student or teacher'),
     body('grade')
       .optional()
+    ,
+    body('parentPhone')
+      .if(body('role').equals('student'))
+      .notEmpty().withMessage('Parent phone is required for students')
+      .isLength({ min: 7, max: 20 }).withMessage('Parent phone must be between 7 and 20 characters')
+    ,
+    body('parentEmail')
+      .if(body('role').equals('student'))
+      .notEmpty().withMessage('Parent email is required for students')
+      .isEmail().withMessage('Parent email must be valid')
   ],
 
   // Login validation
@@ -80,6 +90,14 @@ const validate = {
     body('bio')
       .optional()
       .isLength({ max: 500 }).withMessage('Bio too long')
+    ,
+    body('parentPhone')
+      .optional()
+      .isLength({ min: 7, max: 20 }).withMessage('Parent phone must be between 7 and 20 characters')
+    ,
+    body('parentEmail')
+      .optional()
+      .isEmail().withMessage('Parent email must be valid')
   ],
 
   // Grade validation

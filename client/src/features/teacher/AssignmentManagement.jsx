@@ -162,8 +162,8 @@ const AssignmentManagement = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2, flexWrap: 'wrap' }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>Assignments Management</Typography>
-          <Typography variant="body1" color="textSecondary">Create and manage assignments for your students</Typography>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>Assignments</Typography>
+          <Typography variant="body1" color="textSecondary">Create and manage assignments</Typography>
         </Box>
         <Button variant="contained" startIcon={<Add />} onClick={openCreate}>New Assignment</Button>
       </Box>
@@ -178,6 +178,7 @@ const AssignmentManagement = () => {
                 <TableCell sx={{ color: 'white' }}>Grade</TableCell>
                 <TableCell sx={{ color: 'white' }}>Due Date</TableCell>
                 <TableCell sx={{ color: 'white' }}>Status</TableCell>
+                <TableCell sx={{ color: 'white' }}>Submissions</TableCell>
                 <TableCell align="right" sx={{ color: 'white' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -189,7 +190,18 @@ const AssignmentManagement = () => {
                     <TableCell>{assignment.Subject?.name || '-'}</TableCell>
                     <TableCell>{assignment.Grade?.name || '-'}</TableCell>
                     <TableCell>{assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : '-'}</TableCell>
-                    <TableCell><Chip label={assignment.status || 'active'} size="small" color={assignment.status === 'active' ? 'success' : 'default'} /></TableCell>
+                    <TableCell>
+                      <Chip
+                        label={(assignment.Submissions?.length || 0) > 0 ? 'Completed' : 'Pending'}
+                        size="small"
+                        color={(assignment.Submissions?.length || 0) > 0 ? 'success' : 'warning'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {assignment.Submissions?.length || 0}
+                      </Typography>
+                    </TableCell>
                     <TableCell align="right">
                       <Tooltip title="View Submissions">
                         <IconButton color="primary" onClick={() => navigate(`/assignments/${assignment.id}/submissions`)}><Visibility /></IconButton>
@@ -205,7 +217,7 @@ const AssignmentManagement = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                     <Assignment sx={{ fontSize: 64, color: 'divider', mb: 2 }} />
                     <Typography variant="h6" color="textSecondary">No assignments found</Typography>
                     <Button variant="text" onClick={openCreate} sx={{ mt: 1 }}>Create your first assignment</Button>

@@ -1,7 +1,53 @@
 const express = require('express');
 const router = express.Router();
-const { Assignment, Submission, User, Subject, Grade } = require('../models');
+const { Assignment, Submission, User, Subject, Grade, Lesson, Notification } = require('../models');
 const { protect, authorize } = require('../middleware/auth');
+const { Op } = require('sequelize');
+const { sendParentNotification } = require('../utils/parentNotifier');
+
+const notifyParentForOverdue = async (assignments, user) => {
+  if (!user?.parentEmail || !Array.isArray(assignments)) return;
+
+  const now = new Date();
+  const overdueAssignments = assignments.filter((assignment) => {
+    const dueDate = new Date(assignment.dueDate);
+    const submission = assignment.Submissions?.[0];
+    return !submission && now - dueDate >= 24 * 60 * 60 * 1000;
+  });
+
+  for (const assignment of overdueAssignments) {
+    const existing = await Notification.findOne({
+      where: {
+        userId: user.id,
+        type: 'reminder',
+        isDeleted: false,
+        data: {
+          [Op.like]: `%\"assignmentId\":${assignment.id}%`
+        }
+      }
+    });
+
+    if (existing) continue;
+
+    const message = `${user.name} has not completed "${assignment.title}" within 24 hours of the due time.`;
+    await Notification.create({
+      userId: user.id,
+      type: 'reminder',
+      title: 'Assignment overdue (24h)',
+      message,
+      data: {
+        assignmentId: assignment.id,
+        kind: 'overdue_24h'
+      }
+    });
+
+    await sendParentNotification({
+      email: user.parentEmail,
+      message,
+      subject: 'Assignment overdue reminder'
+    });
+  }
+};
 
 const ALLOWED_STATUSES = new Set(['active', 'draft', 'closed']);
 
@@ -75,13 +121,27 @@ router.get('/', protect, async (req, res) => {
 
     const assignments = await Assignment.findAll({
       where,
-      include: [
+      include: req.user.role === 'student' ? [
         { model: Subject, attributes: ['name'] },
         { model: Grade, attributes: ['name'] },
-        { model: User, as: 'teacher', attributes: ['name'] }
+        { model: Lesson, attributes: ['id', 'title'] },
+        { model: User, as: 'teacher', attributes: ['name'] },
+        { model: Submission, where: { studentId: req.user.id }, required: false }
+      ] : [
+        { model: Subject, attributes: ['name'] },
+        { model: Grade, attributes: ['name'] },
+        { model: Lesson, attributes: ['id', 'title'] },
+        { model: User, as: 'teacher', attributes: ['name'] },
+        { model: Submission, attributes: ['id', 'studentId'], required: false }
       ],
       order: [['dueDate', 'ASC']]
     });
+    if (req.user.role === 'student') {
+      notifyParentForOverdue(assignments, req.user).catch((error) => {
+        console.error('Parent notification error:', error);
+      });
+    }
+
     res.json(assignments);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -95,6 +155,7 @@ router.get('/:id', protect, async (req, res) => {
       include: [
         { model: Subject, attributes: ['id', 'name'] },
         { model: Grade, attributes: ['id', 'name', 'level'] },
+        { model: Lesson, attributes: ['id', 'title'] },
         { model: User, as: 'teacher', attributes: ['id', 'name'] }
       ]
     });

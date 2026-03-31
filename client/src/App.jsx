@@ -17,6 +17,7 @@ import LandingPage from './features/landing/LandingPage';
 import GradeSelect from './features/study/GradeSelect';
 import SubjectSelect from './features/study/SubjectSelect';
 import TopicList from './features/study/TopicList';
+import TopicContent from './features/study/TopicContent';
 import VideoView from './features/play/VideoView';
 import PlayHub from './features/play/PlayHub';
 import GamePage from './features/play/GamePage';
@@ -158,8 +159,8 @@ function App() {
                       <Route index element={<GradeSelect />} />
                       <Route path="grade/:gradeId" element={<SubjectSelect />} />
                       <Route path="subject/:subjectId" element={<TopicList />} />
+                      <Route path="topic/:topicId" element={<TopicContent />} />
                       <Route path="content/:contentId" element={<LessonContent />} />
-                      <Route path="topic/:contentId" element={<LessonContent />} />
                     </Route>
 
                     <Route path="feed" element={<InstagramFeed />} />
@@ -293,6 +294,11 @@ function App() {
                       <Route path=":quizId/run" element={<QuizRunner />} />
                       <Route path=":quizId/result" element={<QuizResult />} />
                     </Route>
+                    <Route path="homework" element={
+                      <ProtectedRoute roles={['student']}>
+                        <HomeworkList />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Achievements */}
                     <Route path="achievements" element={<AchievementsPage />} />

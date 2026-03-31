@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import api from '../utils/axios';
 
 const notificationContext = createContext();
 
@@ -17,6 +18,64 @@ export const NotificationProvider = ({ children }) => {
     message: '',
     severity: 'info'
   });
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/api/notifications/unread/count');
+      setUnreadCount(res.data?.count ?? 0);
+    } catch (error) {
+      console.error('Fetch unread count error:', error);
+    }
+  }, []);
+
+  const fetchNotifications = useCallback(async (limit = 10) => {
+    setLoadingNotifications(true);
+    try {
+      const res = await api.get('/api/notifications', { params: { limit } });
+      setNotifications(res.data?.notifications ?? []);
+      if (typeof res.data?.unreadCount === 'number') {
+        setUnreadCount(res.data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Fetch notifications error:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  }, []);
+
+  const markAsRead = useCallback(async (id) => {
+    try {
+      await api.put(`/api/notifications/${id}/read`);
+      setNotifications(prev => prev.map((n) => (
+        n.id === id ? { ...n, isRead: true } : n
+      )));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Mark notification as read error:', error);
+    }
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await api.put('/api/notifications/read-all');
+      setNotifications(prev => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Mark all notifications as read error:', error);
+    }
+  }, []);
+
+  const deleteNotification = useCallback(async (id) => {
+    try {
+      await api.delete(`/api/notifications/${id}`);
+      setNotifications(prev => prev.filter((n) => n.id !== id));
+    } catch (error) {
+      console.error('Delete notification error:', error);
+    }
+  }, []);
 
   const showNotification = (message, severity = 'info') => {
     setNotification({
@@ -35,13 +94,27 @@ export const NotificationProvider = ({ children }) => {
   const showWarning = (message) => showNotification(message, 'warning');
   const showInfo = (message) => showNotification(message, 'info');
 
+  useEffect(() => {
+    fetchUnreadCount();
+    const intervalId = setInterval(fetchUnreadCount, 20000);
+    return () => clearInterval(intervalId);
+  }, [fetchUnreadCount]);
+
   return (
     <notificationContext.Provider value={{
       showNotification,
       showSuccess,
       showError,
       showWarning,
-      showInfo
+      showInfo,
+      notifications,
+      unreadCount,
+      loadingNotifications,
+      fetchNotifications,
+      fetchUnreadCount,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification
     }}>
       {children}
       <Snackbar

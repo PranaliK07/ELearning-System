@@ -7,28 +7,54 @@ import {
   LinearProgress,
   Chip
 } from '@mui/material';
+import {
+  Calculate,
+  MenuBook,
+  Science,
+  Language,
+  Public,
+  EmojiObjects
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
 const SubjectCard = ({ subject, progress, onClick, index }) => {
   const getIcon = (name) => {
-    switch(name.toLowerCase()) {
-      case 'mathematics': return '🔢';
-      case 'english': return '📖';
-      case 'science': return '🔬';
-      case 'hindi': return '🇮🇳';
-      case 'environmental studies': return '🌍';
-      default: return '📚';
+    const key = name.toLowerCase();
+    switch (key) {
+      case 'mathematics':
+      case 'math':
+        return <Calculate sx={{ fontSize: 56, color: 'white' }} />;
+      case 'english':
+        return <MenuBook sx={{ fontSize: 56, color: 'white' }} />;
+      case 'science':
+        return <Science sx={{ fontSize: 56, color: 'white' }} />;
+      case 'hindi':
+        return <Language sx={{ fontSize: 56, color: 'white' }} />;
+      case 'environmental studies':
+      case 'evs':
+        return <Public sx={{ fontSize: 56, color: 'white' }} />;
+      default:
+        return <EmojiObjects sx={{ fontSize: 56, color: 'white' }} />;
     }
   };
 
   const getColor = (name) => {
-    switch(name.toLowerCase()) {
-      case 'mathematics': return '#FF6B6B';
-      case 'english': return '#4ECDC4';
-      case 'science': return '#45B7D1';
-      case 'hindi': return '#96CEB4';
-      case 'environmental studies': return '#FFEAA7';
-      default: return '#3f51b5';
+    const key = name.toLowerCase();
+    switch (key) {
+      case 'mathematics':
+      case 'math':
+        return '#FF8B94';
+      case 'english':
+        return '#9AE3D7';
+      case 'science':
+        return '#89CFF0';
+      case 'hindi':
+        return '#B8E994';
+      case 'environmental studies':
+      case 'evs':
+        return '#FFE08A';
+      default:
+        return '#9BB5FF';
     }
   };
 
@@ -55,18 +81,16 @@ const SubjectCard = ({ subject, progress, onClick, index }) => {
       >
         <Box
           sx={{
-            height: 100,
+            height: 110,
             backgroundColor: getColor(subject.name),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}
         >
-          <Typography variant="h2" component="div">
-            {getIcon(subject.name)}
-          </Typography>
+          {getIcon(subject.name)}
         </Box>
-        
+
         <CardContent>
           <Typography
             gutterBottom
@@ -76,7 +100,7 @@ const SubjectCard = ({ subject, progress, onClick, index }) => {
           >
             {subject.name}
           </Typography>
-          
+
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="textSecondary">
@@ -105,19 +129,16 @@ const SubjectCard = ({ subject, progress, onClick, index }) => {
             <Chip
               label={`${subject.topicCount || 8} Topics`}
               size="small"
-              icon={<span>📚</span>}
               variant="outlined"
             />
             <Chip
               label={`${subject.videoCount || 12} Videos`}
               size="small"
-              icon={<span>🎥</span>}
               variant="outlined"
             />
             <Chip
               label={`${subject.quizCount || 5} Quizzes`}
               size="small"
-              icon={<span>📝</span>}
               variant="outlined"
             />
           </Box>
