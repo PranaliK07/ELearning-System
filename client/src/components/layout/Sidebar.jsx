@@ -17,6 +17,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Dashboard as DashboardIcon,
   MenuBook as StudyIcon,
+  Source as ContentOverviewIcon,
   PlayCircle as PlayIcon,
   Timeline as ProgressIcon,
   EmojiEvents as AchievementsIcon,
@@ -27,7 +28,9 @@ import {
   Campaign as CampaignIcon,
   Settings as SettingsIcon,
   Tune as BusinessSettingsIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Add as AddIcon,
+  AccountTree as TopicManagerIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/axios';
@@ -40,21 +43,30 @@ const appBarHeights = { xs: 56, sm: 64 };
 const configuredModules = new Set([
   'dashboard',
   'subjects',
+<<<<<<< HEAD
+  'play',
+  'progress',
+  'achievements',
+  'profile',
+  'new-lesson',
+  'subject-topic',
+=======
   'homework',
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
   'assignments',
   'communications',
   'content',
   'users',
   'reports',
-  'analytics',
+  'reports-issues',
   'settings',
   'business-settings'
 ]);
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'communications', 'business-settings']),
-  teacher: new Set(['dashboard', 'subjects', 'assignments', 'reports', 'communications']),
-  student: new Set(['dashboard', 'subjects', 'assignments'])
+  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'communications', 'business-settings']),
+  teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'reports', 'communications']),
+  student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'assignments'])
 };
 
 const loadRoleAccess = () => {
@@ -111,15 +123,22 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const items = [
     { key: 'dashboard', text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { key: 'users', text: 'User Management', icon: <ProfileIcon />, path: '/admin/users' },
-    { key: 'content', text: 'Content Overview', icon: <StudyIcon />, path: '/admin/content' },
+    { key: 'content', text: 'Content Overview', icon: <ContentOverviewIcon />, path: '/admin/content' },
     { key: 'subjects', text: 'Study', icon: <StudyIcon />, path: '/study' },
+    { key: 'new-lesson', text: 'New Lesson', icon: <AddIcon />, path: '/content/create' },
+    { key: 'subject-topic', text: 'Subject & Topic', icon: <TopicManagerIcon />, path: '/topics/manage' },
     { key: 'play', text: 'Play', icon: <PlayIcon />, path: '/play' },
     { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
     { key: 'achievements', text: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
     { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
     { key: 'assignments', text: 'Assignments', icon: <AssignmentIcon />, path: '/assignments/create' },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
+    { key: 'reports-issues', text: 'Reports & Issues', icon: <ReportsIcon />, path: '/admin/reports' },
     { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
+<<<<<<< HEAD
+    { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
+    { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
+=======
     { key: 'content', text: 'Content', icon: <StudyIcon />, path: '/content/create' },
     { key: 'play', text: 'Quize', icon: <PlayIcon />, path: '/play' },
     { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
@@ -127,6 +146,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { key: 'profile', text: 'Profile', icon: <ProfileIcon />, path: '/profile' },
     { key: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/profile/edit' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/dashboard?tab=business' },
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
   ];
 
   const isSelected = (item) => {
@@ -152,7 +172,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return true;
   }).filter(({ key }) => {
     // Basic role guards: students don't see teacher/admin only links when not allowed
-    if (key === 'assignments' || key === 'reports' || key === 'content' || key === 'business-settings' || key === 'communications') {
+    if (key === 'assignments' || key === 'reports' || key === 'reports-issues' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications') {
       return role === 'teacher' || role === 'admin' || allowed.has(key);
     }
     return true;

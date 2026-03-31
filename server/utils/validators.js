@@ -7,7 +7,7 @@ const validatePassword = (password) => {
   // At least 6 characters, 1 letter, 1 number
   const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
   return re.test(password);
-};
+};                                                                        
 
 const validatePhone = (phone) => {
   const re = /^\+?[\d\s-]{10,}$/;

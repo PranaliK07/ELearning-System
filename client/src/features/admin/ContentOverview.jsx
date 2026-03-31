@@ -19,7 +19,7 @@ import {
   Card,
   CardContent
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, Source as ContentOverviewIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
@@ -85,7 +85,10 @@ const ContentOverview = () => {
     <Container maxWidth="lg">
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">Content Management</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <ContentOverviewIcon color="primary" />
+            <Typography variant="h6">Content Management</Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -252,4 +255,3 @@ const ContentOverview = () => {
 };
 
 export default ContentOverview;
-

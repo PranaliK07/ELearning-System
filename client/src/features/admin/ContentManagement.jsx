@@ -30,6 +30,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
+import {
+    validateImageFile,
+    validateRequiredText,
+    validateSelectRequired,
+    validateVideoFile
+} from '../../utils/validation';
 
 const ContentManagement = () => {
     const navigate = useNavigate();
@@ -61,6 +67,8 @@ const ContentManagement = () => {
         name: '',
         description: ''
     });
+    const [errors, setErrors] = useState({});
+    const [topicErrors, setTopicErrors] = useState({});
 
     useEffect(() => {
         fetchGrades();
@@ -116,16 +124,31 @@ const ContentManagement = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (errors[e.target.name]) {
+            setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+        }
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (e.target.name === 'video') {
+            const fileError = file ? validateVideoFile(file) : '';
+            if (fileError) {
+                setErrors((prev) => ({ ...prev, video: fileError }));
+                return;
+            }
             setVideoFile(file);
             setVideoPreview(URL.createObjectURL(file));
+            setErrors((prev) => ({ ...prev, video: '' }));
         } else {
+            const fileError = validateImageFile(file, 'Thumbnail');
+            if (fileError) {
+                setErrors((prev) => ({ ...prev, thumbnail: fileError }));
+                return;
+            }
             setThumbnailFile(file);
             setThumbnailPreview(URL.createObjectURL(file));
+            setErrors((prev) => ({ ...prev, thumbnail: '' }));
         }
     };
 
@@ -134,7 +157,9 @@ const ContentManagement = () => {
             return toast.error('Select a subject first');
         }
         if (!newTopic.name.trim()) {
-            return toast.error('Topic name is required');
+            const nameError = validateRequiredText(newTopic.name, 'Topic name', 2);
+            setTopicErrors({ name: nameError });
+            return toast.error(nameError);
         }
         try {
             const payload = {
@@ -149,6 +174,7 @@ const ContentManagement = () => {
             setFormData((prev) => ({ ...prev, topicId: res.data.topic?.id || '' }));
             setTopicDialogOpen(false);
             setNewTopic({ name: '', description: '' });
+            setTopicErrors({});
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.message || 'Failed to create topic');
@@ -234,8 +260,25 @@ const ContentManagement = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!videoFile && formData.type === 'video') {
-            return toast.error('Please select a video file');
+        const nextErrors = {};
+        const titleError = validateRequiredText(formData.title, 'Title', 2);
+        const typeError = validateSelectRequired(formData.type, 'Content type');
+        const gradeError = validateSelectRequired(formData.gradeId, 'Class');
+        const subjectError = validateSelectRequired(formData.subjectId, 'Subject');
+        const topicError = validateSelectRequired(formData.topicId, 'Topic');
+        if (titleError) nextErrors.title = titleError;
+        if (typeError) nextErrors.type = typeError;
+        if (gradeError) nextErrors.gradeId = gradeError;
+        if (subjectError) nextErrors.subjectId = subjectError;
+        if (topicError) nextErrors.topicId = topicError;
+        if (formData.type === 'video') {
+            const videoError = validateVideoFile(videoFile);
+            if (videoError) nextErrors.video = videoError;
+        }
+        setErrors(nextErrors);
+        if (Object.keys(nextErrors).length > 0) {
+            toast.error('Please fix the highlighted fields');
+            return;
         }
 
         try {
@@ -327,6 +370,8 @@ const ContentManagement = () => {
                                 name="title"
                                 value={formData.title}
                                 onChange={handleChange}
+                                error={!!errors.title}
+                                helperText={errors.title}
                                 required
                             />
                         </Grid>
@@ -339,6 +384,8 @@ const ContentManagement = () => {
                                 name="type"
                                 value={formData.type}
                                 onChange={handleChange}
+                                error={!!errors.type}
+                                helperText={errors.type}
                                 required
                             >
                                 <MenuItem value="video">Video Lesson</MenuItem>
@@ -355,6 +402,8 @@ const ContentManagement = () => {
                                 name="gradeId"
                                 value={formData.gradeId}
                                 onChange={handleChange}
+                                error={!!errors.gradeId}
+                                helperText={errors.gradeId}
                                 required
                             >
                                 {grades.map((g) => (
@@ -372,6 +421,8 @@ const ContentManagement = () => {
                             value={formData.subjectId}
                             onChange={handleChange}
                             disabled={!formData.gradeId || subjectsLoading}
+                            error={!!errors.subjectId}
+                            helperText={errors.subjectId}
                             required
                         >
                             {subjects.map((s) => (
@@ -389,6 +440,8 @@ const ContentManagement = () => {
                                 value={formData.topicId}
                                 onChange={handleChange}
                                 disabled={!formData.subjectId || topicsLoading}
+                                error={!!errors.topicId}
+                                helperText={errors.topicId}
                                 required
                             >
                                 {topics.map((t) => (
@@ -445,7 +498,10 @@ const ContentManagement = () => {
                                         <Box>
                                             <Movie sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
                                             <Typography>{videoFile.name}</Typography>
-                                            <Button size="small" color="error" onClick={() => setVideoPreview(null)}>Remove</Button>
+                                            <Button size="small" color="error" onClick={() => {
+                                                setVideoPreview(null);
+                                                setVideoFile(null);
+                                            }}>Remove</Button>
                                         </Box>
                                     ) : (
                                         <Box>
@@ -453,6 +509,11 @@ const ContentManagement = () => {
                                             <Typography>Click or drag video file to upload</Typography>
                                             <Typography variant="caption" color="textSecondary">Max size: 100MB</Typography>
                                         </Box>
+                                    )}
+                                    {errors.video && (
+                                        <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+                                            {errors.video}
+                                        </Typography>
                                     )}
                                 </Box>
                             </Grid>
@@ -473,7 +534,10 @@ const ContentManagement = () => {
                                             <IconButton
                                                 size="small"
                                                 sx={{ position: 'absolute', top: 5, right: 5, bgcolor: 'rgba(0,0,0,0.5)', color: 'white' }}
-                                                onClick={() => setThumbnailPreview(null)}
+                                                onClick={() => {
+                                                    setThumbnailPreview(null);
+                                                    setThumbnailFile(null);
+                                                }}
                                             >
                                                 <Delete fontSize="small" />
                                             </IconButton>
@@ -504,6 +568,11 @@ const ContentManagement = () => {
                                         <input type="file" hidden accept="image/*" name="thumbnail" onChange={handleFileChange} />
                                     </Button>
                                 </Grid>
+                                {errors.thumbnail && (
+                                    <Grid item xs={12}>
+                                        <Typography variant="caption" color="error">{errors.thumbnail}</Typography>
+                                    </Grid>
+                                )}
                             </Grid>
                         </Grid>
 
@@ -539,8 +608,13 @@ const ContentManagement = () => {
                     <TextField
                         label="Topic Name"
                         value={newTopic.name}
-                        onChange={(e) => setNewTopic({ ...newTopic, name: e.target.value })}
+                        onChange={(e) => {
+                            setNewTopic({ ...newTopic, name: e.target.value });
+                            setTopicErrors((prev) => ({ ...prev, name: '' }));
+                        }}
                         autoFocus
+                        error={!!topicErrors.name}
+                        helperText={topicErrors.name}
                     />
                     <TextField
                         label="Description"

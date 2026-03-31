@@ -13,6 +13,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { validateEmail, validatePassword } from '../../utils/validation';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,14 +46,10 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    if (emailError) newErrors.email = emailError;
+    if (passwordError) newErrors.password = passwordError;
     return newErrors;
   };
 

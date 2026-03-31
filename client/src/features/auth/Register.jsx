@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Container,
   Paper,
@@ -17,6 +17,12 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import {
+  validateEmail,
+  validateName,
+  validatePassword,
+  validateSelectRequired
+} from '../../utils/validation';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -56,23 +62,17 @@ const Register = () => {
     const newErrors = {};
     
     if (activeStep === 0) {
-      if (!formData.name) {
-        newErrors.name = 'Name is required';
-      } else if (formData.name.length < 2) {
-        newErrors.name = 'Name must be at least 2 characters';
-      }
+      const nameError = validateName(formData.name, 'Full name');
+      if (nameError) newErrors.name = nameError;
     }
     
     if (activeStep === 1) {
-      if (!formData.email) {
-        newErrors.email = 'Email is required';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email is invalid';
-      }
-      if (!formData.password) {
-        newErrors.password = 'Password is required';
-      } else if (formData.password.length < 6) {
-        newErrors.password = 'Password must be at least 6 characters';
+      const emailError = validateEmail(formData.email);
+      const passwordError = validatePassword(formData.password);
+      if (emailError) newErrors.email = emailError;
+      if (passwordError) newErrors.password = passwordError;
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Confirm password is required';
       }
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
@@ -80,8 +80,9 @@ const Register = () => {
     }
     
     if (activeStep === 2) {
-      if (!formData.grade && formData.role === 'student') {
-        newErrors.grade = 'Grade is required for students';
+      if (formData.role === 'student') {
+        const gradeError = validateSelectRequired(formData.grade, 'Grade');
+        if (gradeError) newErrors.grade = gradeError;
       }
       if (formData.role === 'student') {
         if (!formData.parentPhone) {
@@ -406,3 +407,7 @@ const Register = () => {
 };
 
 export default Register;
+<<<<<<< HEAD
+
+=======
+>>>>>>> 5c863f60ec7451a05e25a15d2175040663ab0e24
