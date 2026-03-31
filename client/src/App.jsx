@@ -43,6 +43,10 @@ import StudentAssignmentView from './features/teacher/StudentAssignmentView';
 import TopicManager from './features/teacher/TopicManager';
 import ClassCommunication from './features/teacher/ClassCommunication';
 import NotFound from './features/NotFound';
+import LandingPage from './features/LandingPage';
+import HomeworkList from './features/homework/HomeworkList';
+import AboutPage from './features/AboutPage';
+import ContactPage from './features/ContactPage';
 
 
 
@@ -133,6 +137,8 @@ function App() {
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<LandingPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
 
