@@ -25,6 +25,7 @@ import { Campaign, Send } from '@mui/icons-material';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { validateRequiredText } from '../../utils/validation';
 
 const ClassCommunication = () => {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ const ClassCommunication = () => {
   const [communications, setCommunications] = useState([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [filters, setFilters] = useState({
     gradeId: '',
@@ -122,8 +124,14 @@ const ClassCommunication = () => {
   }, [communications, filters.search]);
 
   const handleSend = async () => {
-    if (!form.title.trim() || !form.message.trim()) {
-      toast.error('Title and message are required');
+    const nextErrors = {};
+    const titleError = validateRequiredText(form.title, 'Title', 2);
+    const messageError = validateRequiredText(form.message, 'Message', 5);
+    if (titleError) nextErrors.title = titleError;
+    if (messageError) nextErrors.message = messageError;
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error('Please fix the highlighted fields');
       return;
     }
 
@@ -237,7 +245,12 @@ const ClassCommunication = () => {
                     fullWidth
                     label="Title"
                     value={form.title}
-                    onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((prev) => ({ ...prev, title: e.target.value }));
+                      setErrors((prev) => ({ ...prev, title: '' }));
+                    }}
+                    error={!!errors.title}
+                    helperText={errors.title}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -247,7 +260,12 @@ const ClassCommunication = () => {
                     minRows={5}
                     label="Message"
                     value={form.message}
-                    onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((prev) => ({ ...prev, message: e.target.value }));
+                      setErrors((prev) => ({ ...prev, message: '' }));
+                    }}
+                    error={!!errors.message}
+                    helperText={errors.message}
                   />
                 </Grid>
                 <Grid item xs={12}>

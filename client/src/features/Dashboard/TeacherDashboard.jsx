@@ -35,15 +35,12 @@ import {
   School,
   Assignment as AssignmentIcon,
   TrendingUp,
-  Add,
   Search,
   MoreVert,
   Email,
   Download,
-  BarChart,
   Person,
   ExpandMore,
-  Campaign,
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -284,79 +281,30 @@ const TeacherDashboard = () => {
         {/* Quick Actions */}
         <Paper sx={{ p: 3, borderRadius: 3, mb: 4, boxShadow: 2 }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Quick Management
+            Export Data
           </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm="auto">
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={() => navigate('/content/create')}
-                >
-                  New Lesson
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm="auto">
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<Add />}
-                  onClick={() => navigate('/topics/manage')}
-                >
-                  Add Subject and Topic
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm="auto">
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  startIcon={<AssignmentIcon />}
-                  onClick={() => navigate('/assignments/create')}
-                >
-                Add Assignment
-              </Button>
-            </Grid>
+          <Grid container spacing={2}>
             <Grid item xs={12} sm="auto">
               <Button
                 variant="outlined"
-                color="info"
-                startIcon={<BarChart />}
-                onClick={() => navigate('/reports')}
+                color="success"
+                startIcon={<Download />}
+                endIcon={<ExpandMore />}
+                onClick={handleExportClick}
               >
-                View Analytics
+                Export Data
               </Button>
-            </Grid>
-            <Grid item xs={12} sm="auto">
-              <Button
-                variant="outlined"
-                color="warning"
-                startIcon={<Campaign />}
-                onClick={() => navigate('/class-communication')}
+              <Menu
+                anchorEl={exportAnchorEl}
+                open={exportOpen}
+                onClose={handleExportClose}
               >
-                Class Communication
-              </Button>
+                <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
+                <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
+                <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
+                <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+              </Menu>
             </Grid>
-              <Grid item xs={12} sm="auto">
-                <Button
-                  variant="outlined"
-                  color="success"
-                  startIcon={<Download />}
-                  endIcon={<ExpandMore />}
-                  onClick={handleExportClick}
-                >
-                  Export Data
-                </Button>
-                <Menu
-                  anchorEl={exportAnchorEl}
-                  open={exportOpen}
-                  onClose={handleExportClose}
-                >
-                  <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
-                  <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
-                  <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
-                  <MenuItem onClick={exportWord}>Export as Word</MenuItem>
-                </Menu>
-              </Grid>
           </Grid>
         </Paper>
 
@@ -443,11 +391,6 @@ const TeacherDashboard = () => {
                         <TableCell>{student.Grade?.name || 'Unassigned'}</TableCell>
                         <TableCell>{new Date(student.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell align="right">
-                          <Tooltip title="View Report">
-                            <IconButton size="small" onClick={() => navigate('/reports')}>
-                              <BarChart fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Send Email">
                             <IconButton size="small" onClick={() => window.location.href = `mailto:${student.email}`}>
                               <Email fontSize="small" />

@@ -24,6 +24,7 @@ import { Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
+import { validateRequiredText, validateSelectRequired } from '../../utils/validation';
 
 const TopicManager = () => {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ const TopicManager = () => {
   const [form, setForm] = useState({ gradeId: '', subjectId: '', topicId: '', subjectName: '', topicName: '', topicDescription: '' });
   const [loading, setLoading] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, type: '', item: null, values: {} });
+  const [errors, setErrors] = useState({});
+  const [editErrors, setEditErrors] = useState({});
 
   useEffect(() => {
     fetchGrades();
@@ -99,7 +102,13 @@ const TopicManager = () => {
   };
 
   const handleCreateSubject = async () => {
-    if (!form.gradeId || !form.subjectName.trim()) return toast.error('Select class and enter subject name');
+    const nextErrors = {};
+    const gradeError = validateSelectRequired(form.gradeId, 'Class');
+    const subjectError = validateRequiredText(form.subjectName, 'Subject name', 2);
+    if (gradeError) nextErrors.gradeId = gradeError;
+    if (subjectError) nextErrors.subjectName = subjectError;
+    setErrors((prev) => ({ ...prev, ...nextErrors }));
+    if (Object.keys(nextErrors).length > 0) return toast.error('Please fix the highlighted fields');
     try {
       setLoading(true);
       await axios.post('/api/subjects', { name: form.subjectName.trim(), gradeId: Number(form.gradeId), description: '' });
@@ -114,7 +123,13 @@ const TopicManager = () => {
   };
 
   const handleCreateTopic = async () => {
-    if (!form.subjectId || !form.topicName.trim()) return toast.error('Select subject and enter topic name');
+    const nextErrors = {};
+    const subjectError = validateSelectRequired(form.subjectId, 'Subject');
+    const topicError = validateRequiredText(form.topicName, 'Topic name', 2);
+    if (subjectError) nextErrors.subjectId = subjectError;
+    if (topicError) nextErrors.topicName = topicError;
+    setErrors((prev) => ({ ...prev, ...nextErrors }));
+    if (Object.keys(nextErrors).length > 0) return toast.error('Please fix the highlighted fields');
     try {
       setLoading(true);
       await axios.post('/api/topics', { name: form.topicName.trim(), description: form.topicDescription, subjectId: Number(form.subjectId) });
@@ -136,6 +151,11 @@ const TopicManager = () => {
 
   const handleEditSave = async () => {
     if (!editDialog.item) return;
+    const nameError = validateRequiredText(editDialog.values.name, editDialog.type === 'video' ? 'Video title' : 'Name', 2);
+    if (nameError) {
+      setEditErrors({ name: nameError });
+      return toast.error(nameError);
+    }
     try {
       setLoading(true);
       if (editDialog.type === 'subject') {
@@ -199,24 +219,24 @@ const TopicManager = () => {
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} md={3}>
-            <TextField select fullWidth label="Class" value={form.gradeId} onChange={(e) => setForm((prev) => ({ ...prev, gradeId: e.target.value }))}>
+            <TextField select fullWidth label="Class" value={form.gradeId} onChange={(e) => { setForm((prev) => ({ ...prev, gradeId: e.target.value })); setErrors((prev) => ({ ...prev, gradeId: '' })); }} error={!!errors.gradeId} helperText={errors.gradeId}>
               {grades.map((g) => <MenuItem key={g.id} value={g.id}>Class {g.level} - {g.name}</MenuItem>)}
             </TextField>
           </Grid>
           <Grid item xs={12} sm={6} md={5}>
-            <TextField fullWidth label="New Subject" value={form.subjectName} onChange={(e) => setForm((prev) => ({ ...prev, subjectName: e.target.value }))} disabled={!form.gradeId} />
+            <TextField fullWidth label="New Subject" value={form.subjectName} onChange={(e) => { setForm((prev) => ({ ...prev, subjectName: e.target.value })); setErrors((prev) => ({ ...prev, subjectName: '' })); }} disabled={!form.gradeId} error={!!errors.subjectName} helperText={errors.subjectName} />
           </Grid>
           <Grid item xs={12} md={4}>
             <Button variant="contained" fullWidth sx={{ height: '56px' }} onClick={handleCreateSubject} disabled={loading || !form.gradeId}>Add Subject</Button>
           </Grid>
 
           <Grid item xs={12} sm={6} md={4}>
-            <TextField select fullWidth label="Subject" value={form.subjectId} onChange={(e) => setForm((prev) => ({ ...prev, subjectId: e.target.value }))} disabled={!form.gradeId}>
+            <TextField select fullWidth label="Subject" value={form.subjectId} onChange={(e) => { setForm((prev) => ({ ...prev, subjectId: e.target.value })); setErrors((prev) => ({ ...prev, subjectId: '' })); }} disabled={!form.gradeId} error={!!errors.subjectId} helperText={errors.subjectId}>
               {subjects.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
             </TextField>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-            <TextField fullWidth label="New Topic" value={form.topicName} onChange={(e) => setForm((prev) => ({ ...prev, topicName: e.target.value }))} disabled={!form.subjectId} />
+            <TextField fullWidth label="New Topic" value={form.topicName} onChange={(e) => { setForm((prev) => ({ ...prev, topicName: e.target.value })); setErrors((prev) => ({ ...prev, topicName: '' })); }} disabled={!form.subjectId} error={!!errors.topicName} helperText={errors.topicName} />
           </Grid>
           <Grid item xs={12} md={4}>
             <Button variant="contained" fullWidth sx={{ height: '56px' }} onClick={handleCreateTopic} disabled={loading || !form.subjectId}>Add Topic</Button>
@@ -305,7 +325,7 @@ const TopicManager = () => {
       <Dialog open={editDialog.open} onClose={closeEditDialog} fullWidth maxWidth="sm">
         <DialogTitle>Edit {editDialog.type}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField label={editDialog.type === 'video' ? 'Video Title' : 'Name'} value={editDialog.values.name || ''} onChange={(e) => setEditDialog((prev) => ({ ...prev, values: { ...prev.values, name: e.target.value } }))} />
+          <TextField label={editDialog.type === 'video' ? 'Video Title' : 'Name'} value={editDialog.values.name || ''} onChange={(e) => { setEditDialog((prev) => ({ ...prev, values: { ...prev.values, name: e.target.value } })); setEditErrors((prev) => ({ ...prev, name: '' })); }} error={!!editErrors.name} helperText={editErrors.name} />
           <TextField label="Description" multiline rows={3} value={editDialog.values.description || ''} onChange={(e) => setEditDialog((prev) => ({ ...prev, values: { ...prev.values, description: e.target.value } }))} />
         </DialogContent>
         <DialogActions>

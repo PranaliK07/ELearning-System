@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from 'react-hot-toast';
@@ -12,6 +12,7 @@ import MainLayout from './components/layout/MainLayout';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
 import DashboardRouter from './features/Dashboard/DashboardRouter';
+import LandingPage from './features/landing/LandingPage';
 
 import GradeSelect from './features/study/GradeSelect';
 import SubjectSelect from './features/study/SubjectSelect';
@@ -31,6 +32,9 @@ import InstagramFeed from './features/feed/InstagramFeed';
 import ContentManagement from './features/admin/ContentManagement';
 import UserManagement from './features/admin/UserManagement';
 import ContentOverview from './features/admin/ContentOverview';
+import BusinessSettings from './features/admin/BusinessSettings';
+import ReportsIssues from './features/admin/ReportsIssues';
+import SystemSettings from './features/admin/SystemSettings';
 import AssignmentManagement from './features/teacher/AssignmentManagement';
 import Reports from './features/teacher/Reports';
 import SubmissionsList from './features/teacher/SubmissionsList';
@@ -127,24 +131,27 @@ function App() {
                 />
                 <Routes>
                   {/* Public routes */}
+                  <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
 
                   {/* Protected routes with layout */}
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <MainLayout />
-                    </ProtectedRoute>
-                  }>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-
-                    {/* Dashboard routes */}
-                    <Route path="dashboard" element={
-                      <ProtectedRoute roles={['student', 'teacher', 'admin']}>
-                        <DashboardRouter />
+                  <Route
+                    element={
+                      <ProtectedRoute>
+                        <MainLayout />
                       </ProtectedRoute>
-                    } />
-
+                    }
+                  >
+                    {/* Dashboard routes */}
+                    <Route
+                      path="dashboard"
+                      element={
+                        <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+                          <DashboardRouter />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Study routes */}
                     <Route path="study">
@@ -158,59 +165,113 @@ function App() {
                     <Route path="feed" element={<InstagramFeed />} />
 
                     {/* Admin/Teacher routes */}
-                    <Route path="admin/users" element={
-                      <ProtectedRoute roles={['admin']}>
-                        <UserManagement />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="admin/users"
+                      element={
+                        <ProtectedRoute roles={['admin']}>
+                          <UserManagement />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                    <Route path="admin/content" element={
-                      <ProtectedRoute roles={['admin']}>
-                        <ContentOverview />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="admin/content"
+                      element={
+                        <ProtectedRoute roles={['admin']}>
+                          <ContentOverview />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                    <Route path="content/create" element={
-                      <ProtectedRoute roles={['admin', 'teacher']}>
-                        <ContentManagement />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="admin/reports"
+                      element={
+                        <ProtectedRoute roles={['admin']}>
+                          <ReportsIssues />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="admin/business-settings"
+                      element={
+                        <ProtectedRoute roles={['admin']}>
+                          <BusinessSettings />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="admin/system-settings"
+                      element={
+                        <ProtectedRoute roles={['admin']}>
+                          <SystemSettings />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="content/create"
+                      element={
+                        <ProtectedRoute roles={['admin', 'teacher']}>
+                          <ContentManagement />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     <Route path="assignments">
-                      <Route path="create" element={
-                        <ProtectedRoute roles={['teacher', 'admin']}>
-                          <AssignmentManagement />
-                        </ProtectedRoute>
-                      } />
-                      <Route path=":assignmentId/submissions" element={
-                        <ProtectedRoute roles={['teacher', 'admin']}>
-                          <SubmissionsList />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="view/:assignmentId" element={
-                        <ProtectedRoute roles={['student', 'teacher', 'admin']}>
-                          <StudentAssignmentView />
-                        </ProtectedRoute>
-                      } />
+                      <Route
+                        path="create"
+                        element={
+                          <ProtectedRoute roles={['teacher', 'admin']}>
+                            <AssignmentManagement />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path=":assignmentId/submissions"
+                        element={
+                          <ProtectedRoute roles={['teacher', 'admin']}>
+                            <SubmissionsList />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="view/:assignmentId"
+                        element={
+                          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+                            <StudentAssignmentView />
+                          </ProtectedRoute>
+                        }
+                      />
                     </Route>
 
-                    <Route path="reports" element={
-                      <ProtectedRoute roles={['teacher', 'admin']}>
-                        <Reports />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="reports"
+                      element={
+                        <ProtectedRoute roles={['teacher', 'admin']}>
+                          <Reports />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                    <Route path="topics/manage" element={
-                      <ProtectedRoute roles={['teacher', 'admin']}>
-                        <TopicManager />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="topics/manage"
+                      element={
+                        <ProtectedRoute roles={['teacher', 'admin']}>
+                          <TopicManager />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                    <Route path="class-communication" element={
-                      <ProtectedRoute roles={['teacher', 'admin']}>
-                        <ClassCommunication />
-                      </ProtectedRoute>
-                    } />
+                    <Route
+                      path="class-communication"
+                      element={
+                        <ProtectedRoute roles={['teacher', 'admin']}>
+                          <ClassCommunication />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Play routes */}
 

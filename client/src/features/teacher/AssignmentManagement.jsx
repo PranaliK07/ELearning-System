@@ -26,6 +26,11 @@ import { Add, Assignment, Delete, Edit, Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
+import {
+  validateFutureOrTodayDate,
+  validateRequiredText,
+  validateSelectRequired
+} from '../../utils/validation';
 
 const emptyForm = {
   title: '',
@@ -44,6 +49,7 @@ const AssignmentManagement = () => {
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   async function fetchAssignments() {
     try {
@@ -95,15 +101,23 @@ const AssignmentManagement = () => {
   };
 
   const handleSubmit = async () => {
+    const nextErrors = {};
+    const titleError = validateRequiredText(formData.title, 'Assignment title', 2);
+    const descriptionError = validateRequiredText(formData.description, 'Description', 5);
+    const subjectError = validateSelectRequired(formData.subjectId, 'Subject');
+    const gradeError = validateSelectRequired(formData.gradeId, 'Grade');
+    const dueDateError = validateFutureOrTodayDate(formData.dueDate, 'Due date');
+    if (titleError) nextErrors.title = titleError;
+    if (descriptionError) nextErrors.description = descriptionError;
+    if (subjectError) nextErrors.subjectId = subjectError;
+    if (gradeError) nextErrors.gradeId = gradeError;
+    if (dueDateError) nextErrors.dueDate = dueDateError;
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error('Please fix the highlighted fields');
+      return;
+    }
     const title = formData.title.trim();
-    if (!title) {
-      toast.error('Assignment title is required');
-      return;
-    }
-    if (!formData.dueDate) {
-      toast.error('Due date is required');
-      return;
-    }
 
     try {
       setSaving(true);
@@ -207,21 +221,21 @@ const AssignmentManagement = () => {
         <DialogTitle>{editing ? 'Edit Assignment' : 'Create New Assignment'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <TextField label="Assignment Title" fullWidth value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-            <TextField label="Description" fullWidth multiline rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            <TextField label="Assignment Title" fullWidth value={formData.title} onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors((prev) => ({ ...prev, title: '' })); }} error={!!errors.title} helperText={errors.title} />
+            <TextField label="Description" fullWidth multiline rows={4} value={formData.description} onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setErrors((prev) => ({ ...prev, description: '' })); }} error={!!errors.description} helperText={errors.description} />
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <TextField select label="Subject" fullWidth value={formData.subjectId} onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}>
+                <TextField select label="Subject" fullWidth value={formData.subjectId} onChange={(e) => { setFormData({ ...formData, subjectId: e.target.value }); setErrors((prev) => ({ ...prev, subjectId: '' })); }} error={!!errors.subjectId} helperText={errors.subjectId}>
                   {subjects.map((sub) => <MenuItem key={sub.id} value={sub.id}>{sub.name}</MenuItem>)}
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField select label="Grade" fullWidth value={formData.gradeId} onChange={(e) => setFormData({ ...formData, gradeId: e.target.value })}>
+                <TextField select label="Grade" fullWidth value={formData.gradeId} onChange={(e) => { setFormData({ ...formData, gradeId: e.target.value }); setErrors((prev) => ({ ...prev, gradeId: '' })); }} error={!!errors.gradeId} helperText={errors.gradeId}>
                   {grades.map((grade) => <MenuItem key={grade.id} value={grade.id}>{grade.name}</MenuItem>)}
                 </TextField>
               </Grid>
             </Grid>
-            <TextField label="Due Date" type="date" fullWidth InputLabelProps={{ shrink: true }} value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} />
+            <TextField label="Due Date" type="date" fullWidth InputLabelProps={{ shrink: true }} value={formData.dueDate} onChange={(e) => { setFormData({ ...formData, dueDate: e.target.value }); setErrors((prev) => ({ ...prev, dueDate: '' })); }} error={!!errors.dueDate} helperText={errors.dueDate} />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

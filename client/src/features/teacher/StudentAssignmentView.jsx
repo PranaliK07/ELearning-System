@@ -16,6 +16,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack, Assignment, CloudUpload, TaskAlt } from '@mui/icons-material';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
+import { validateRequiredText } from '../../utils/validation';
 
 const StudentAssignmentView = () => {
   const { assignmentId } = useParams();
@@ -24,6 +25,7 @@ const StudentAssignmentView = () => {
   const [submission, setSubmission] = useState(null);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
+  const [contentError, setContentError] = useState('');
 
   async function fetchAssignmentDetails() {
     try {
@@ -50,6 +52,12 @@ const StudentAssignmentView = () => {
   }, [assignmentId]);
 
   const handleSubmit = async () => {
+    const error = validateRequiredText(content, 'Submission', 10);
+    setContentError(error);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     try {
       await axios.post(`/api/assignments/${assignmentId}/submissions`, { content: content.trim() });
       toast.success('Assignment submitted successfully!');
@@ -125,9 +133,14 @@ const StudentAssignmentView = () => {
             placeholder="Type your answer here or paste a link to your document..."
             variant="outlined"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setContentError('');
+            }}
             sx={{ mb: 3 }}
             disabled={alreadySubmitted}
+            error={!!contentError}
+            helperText={contentError}
           />
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Button startIcon={<CloudUpload />} variant="outlined" component="label" disabled>

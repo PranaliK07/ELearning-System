@@ -30,6 +30,12 @@ import {
 import { Add, Search, Edit, Delete } from '@mui/icons-material';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
+import {
+  validateEmail,
+  validateName,
+  validatePositiveInteger,
+  validateSelectRequired
+} from '../../utils/validation';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -38,6 +44,7 @@ const UserManagement = () => {
   const [openUserDialog, setOpenUserDialog] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -85,6 +92,31 @@ const UserManagement = () => {
     } catch (err) {
       toast.error('Failed to delete user');
     }
+  };
+
+  const validateUserForm = () => {
+    const nextErrors = {};
+    const nameError = validateName(newUser.name, 'Full name');
+    const emailError = validateEmail(newUser.email);
+    const roleError = validateSelectRequired(newUser.role, 'Role');
+    const statusError = validateSelectRequired(newUser.status, 'Status');
+
+    if (nameError) nextErrors.name = nameError;
+    if (emailError) nextErrors.email = emailError;
+    if (roleError) nextErrors.role = roleError;
+    if (statusError) nextErrors.status = statusError;
+
+    if (newUser.role === 'student') {
+      const gradeError = validatePositiveInteger(newUser.grade, 'Grade');
+      if (gradeError) nextErrors.grade = gradeError;
+    }
+
+    if (newUser.role === 'parent' && newUser.studentEmail.trim()) {
+      const studentEmailError = validateEmail(newUser.studentEmail, 'Student email');
+      if (studentEmailError) nextErrors.studentEmail = studentEmailError;
+    }
+
+    return nextErrors;
   };
 
   return (
@@ -270,7 +302,12 @@ const UserManagement = () => {
                 fullWidth
                 label="Full Name"
                 value={newUser.name}
-                onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  setNewUser((prev) => ({ ...prev, name: e.target.value }));
+                  setFormErrors((prev) => ({ ...prev, name: '' }));
+                }}
+                error={!!formErrors.name}
+                helperText={formErrors.name}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -279,7 +316,12 @@ const UserManagement = () => {
                 type="email"
                 label="Email"
                 value={newUser.email}
-                onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => {
+                  setNewUser((prev) => ({ ...prev, email: e.target.value }));
+                  setFormErrors((prev) => ({ ...prev, email: '' }));
+                }}
+                error={!!formErrors.email}
+                helperText={formErrors.email}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -288,7 +330,11 @@ const UserManagement = () => {
                 <Select
                   label="Role"
                   value={newUser.role}
-                  onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value, studentEmail: '' }))}
+                  onChange={(e) => {
+                    setNewUser((prev) => ({ ...prev, role: e.target.value, studentEmail: '' }));
+                    setFormErrors((prev) => ({ ...prev, role: '', grade: '', studentEmail: '' }));
+                  }}
+                  error={!!formErrors.role}
                 >
                   <MenuItem value="student">Student</MenuItem>
                   <MenuItem value="teacher">Teacher</MenuItem>
@@ -302,8 +348,13 @@ const UserManagement = () => {
                 fullWidth
                 label="Grade (if student)"
                 value={newUser.grade}
-                onChange={(e) => setNewUser((prev) => ({ ...prev, grade: e.target.value }))}
+                onChange={(e) => {
+                  setNewUser((prev) => ({ ...prev, grade: e.target.value.replace(/[^\d]/g, '') }));
+                  setFormErrors((prev) => ({ ...prev, grade: '' }));
+                }}
                 disabled={newUser.role !== 'student'}
+                error={!!formErrors.grade}
+                helperText={formErrors.grade}
               />
             </Grid>
             {newUser.role === 'parent' && (
@@ -312,8 +363,13 @@ const UserManagement = () => {
                   fullWidth
                   label="Student Email to Link"
                   value={newUser.studentEmail}
-                  onChange={(e) => setNewUser((prev) => ({ ...prev, studentEmail: e.target.value }))}
+                  onChange={(e) => {
+                    setNewUser((prev) => ({ ...prev, studentEmail: e.target.value }));
+                    setFormErrors((prev) => ({ ...prev, studentEmail: '' }));
+                  }}
                   placeholder="Optional"
+                  error={!!formErrors.studentEmail}
+                  helperText={formErrors.studentEmail}
                 />
               </Grid>
             )}
@@ -323,7 +379,11 @@ const UserManagement = () => {
                 <Select
                   label="Status"
                   value={newUser.status}
-                  onChange={(e) => setNewUser((prev) => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) => {
+                    setNewUser((prev) => ({ ...prev, status: e.target.value }));
+                    setFormErrors((prev) => ({ ...prev, status: '' }));
+                  }}
+                  error={!!formErrors.status}
                 >
                   <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="inactive">Inactive</MenuItem>
@@ -344,8 +404,10 @@ const UserManagement = () => {
           <Button
             variant="contained"
             onClick={async () => {
-              if (!newUser.name.trim() || !newUser.email.trim()) {
-                toast.error('Please fill in all required fields');
+              const nextErrors = validateUserForm();
+              setFormErrors(nextErrors);
+              if (Object.keys(nextErrors).length > 0) {
+                toast.error('Please fix the highlighted fields');
                 return;
               }
 
@@ -408,4 +470,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-

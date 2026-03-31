@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 
-
 const register = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -21,7 +20,6 @@ const register = async (req, res) => {
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
-
     // Create verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
 

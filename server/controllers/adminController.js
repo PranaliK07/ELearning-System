@@ -6,23 +6,29 @@ const { exec } = require('child_process');
 const allowedModules = [
   'dashboard',
   'subjects',
+  'play',
+  'progress',
+  'achievements',
+  'profile',
+  'new-lesson',
+  'subject-topic',
   'assignments',
   'communications',
   'content',
   'users',
   'reports',
-  'analytics',
+  'reports-issues',
   'settings',
   'business-settings'
 ];
 
 const defaultRoleAccess = {
-  admin: ['dashboard', 'users', 'content', 'reports', 'analytics', 'settings', 'subjects', 'assignments', 'communications', 'business-settings'],
-  teacher: ['dashboard', 'subjects', 'assignments', 'reports', 'communications'],
-  student: ['dashboard', 'subjects', 'assignments']
+  admin: ['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'communications', 'business-settings'],
+  teacher: ['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'reports', 'communications'],
+  student: ['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'assignments']
 };
 
-const ROLE_ACCESS_VERSION = 2;
+const ROLE_ACCESS_VERSION = 5;
 
 // --- Business settings: role-based sidebar access ---
 const getRoleAccess = async (req, res) => {
@@ -49,10 +55,25 @@ const getRoleAccess = async (req, res) => {
       }
       if (!Array.isArray(mods)) mods = [];
 
-      // Lightweight migration: only add newly introduced modules without overriding admin choices.
       if ((rec.version || 1) < ROLE_ACCESS_VERSION) {
-        const next = new Set(mods);
-        if (rec.role === 'admin' || rec.role === 'teacher') next.add('communications');
+        const next = new Set(mods.filter((module) => allowedModules.includes(module)));
+        next.add('play');
+        next.add('progress');
+        next.add('achievements');
+        next.add('profile');
+        if (rec.role === 'admin' || rec.role === 'teacher') next.add('reports');
+        if (rec.role === 'admin') {
+          next.add('reports-issues');
+          next.add('users');
+          next.add('content');
+          next.add('settings');
+          next.add('business-settings');
+        }
+        if (rec.role === 'admin' || rec.role === 'teacher') {
+          next.add('communications');
+          next.add('new-lesson');
+          next.add('subject-topic');
+        }
         rec.set('modules', Array.from(next));
         rec.set('version', ROLE_ACCESS_VERSION);
         await rec.save();

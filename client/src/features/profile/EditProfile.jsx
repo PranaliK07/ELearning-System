@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { resolveAvatarSrc } from '../../utils/media';
+import { validateImageFile, validateName, validateSelectRequired } from '../../utils/validation';
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -34,17 +35,26 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const fileError = validateImageFile(file, 'Profile image');
+      if (fileError) {
+        setError(fileError);
+        return;
+      }
       setFormData({
         ...formData,
         avatar: file
@@ -58,6 +68,18 @@ const EditProfile = () => {
     setLoading(true);
     setError('');
     setSuccess('');
+    const nextErrors = {};
+    const nameError = validateName(formData.name, 'Full name');
+    if (nameError) nextErrors.name = nameError;
+    if (user?.role === 'student') {
+      const gradeError = validateSelectRequired(formData.grade, 'Grade');
+      if (gradeError) nextErrors.grade = gradeError;
+    }
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();
@@ -169,6 +191,8 @@ const EditProfile = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
+              error={!!fieldErrors.name}
+              helperText={fieldErrors.name}
               margin="normal"
               variant="outlined"
               required
@@ -193,6 +217,8 @@ const EditProfile = () => {
               name="grade"
               value={formData.grade}
               onChange={handleChange}
+              error={!!fieldErrors.grade}
+              helperText={fieldErrors.grade}
               margin="normal"
               variant="outlined"
             >
