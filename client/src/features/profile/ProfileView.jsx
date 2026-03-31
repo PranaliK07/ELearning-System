@@ -28,7 +28,6 @@ import {
   People,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
-import LinearProgress from '@mui/material/LinearProgress';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
