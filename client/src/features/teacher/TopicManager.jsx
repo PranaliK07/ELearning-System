@@ -19,11 +19,8 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  Card,
-  CardMedia,
-  LinearProgress
 } from '@mui/material';
-import { Edit, Delete, CloudUpload, Movie, CheckCircle } from '@mui/icons-material';
+import { Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
@@ -43,13 +40,6 @@ const TopicManager = () => {
     topicName: '',
     topicDescription: ''
   });
-  const [videoForm, setVideoForm] = useState({ title: '', description: '' });
-  const [videoFile, setVideoFile] = useState(null);
-  const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [videoPreview, setVideoPreview] = useState(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, type: '', item: null, values: {} });
   const [errors, setErrors] = useState({});
@@ -167,74 +157,6 @@ const TopicManager = () => {
       toast.error(error.response?.data?.message || 'Failed to add topic');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVideoFileChange = (event) => {
-    const file = event.target.files?.[0] || null;
-    if (!file) return;
-    setVideoFile(file);
-    setVideoPreview(URL.createObjectURL(file));
-  };
-
-  const handleThumbnailChange = (event) => {
-    const file = event.target.files?.[0] || null;
-    if (!file) return;
-    setThumbnailFile(file);
-    setThumbnailPreview(URL.createObjectURL(file));
-  };
-
-  const handleUploadVideo = async () => {
-    if (!form.gradeId || !form.subjectId || !form.topicId) {
-      return toast.error('Select class, subject, and topic');
-    }
-    if (!videoForm.title.trim()) {
-      return toast.error('Enter a video title');
-    }
-    if (!videoFile) {
-      return toast.error('Select a video file');
-    }
-    try {
-      setUploading(true);
-      const uploadData = new FormData();
-      uploadData.append('video', videoFile);
-      if (thumbnailFile) uploadData.append('thumbnail', thumbnailFile);
-
-      const uploadRes = await axios.post('/api/upload/content', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(progress);
-        }
-      });
-
-      const videoUrl = uploadRes.data.videoUrl || '';
-      const thumbnailUrl = uploadRes.data.thumbnailUrl || '';
-
-      await axios.post('/api/content', {
-        title: videoForm.title.trim(),
-        type: 'video',
-        description: videoForm.description,
-        gradeId: Number(form.gradeId),
-        subjectId: Number(form.subjectId),
-        topicId: Number(form.topicId),
-        videoUrl: videoUrl,
-        videoFile: videoUrl,
-        thumbnail: thumbnailUrl
-      });
-
-      toast.success('Video uploaded');
-      setVideoForm({ title: '', description: '' });
-      setVideoFile(null);
-      setThumbnailFile(null);
-      setVideoPreview(null);
-      setThumbnailPreview(null);
-      setUploadProgress(0);
-      fetchVideos(form.topicId);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -387,121 +309,6 @@ const TopicManager = () => {
                 </MenuItem>
               ))}
             </TextField>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      <Paper sx={{ p: 3, borderRadius: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>Upload Video</Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Video Title"
-              value={videoForm.title}
-              onChange={(e) => setVideoForm((prev) => ({ ...prev, title: e.target.value }))}
-              disabled={!form.topicId}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Description"
-              value={videoForm.description}
-              onChange={(e) => setVideoForm((prev) => ({ ...prev, description: e.target.value }))}
-              disabled={!form.topicId}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={7}>
-            <Box
-              sx={{
-                border: '2px dashed',
-                borderColor: 'divider',
-                borderRadius: 2,
-                p: 3,
-                textAlign: 'center',
-                bgcolor: 'background.default',
-                position: 'relative'
-              }}
-            >
-              <input
-                type="file"
-                accept="video/*"
-                style={{ opacity: 0, position: 'absolute', inset: 0, cursor: 'pointer' }}
-                onChange={handleVideoFileChange}
-                disabled={!form.topicId}
-              />
-              {videoPreview ? (
-                <Box>
-                  <Movie sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography>{videoFile?.name}</Typography>
-                  <Button size="small" color="error" onClick={() => { setVideoPreview(null); setVideoFile(null); }}>
-                    Remove
-                  </Button>
-                </Box>
-              ) : (
-                <Box>
-                  <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                  <Typography>Click or drag video file to upload</Typography>
-                </Box>
-              )}
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} md={5}>
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>Thumbnail (optional)</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {thumbnailPreview ? (
-                <Card sx={{ width: 140, position: 'relative' }}>
-                  <CardMedia component="img" height="90" image={thumbnailPreview} />
-                  <Button size="small" color="error" onClick={() => { setThumbnailPreview(null); setThumbnailFile(null); }}>
-                    Remove
-                  </Button>
-                </Card>
-              ) : (
-                <Box
-                  sx={{
-                    width: 140,
-                    height: 90,
-                    borderRadius: 2,
-                    border: '2px dashed',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <CloudUpload sx={{ color: 'text.secondary' }} />
-                </Box>
-              )}
-              <Button variant="outlined" component="label" disabled={!form.topicId}>
-                Select Image
-                <input type="file" hidden accept="image/*" onChange={handleThumbnailChange} />
-              </Button>
-            </Box>
-          </Grid>
-
-          {uploading && (
-            <Grid item xs={12}>
-              <Box sx={{ width: '100%' }}>
-                <Typography variant="body2" gutterBottom>Uploading: {uploadProgress}%</Typography>
-                <LinearProgress variant="determinate" value={uploadProgress} />
-              </Box>
-            </Grid>
-          )}
-
-          <Grid item xs={12} md={4}>
-            <Button
-              variant="contained"
-              fullWidth
-              startIcon={<CheckCircle />}
-              onClick={handleUploadVideo}
-              disabled={uploading || !form.topicId}
-              sx={{ height: 52 }}
-            >
-              {uploading ? 'Uploading...' : 'Upload Video'}
-            </Button>
           </Grid>
         </Grid>
       </Paper>

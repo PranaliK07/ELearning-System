@@ -25,7 +25,10 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  useMediaQuery,
+  useTheme,
+  Divider
 } from '@mui/material';
 import { Add, Search, Edit, Delete } from '@mui/icons-material';
 import api from '../../utils/axios';
@@ -38,6 +41,8 @@ import {
 } from '../../utils/validation';
 
 const UserManagement = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -131,20 +136,20 @@ const UserManagement = () => {
 
   return (
     <Container maxWidth="lg">
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            flexDirection: { xs: 'column', md: 'row' },
             gap: 2,
             mb: 3
           }}
         >
-          <Typography variant="h6">User Management</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
+          <Typography variant="h6" fontWeight="bold">User Management</Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: '1 1 120px' }, minWidth: { sm: 160 } }}>
               <InputLabel>Filter by Role</InputLabel>
               <Select
                 value={filterRole}
@@ -170,12 +175,12 @@ const UserManagement = () => {
                   </InputAdornment>
                 )
               }}
-              sx={{ width: { xs: '100%', sm: 250 } }}
+              sx={{ flex: { xs: '1 1 100%', sm: '1 1 200px' } }}
             />
             <Button
               variant="contained"
               startIcon={<Add />}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
+              sx={{ width: { xs: '100%', sm: 'auto' }, py: 1 }}
               onClick={() => {
                 setEditingUserId(null);
                 setNewUser({ name: '', email: '', role: 'student', grade: '', studentEmail: '', parentPhone: '', status: 'active' });
@@ -189,6 +194,110 @@ const UserManagement = () => {
 
         {loading ? (
           <LinearProgress />
+        ) : isMobile ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {filteredUsers.length === 0 ? (
+              <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 4 }}>
+                No users found
+              </Typography>
+            ) : (
+              filteredUsers.map((user) => (
+                <Paper
+                  key={user.id || user._id}
+                  variant="outlined"
+                  sx={{ p: 2, borderRadius: 2, position: 'relative' }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
+                      {(user.name || 'U').charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">{user.name || 'Unknown'}</Typography>
+                      <Typography variant="caption" color="textSecondary" display="block">
+                        {user.email || 'No email'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                      <Chip
+                        label={user.role || 'student'}
+                        size="small"
+                        color={
+                          user.role === 'admin'
+                            ? 'error'
+                            : user.role === 'teacher'
+                              ? 'warning'
+                              : user.role === 'parent'
+                                ? 'secondary'
+                                : 'primary'
+                        }
+                      />
+                      <Chip
+                        label={user.status || 'active'}
+                        size="small"
+                        color={(user.status === 'active' || user.status === 'Active') ? 'success' : 'default'}
+                        variant="outlined"
+                      />
+                    </Box>
+                  </Box>
+
+                  <Grid container spacing={1} sx={{ mb: 2 }}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Grade</Typography>
+                      <Typography variant="body2">{user.grade || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Last Login</Typography>
+                      <Typography variant="body2">{user.lastLogin || 'Never'}</Typography>
+                    </Grid>
+                    {user.role === 'student' && user.parent && (
+                      <Grid item xs={12}>
+                        <Typography variant="caption" color="textSecondary">Parent</Typography>
+                        <Typography variant="body2">
+                          {user.parent.name} ({user.parent.email})
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  <Divider sx={{ my: 1.5 }} />
+
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                    <Button
+                      size="small"
+                      startIcon={<Edit />}
+                      onClick={() => {
+                        setEditingUserId(user.id || user._id);
+                        setNewUser({
+                          name: user.name || '',
+                          email: user.email || '',
+                          role: user.role || 'student',
+                          grade: user.grade || '',
+                          studentEmail: '',
+                          parentPhone: user.parentPhone || '',
+                          status: (user.status === 'inactive' || user.isActive === false) ? 'inactive' : 'active'
+                        });
+                        setOpenUserDialog(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<Delete />}
+                      onClick={() => {
+                        if (window.confirm('Delete this user? This cannot be undone.')) {
+                          handleDeleteUser(user.id || user._id);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </Box>
+                </Paper>
+              ))
+            )}
+          </Box>
         ) : (
           <TableContainer>
             <Table>
@@ -368,11 +477,11 @@ const UserManagement = () => {
                 helperText={formErrors.grade}
               />
             </Grid>
-            {newUser.role === 'parent' && (
+            {(newUser.role === 'parent' || newUser.role === 'student') && (
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Parent Mobile Number"
+                  label={newUser.role === 'student' ? "Parent Mobile (SMS notifications)" : "Parent Mobile Number"}
                   value={newUser.parentPhone}
                   onChange={(e) => {
                     setNewUser((prev) => ({ ...prev, parentPhone: e.target.value }));
@@ -446,7 +555,7 @@ const UserManagement = () => {
                   grade: newUser.role === 'student' && newUser.grade ? Number(newUser.grade) : null,
                   isActive: newUser.status === 'active',
                   studentEmail: newUser.role === 'parent' && newUser.studentEmail ? newUser.studentEmail.trim() : undefined,
-                  parentPhone: newUser.role === 'parent' ? String(newUser.parentPhone || '').trim() : undefined
+                  parentPhone: (newUser.role === 'parent' || newUser.role === 'student') ? String(newUser.parentPhone || '').trim() : undefined
                 };
 
                 let response;

@@ -85,12 +85,12 @@ const createUser = async (req, res) => {
 
     // Restore flow: allow re-creating a previously deleted user with the same email
     if (existing && existing.isDeleted) {
-      if (normalizedRole === 'parent') {
+      if (normalizedRole === 'parent' || normalizedRole === 'student') {
         const phone = typeof parentPhone === 'string' ? parentPhone.trim() : '';
-        if (!phone) {
+        if (normalizedRole === 'parent' && !phone) {
           return res.status(400).json({ message: 'Parent mobile number is required' });
         }
-        if (phone.length < 7 || phone.length > 20) {
+        if (phone && (phone.length < 7 || phone.length > 20)) {
           return res.status(400).json({ message: 'Parent mobile number must be between 7 and 20 characters' });
         }
       }
@@ -102,10 +102,10 @@ const createUser = async (req, res) => {
       existing.isActive = isActive === undefined ? true : Boolean(isActive);
       existing.isDeleted = false;
       existing.password = temporaryPassword;
-      existing.parentPhone = normalizedRole === 'parent'
-        ? String(parentPhone).trim()
-        : (existing.parentPhone || null);
+      // Allow parentPhone for both roles
+      existing.parentPhone = parentPhone ? String(parentPhone).trim() : (existing.parentPhone || null);
       await existing.save();
+
 
       if (normalizedRole === 'parent' && (studentEmail || studentId)) {
         let student = null;
@@ -175,7 +175,7 @@ const createUser = async (req, res) => {
       password: temporaryPassword,
       role: normalizedRole,
       grade: grade || null,
-      parentPhone: normalizedRole === 'parent' ? String(parentPhone).trim() : null,
+      parentPhone: parentPhone ? String(parentPhone).trim() : null,
       isActive: isActive === undefined ? true : Boolean(isActive)
     });
 
@@ -243,7 +243,7 @@ const linkParent = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { name, email, role, grade, isActive, parentEmail, parentId, clearParent } = req.body;
+    const { name, email, role, grade, isActive, parentEmail, parentId, clearParent, parentPhone } = req.body;
     const user = await User.findByPk(req.params.id);
 
     if (!user) {
@@ -266,6 +266,7 @@ const updateUser = async (req, res) => {
     if (role) user.role = role;
     if (grade !== undefined) user.grade = grade;
     if (isActive !== undefined) user.isActive = isActive;
+    if (parentPhone !== undefined) user.parentPhone = parentPhone;
 
     if (clearParent) {
       user.ParentId = null;

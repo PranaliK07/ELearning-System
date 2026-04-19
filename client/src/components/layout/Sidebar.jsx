@@ -61,7 +61,6 @@ const configuredModules = new Set([
   'content',
   'users',
   'reports',
-  'reports-issues',
   'settings',
   'business-settings',
   'doubts',
@@ -71,7 +70,7 @@ const configuredModules = new Set([
 ]);
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback']),
+  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback']),
   teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback']),
   student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'doubts', 'feedback', 'attendance'])
 };
@@ -140,7 +139,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { key: 'content', text: 'Content Management', icon: <ContentOverviewIcon />, path: '/admin/content' },
     { key: 'subjects', text: 'Study', icon: <StudyIcon />, path: '/study' },
     { key: 'new-lesson', text: 'New Lesson', icon: <AddIcon />, path: '/content/create' },
-    { key: 'study-material', text: 'Study Material', icon: <Description />, path: '/study-material' },
+    { key: 'study-material', text: 'Notes', icon: <Description />, path: '/study-material' },
     { key: 'subject-topic', text: 'Subject & Topic', icon: <TopicManagerIcon />, path: '/topics/manage' },
     { key: 'play', text: 'Play', icon: <PlayIcon />, path: '/play' },
     { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
@@ -150,7 +149,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { key: 'class-management', text: 'Class Management', icon: <ClassManagementIcon />, path: '/classes/manage' },
     { key: 'doubts', text: 'Doubts', icon: <DoubtIcon />, path: '/doubts' },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-    { key: 'reports-issues', text: 'Reports & Issues', icon: <ReportsIcon />, path: '/admin/reports' },
     { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
     { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
@@ -176,7 +174,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     return true;
   }).filter(({ key }) => {
     // Basic role guards: students don't see teacher/admin only links when not allowed
-    if (key === 'assignments' || key === 'reports' || key === 'reports-issues' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications' || key === 'class-management' || key === 'study-material') {
+    if (key === 'assignments' || key === 'reports' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications' || key === 'class-management' || key === 'study-material') {
       return role === 'teacher' || role === 'admin' || role === 'student' || allowed.has(key);
     }
     if (key === 'feedback') {

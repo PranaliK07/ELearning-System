@@ -11,6 +11,7 @@ import {
     CircularProgress,
     IconButton,
     Card,
+    CardActionArea,
     CardMedia,
     LinearProgress,
     Dialog,
@@ -23,11 +24,12 @@ import {
     Movie,
     Description,
     Quiz,
-    ArrowBack,
+    OndemandVideo,
+    PictureAsPdf,
     Delete,
     CheckCircle
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
 import {
@@ -39,6 +41,8 @@ import {
 
 const ContentManagement = () => {
     const navigate = useNavigate();
+    const { contentId } = useParams();
+    const isEditMode = Boolean(contentId);
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [grades, setGrades] = useState([]);
@@ -49,14 +53,17 @@ const ContentManagement = () => {
 
     const [formData, setFormData] = useState({
         title: '',
-        type: 'video',
+        type: isEditMode ? 'video' : '',
         description: '',
         gradeId: '',
         subjectId: '',
         topicId: '',
         isPremium: false,
         isPublished: true,
-        order: 0
+        order: 0,
+        existingVideoUrl: '',
+        existingThumbnail: '',
+        existingReadingMaterial: ''
     });
 
     const [videoFile, setVideoFile] = useState(null);
@@ -75,7 +82,48 @@ const ContentManagement = () => {
 
     useEffect(() => {
         fetchGrades();
-    }, []);
+        if (isEditMode) {
+            fetchContentData();
+        }
+    }, [isEditMode, contentId]);
+
+    const fetchContentData = async () => {
+        try {
+            const res = await axios.get(`/api/content/${contentId}`);
+            let data = res.data;
+            if (data.content) data = data.content;
+            else if (data.data) data = data.data;
+            else if (Array.isArray(data)) data = data[0];
+
+            setFormData(prev => ({
+                ...prev,
+                title: data.title || '',
+                type: data.type || data.contentType || 'video',
+                description: data.description || '',
+                gradeId: data.gradeId || data.Grade?.id || '',
+                subjectId: data.subjectId || data.Subject?.id || '',
+                topicId: data.topicId || data.Topic?.id || '',
+                isPremium: data.isPremium || false,
+                isPublished: data.isPublished !== undefined ? data.isPublished : true,
+                order: data.order || 0,
+                existingVideoUrl: data.videoUrl || '',
+                existingThumbnail: data.thumbnail || '',
+                existingReadingMaterial: data.readingMaterial || ''
+            }));
+
+            if (data.thumbnail) {
+                const thumb = data.thumbnail;
+                setThumbnailPreview(
+                    thumb.startsWith('http') || thumb.startsWith('/')
+                        ? thumb
+                        : `/uploads/${thumb}`
+                );
+            }
+        } catch (error) {
+            console.error('Failed to fetch content data:', error);
+            toast.error('Failed to load content for editing');
+        }
+    };
 
     useEffect(() => {
         if (formData.gradeId) fetchSubjects(formData.gradeId);
@@ -130,6 +178,20 @@ const ContentManagement = () => {
         if (errors[e.target.name]) {
             setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
         }
+    };
+
+    const handleSelectContentType = (type) => {
+        setFormData((prev) => ({ ...prev, type }));
+        if (errors.type) {
+            setErrors((prev) => ({ ...prev, type: '' }));
+        }
+    };
+
+    const getContentTypeLabel = (type) => {
+        if (type === 'video') return 'Video Lesson';
+        if (type === 'reading') return 'Reading Material';
+        if (type === 'quiz') return 'Quiz';
+        return '';
     };
 
     const handleFileChange = (e) => {
@@ -284,11 +346,17 @@ const ContentManagement = () => {
         if (subjectError) nextErrors.subjectId = subjectError;
         if (topicError) nextErrors.topicId = topicError;
         if (formData.type === 'video') {
-            const videoError = validateVideoFile(videoFile);
-            if (videoError) nextErrors.video = videoError;
+            if (videoFile) {
+                const videoError = validateVideoFile(videoFile);
+                if (videoError) nextErrors.video = videoError;
+            } else if (!isEditMode && !formData.existingVideoUrl) {
+                nextErrors.video = 'Video file is required';
+            }
         }
         if (formData.type === 'reading') {
-            if (!readingFile) nextErrors.reading = 'Reading material file is required';
+            if (!readingFile && !isEditMode && !formData.existingReadingMaterial) {
+                nextErrors.reading = 'Reading material file is required';
+            }
         }
         setErrors(nextErrors);
         if (Object.keys(nextErrors).length > 0) {
@@ -309,7 +377,7 @@ const ContentManagement = () => {
                     throw new Error('Enter quiz in format: Q:, options A)/B)/..., and Answer:');
                 }
 
-                await axios.post('/api/quiz', {
+                const quizPayload = {
                     title: formData.title,
                     description: formData.description,
                     topicId: parseInt(formData.topicId, 10),
@@ -318,9 +386,16 @@ const ContentManagement = () => {
                     passingScore: parsedQuiz.passingScore || 70,
                     maxAttempts: parsedQuiz.maxAttempts || 3,
                     isPublished: true
-                });
+                };
 
-                toast.success('Quiz created successfully!');
+                if (isEditMode) {
+                    await axios.put(`/api/content/${contentId}`, quizPayload);
+                    toast.success('Quiz updated successfully!');
+                } else {
+                    await axios.post('/api/quiz', quizPayload);
+                    toast.success('Quiz created successfully!');
+                }
+
                 navigate('/admin/content');
                 return;
             }
@@ -350,18 +425,26 @@ const ContentManagement = () => {
                 }
             }
 
-            // 2. Create content
-            await axios.post('/api/content', {
+            // 2. Create or Update content
+            const payload = {
                 ...formData,
                 gradeId: formData.gradeId ? parseInt(formData.gradeId, 10) : undefined,
                 subjectId: formData.subjectId ? parseInt(formData.subjectId, 10) : undefined,
                 topicId: formData.topicId ? parseInt(formData.topicId, 10) : undefined,
-                videoUrl: videoUrl,
-                videoFile: videoUrl,
-                thumbnail: thumbnailUrl
-            });
+                videoUrl: videoUrl || formData.existingVideoUrl,
+                thumbnail: thumbnailUrl || formData.existingThumbnail,
+                readingMaterial: formData.readingMaterial || formData.existingReadingMaterial
+            };
 
-            toast.success('Content uploaded successfully! 🎉');
+            if (isEditMode) {
+                await axios.put(`/api/content/${contentId}`, payload);
+                toast.success('Content updated successfully! 🎉');
+            } else {
+                payload.videoFile = payload.videoUrl;
+                await axios.post('/api/content', payload);
+                toast.success('Content uploaded successfully! 🎉');
+            }
+
             navigate('/admin/content');
         } catch (error) {
             console.error(error);
@@ -373,84 +456,183 @@ const ContentManagement = () => {
     };
 
     return (
-        <Container maxWidth="md">
-            <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <IconButton onClick={() => navigate(-1)}>
-                    <ArrowBack />
-                </IconButton>
-                <Typography variant="h4">Upload New Content</Typography>
+        <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2, md: 3 } }}>
+            <Box
+                sx={{
+                    mb: 4,
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    gap: 2,
+                    flexWrap: 'wrap'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontSize: { xs: '1.75rem', sm: '2rem' } }}>
+                    {isEditMode ? 'Edit Content' : 'Upload New Content'}
+                </Typography>
+                {!isEditMode && formData.type && (
+                    <Button
+                        variant="outlined"
+                        sx={{ ml: { xs: 0, sm: 'auto' }, width: { xs: '100%', sm: 'auto' } }}
+                        onClick={() => handleSelectContentType('')}
+                    >
+                        Back
+                    </Button>
+                )}
+                {isEditMode && (
+                    <Button
+                        variant="outlined"
+                        sx={{ ml: { xs: 0, sm: 'auto' }, width: { xs: '100%', sm: 'auto' } }}
+                        onClick={() => navigate(-1)}
+                    >
+                        Back
+                    </Button>
+                )}
             </Box>
 
-            <Paper sx={{ p: 4, borderRadius: 4 }}>
-                <form onSubmit={handleSubmit}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Title"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                error={!!errors.title}
-                                helperText={errors.title}
-                                required
-                            />
-                        </Grid>
+            {!isEditMode && !formData.type ? (
+                <Paper sx={{ p: { xs: 2, sm: 3, md: 4 }, borderRadius: 4 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        Select Content Type
+                    </Typography>
+                    <Grid container spacing={2} direction="column">
+                        {[
+                            { value: 'video', label: 'Video Lesson', icon: OndemandVideo, color: 'primary.main' },
+                            { value: 'reading', label: 'Reading Material', icon: PictureAsPdf, color: 'error.main' },
+                            { value: 'quiz', label: 'Quiz', icon: Quiz, color: 'success.main' }
+                        ].map((opt) => {
+                            const Icon = opt.icon;
+                            return (
+                                <Grid item xs={12} key={opt.value}>
+                                    <Card
+                                        variant="outlined"
+                                        sx={{
+                                            borderRadius: 3,
+                                            height: '100%',
+                                            '&:hover': { borderColor: 'primary.main' }
+                                        }}
+                                    >
+                                        <CardActionArea onClick={() => handleSelectContentType(opt.value)} sx={{ p: 2.25 }}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    textAlign: 'center',
+                                                    gap: 1.25
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        width: 56,
+                                                        height: 56,
+                                                        borderRadius: 3,
+                                                        bgcolor: 'action.hover',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <Icon sx={{ fontSize: 32, color: opt.color }} />
+                                                </Box>
+                                                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                                                    {opt.label}
+                                                </Typography>
+                                            </Box>
+                                        </CardActionArea>
+                                    </Card>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                    {errors.type && (
+                        <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+                            {errors.type}
+                        </Typography>
+                    )}
+                </Paper>
+            ) : (
+                <Paper sx={{ p: { xs: 2, sm: 3, md: 4 }, borderRadius: 4 }}>
+                    <form onSubmit={handleSubmit}>
+                        <Grid container spacing={{ xs: 2, sm: 3 }}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Title"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    error={!!errors.title}
+                                    helperText={errors.title}
+                                    required
+                                />
+                            </Grid>
 
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                select
-                                label="Content Type"
-                                name="type"
-                                value={formData.type}
-                                onChange={handleChange}
-                                error={!!errors.type}
-                                helperText={errors.type}
-                                required
-                            >
-                                <MenuItem value="video">Video Lesson</MenuItem>
-                                <MenuItem value="reading">Reading Material</MenuItem>
-                                <MenuItem value="quiz">Quiz</MenuItem>
-                            </TextField>
-                        </Grid>
+                            <Grid item xs={12} sm={6}>
+                                {isEditMode ? (
+                                    <TextField
+                                        fullWidth
+                                        select
+                                        label="Content Type"
+                                        name="type"
+                                        value={formData.type}
+                                        onChange={handleChange}
+                                        error={!!errors.type}
+                                        helperText={errors.type}
+                                        required
+                                    >
+                                        <MenuItem value="video">Video Lesson</MenuItem>
+                                        <MenuItem value="reading">Reading Material</MenuItem>
+                                        <MenuItem value="quiz">Quiz</MenuItem>
+                                    </TextField>
+                                ) : (
+                                    <Box>
+                                        <TextField
+                                            fullWidth
+                                            label="Content Type"
+                                            value={getContentTypeLabel(formData.type)}
+                                            disabled
+                                        />
+                                    </Box>
+                                )}
+                            </Grid>
 
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                select
-                                label="Class"
-                                name="gradeId"
-                                value={formData.gradeId}
-                                onChange={handleChange}
-                                error={!!errors.gradeId}
-                                helperText={errors.gradeId}
-                                required
-                            >
-                                {grades.map((g) => (
-                                    <MenuItem key={g.id} value={g.id}>Class {g.level} - {g.name}</MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Class"
+                                    name="gradeId"
+                                    value={formData.gradeId}
+                                    onChange={handleChange}
+                                    error={!!errors.gradeId}
+                                    helperText={errors.gradeId}
+                                    required
+                                >
+                                    {grades.map((g) => (
+                                        <MenuItem key={g.id} value={g.id}>Class {g.level} - {g.name}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
 
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                select
-                            label="Subject"
-                            name="subjectId"
-                            value={formData.subjectId}
-                            onChange={handleChange}
-                            disabled={!formData.gradeId || subjectsLoading}
-                            error={!!errors.subjectId}
-                            helperText={errors.subjectId}
-                            required
-                        >
-                            {subjects.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                            ))}
-                            </TextField>
-                        </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Subject"
+                                    name="subjectId"
+                                    value={formData.subjectId}
+                                    onChange={handleChange}
+                                    disabled={!formData.gradeId || subjectsLoading}
+                                    error={!!errors.subjectId}
+                                    helperText={errors.subjectId}
+                                    required
+                                >
+                                    {subjects.map((s) => (
+                                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
 
                         <Grid item xs={12} sm={6}>
                             <TextField
@@ -502,7 +684,7 @@ const ContentManagement = () => {
                                         border: '2px dashed',
                                         borderColor: 'divider',
                                         borderRadius: 2,
-                                        p: 4,
+                                        p: { xs: 2, sm: 3, md: 4 },
                                         textAlign: 'center',
                                         bgcolor: 'background.default',
                                         position: 'relative'
@@ -526,9 +708,19 @@ const ContentManagement = () => {
                                         </Box>
                                     ) : (
                                         <Box>
-                                            <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                            <Typography>Click or drag video file to upload</Typography>
-                                            <Typography variant="caption" color="textSecondary">Max size: 100MB</Typography>
+                                            {isEditMode && formData.existingVideoUrl ? (
+                                                <>
+                                                    <Movie sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+                                                    <Typography>Video Attached: {formData.existingVideoUrl.split('/').pop()}</Typography>
+                                                    <Typography variant="caption" color="textSecondary">Click or drag a new video file to replace</Typography>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                                                    <Typography>Click or drag video file to upload</Typography>
+                                                    <Typography variant="caption" color="textSecondary">Max size: 100MB</Typography>
+                                                </>
+                                            )}
                                         </Box>
                                     )}
                                     {errors.video && (
@@ -549,7 +741,7 @@ const ContentManagement = () => {
                                         border: '2px dashed',
                                         borderColor: 'divider',
                                         borderRadius: 2,
-                                        p: 4,
+                                        p: { xs: 2, sm: 3, md: 4 },
                                         textAlign: 'center',
                                         bgcolor: 'background.default',
                                         position: 'relative'
@@ -573,9 +765,19 @@ const ContentManagement = () => {
                                         </Box>
                                     ) : (
                                         <Box>
-                                            <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                            <Typography>Click or drag PDF file to upload</Typography>
-                                            <Typography variant="caption" color="textSecondary">Max size: 50MB</Typography>
+                                            {isEditMode && formData.existingReadingMaterial ? (
+                                                <>
+                                                    <Description sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+                                                    <Typography>PDF Attached: {formData.existingReadingMaterial.split('/').pop()}</Typography>
+                                                    <Typography variant="caption" color="textSecondary">Click or drag a new PDF file to replace</Typography>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                                                    <Typography>Click or drag PDF file to upload</Typography>
+                                                    <Typography variant="caption" color="textSecondary">Max size: 50MB</Typography>
+                                                </>
+                                            )}
                                         </Box>
                                     )}
                                     {errors.reading && (
@@ -631,6 +833,7 @@ const ContentManagement = () => {
                                         variant="outlined"
                                         component="label"
                                         startIcon={<CloudUpload />}
+                                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                                     >
                                         Select Thumbnail
                                         <input type="file" hidden accept="image/*" name="thumbnail" onChange={handleFileChange} />
@@ -662,15 +865,23 @@ const ContentManagement = () => {
                                 disabled={loading}
                                 startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
                             >
-                                {loading ? 'Processing...' : 'Create Content'}
+                                {loading ? 'Processing...' : (isEditMode ? 'Update Content' : 'Create Content')}
                             </Button>
                         </Grid>
                     </Grid>
                 </form>
             </Paper>
+            )}
 
             {/* Add Topic Dialog */}
-            <Dialog open={topicDialogOpen} onClose={() => setTopicDialogOpen(false)} fullWidth maxWidth="sm">
+            <Dialog
+                open={topicDialogOpen}
+                onClose={() => setTopicDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                fullScreen={false}
+                PaperProps={{ sx: { mx: { xs: 1.5, sm: 2 } } }}
+            >
                 <DialogTitle>Add Topic</DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     <TextField

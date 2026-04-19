@@ -15,13 +15,18 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Paper
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const ClassManagement = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [classes, setClasses] = useState([]);
@@ -123,7 +128,7 @@ const ClassManagement = () => {
               onChange={(e) => setLevel(e.target.value)}
               inputProps={{ min: 1 }}
             />
-            <Button variant="contained" onClick={addClass} disabled={saving}>
+            <Button variant="contained" onClick={addClass} disabled={saving} sx={{ py: { xs: 1.5, sm: 1 } }}>
               {saving ? 'Saving...' : 'Add Class'}
             </Button>
           </Stack>
@@ -147,6 +152,33 @@ const ClassManagement = () => {
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress />
+              </Box>
+            ) : isMobile ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filtered.map((c) => (
+                  <Paper key={c.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="subtitle2" color="textSecondary">Level {c.level}</Typography>
+                        <Typography variant="subtitle1" fontWeight="bold">{c.name}</Typography>
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        disabled={saving}
+                        onClick={() => setDeleteTarget(c)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </Paper>
+                ))}
+                {filtered.length === 0 && (
+                  <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 4 }}>
+                    No classes found
+                  </Typography>
+                )}
               </Box>
             ) : (
               <TableContainer component={Box} sx={{ maxHeight: 560, overflowX: 'auto' }}>

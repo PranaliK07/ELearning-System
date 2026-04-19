@@ -9,7 +9,9 @@ import {
   TextField,
   InputAdornment,
   IconButton,
-  Autocomplete
+  Autocomplete,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { PlayCircleOutline, Search as SearchIcon, VolumeOff, VolumeUp } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -49,6 +51,8 @@ const VideosHome = () => {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [videoReady, setVideoReady] = useState({}); // Track ready state per video
+  const [completedIndices, setCompletedIndices] = useState(new Set([0]));
+  const [showSkipError, setShowSkipError] = useState(false);
   const watchAccumulatorRef = useRef(0);
   const lastTimeRef = useRef(0);
 
@@ -149,6 +153,15 @@ const VideosHome = () => {
   const handleInlineTimeUpdate = (index, videoId, currentTime) => {
     if (openPlayer) return;
     if (index !== activeIndex) return;
+
+    const vRef = videoRefs.current[index];
+    if (vRef && !completedIndices.has(index)) {
+      const prog = (currentTime / vRef.duration) * 100;
+      if (prog > 90) { // Set completion slightly before end for better UX
+        setCompletedIndices(prev => new Set([...prev, index]));
+      }
+    }
+
     const delta = currentTime - (lastTimeRef.current || 0);
     lastTimeRef.current = currentTime;
     if (delta > 0 && delta < 3) {
@@ -230,7 +243,16 @@ const VideosHome = () => {
         return;
       }
       const height = container.clientHeight || 1;
-      const nextIndex = clampIndex(Math.round(container.scrollTop / height));
+      let nextIndex = Math.round(container.scrollTop / height);
+
+      if (nextIndex > activeIndex && !completedIndices.has(activeIndex)) {
+        container.scrollTo({ top: height * activeIndex, behavior: 'instant' });
+        if (!showSkipError) setShowSkipError(true);
+        scrollFrame.current = null;
+        return;
+      }
+
+      nextIndex = clampIndex(nextIndex);
       if (nextIndex !== activeIndex) {
         setActiveIndex(nextIndex);
       }
@@ -247,6 +269,12 @@ const VideosHome = () => {
 
   const handleSwipe = (direction) => {
     if (swipeLock.current) return;
+
+    if (direction === 'up' && !completedIndices.has(activeIndex)) {
+      if (!showSkipError) setShowSkipError(true);
+      return;
+    }
+
     setActiveIndex((prev) => {
       const next =
         direction === 'up'
@@ -369,7 +397,7 @@ const VideosHome = () => {
           borderRadius: 3,
           bgcolor: 'background.default',
           overflowY: 'auto',
-          scrollSnapType: 'y mandatory',
+          scrollSnapType: completedIndices.has(activeIndex) ? 'y mandatory' : 'none',
           scrollBehavior: 'smooth',
           userSelect: 'none',
           touchAction: 'pan-y',
@@ -412,7 +440,7 @@ const VideosHome = () => {
                   src={normalizeMediaUrl(video.videoUrl || video.videoFile)}
                   poster={normalizeMediaUrl(video.thumbnail)}
                   muted={muted}
-                  loop
+                  loop={false}
                   playsInline
                   preload="auto"
                   onTouchStart={handleTouchStart}
@@ -466,23 +494,24 @@ const VideosHome = () => {
                   <PlayCircleOutline sx={{ fontSize: 56, color: 'white' }} />
                 </Box>
                 
-                {/* Swipe indicator for first video */}
-                {index === 0 && activeIndex === 0 && (
+                {/* Swipe indicator for completed video */}
+                {index === activeIndex && completedIndices.has(activeIndex) && (
                   <Box
                     sx={{
                       position: 'absolute',
                       bottom: 16,
                       right: 16,
-                      bgcolor: 'rgba(0,0,0,0.6)',
+                      bgcolor: 'rgba(78, 205, 196, 0.8)',
                       color: 'white',
                       px: 1.5,
                       py: 0.5,
                       borderRadius: 2,
                       fontSize: 12,
-                      animation: 'bounce 1s infinite'
+                      animation: 'bounce 1s infinite',
+                      zIndex: 10
                     }}
                   >
-                    Swipe Up ↑
+                    Completed! Swipe Up ↑
                   </Box>
                 )}
                 
@@ -597,6 +626,17 @@ const VideosHome = () => {
         </Box>
       </motion.div>
       
+      <Snackbar 
+        open={showSkipError} 
+        autoHideDuration={2000} 
+        onClose={() => setShowSkipError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="warning" variant="filled" sx={{ borderRadius: 2 }}>
+          Please finish watching the current video first! 📺
+        </Alert>
+      </Snackbar>
+
       <ReelPlayer 
         open={openPlayer}
         onClose={() => setOpenPlayer(false)}

@@ -22,8 +22,11 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import { useProgress } from '../../context/ProgressContext';
 
 const AchievementsPage = () => {
+  const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [achievements, setAchievements] = useState([]);
   const [userAchievements, setUserAchievements] = useState([]);
@@ -35,6 +38,11 @@ const AchievementsPage = () => {
 
   const fetchAchievements = async () => {
     try {
+      // First silently analyze and securely check if the user unlocks any valid achievements
+      await axios.post('/api/achievements/check', {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
       const [allRes, userRes] = await Promise.all([
         axios.get('/api/achievements', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -61,14 +69,38 @@ const AchievementsPage = () => {
     return userAchievements.some(a => a.id === achievementId);
   };
 
+  const { watchTimeStats, progress } = useProgress();
+
   const getProgress = (criteria) => {
-    // Calculate progress based on criteria
-    return Math.random() * 100; // Placeholder
+    if (!criteria) return 0;
+    const c = criteria.toLowerCase();
+    
+    // Watch time criteria
+    if (c.includes('watch') || c.includes('time') || c.includes('hours')) {
+      const targetMin = parseInt(c.match(/\d+/)?.[0] || 60);
+      const currentMin = (watchTimeStats?.totalWatchTime || 0) / 60;
+      return Math.min(100, (currentMin / targetMin) * 100);
+    }
+    
+    // Lessons criteria
+    if (c.includes('lesson') || c.includes('complete')) {
+      const targetCount = parseInt(c.match(/\d+/)?.[0] || 10);
+      const completedCount = progress.filter(p => p.completed).length;
+      return Math.min(100, (completedCount / targetCount) * 100);
+    }
+
+    // Default to some logic based on points if nothing else matches
+    if (c.includes('points')) {
+      const targetPoints = parseInt(c.match(/\d+/)?.[0] || 100);
+      return Math.min(100, ((user?.points || 0) / targetPoints) * 100);
+    }
+
+    return 25; // Default starting progress for existing users
   };
 
   const achievementsList = tabValue === 0 
     ? achievements 
-    : achievements.filter(a => !isAchievementEarned(a.id));
+    : achievements.filter(a => !isAchievementEarned(a.id) && getProgress(a.criteria) > 0);
 
   return (
     <Container maxWidth="lg">

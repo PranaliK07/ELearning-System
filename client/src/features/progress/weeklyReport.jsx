@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Container,
   Paper,
@@ -6,7 +6,6 @@ import {
   Box,
   Grid,
   Card,
-  CardContent,
   List,
   ListItem,
   ListItemText,
@@ -18,7 +17,8 @@ import {
   useTheme,
   useMediaQuery,
   Collapse,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import {
   AccessTime,
@@ -29,54 +29,94 @@ import {
   Share,
   ExpandMore,
   ExpandLess,
-  CalendarToday,
-  Star
+  CalendarToday
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import TimeSpentChart from '../../components/charts/TimeSpentChart';
 import ProgressChart from '../../components/charts/ProgressChart';
 
+import { useProgress } from '../../context/ProgressContext';
+import { useAuth } from '../../context/AuthContext';
+
 const WeeklyReport = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const [expandedHighlights, setExpandedHighlights] = React.useState(!isMobile);
   const [expandedAchievements, setExpandedAchievements] = React.useState(!isMobile);
 
-  const weekData = {
-    totalWatchTime: 245,
-    avgWatchTime: 35,
-    completedLessons: 12,
-    quizzesTaken: 5,
-    avgScore: 82,
-    pointsEarned: 150,
-    topSubject: 'Mathematics',
-    dailyData: [30, 45, 25, 60, 35, 50, 0]
-  };
+  const { user } = useAuth();
+  const { progress = [], watchTimeStats, getQuizStats, loading } = useProgress();
 
-  const achievements = [
-    { name: 'Quick Learner', date: 'Jan 15, 2024', points: 20, icon: '⚡' },
-    { name: 'Math Wizard', date: 'Jan 14, 2024', points: 30, icon: '🧙' },
-    { name: 'Consistent Student', date: 'Jan 13, 2024', points: 25, icon: '📚' },
-  ];
+  const quizStats = getQuizStats();
 
-  const subjectData = {
-    labels: ['Math', 'Science', 'English', 'Hindi', 'EVS'],
-    datasets: [
-      {
-        label: 'Hours Spent',
-        data: [5, 3, 4, 2, 3],
-        backgroundColor: [
-          '#FF6B6B',
-          '#4ECDC4',
-          '#45B7D1',
-          '#96CEB4',
-          '#FFEAA7'
-        ],
-        borderWidth: 0
-      }
-    ]
-  };
+  const subjectData = useMemo(() => {
+    const subjects = {};
+    progress.forEach(p => {
+      const sName = p.Content?.Topic?.Subject?.name || 'General';
+      if (!subjects[sName]) subjects[sName] = { total: 0, completed: 0, time: 0 };
+      subjects[sName].total += 1;
+      if (p.completed) subjects[sName].completed += 1;
+      subjects[sName].time += (p.watchTime || 0) / 3600; // rough hours approx from seconds
+    });
+
+    const labels = Object.keys(subjects);
+    const data = labels.map(l => Math.max(0.1, Number(subjects[l].time.toFixed(1)))); // At least 0.1 for visibility
+    
+    // Find top subject
+    let topSubject = 'General';
+    let maxTime = -1;
+    labels.forEach((l, i) => {
+       if (data[i] > maxTime) {
+           maxTime = data[i];
+           topSubject = l;
+       }
+    });
+
+    return {
+      labels: labels.length ? labels : ['No Activity'],
+      datasets: [
+        {
+          label: 'Hours Spent',
+          data: labels.length ? data : [1],
+          backgroundColor: [
+            '#FF6B6B',
+            '#4ECDC4',
+            '#45B7D1',
+            '#96CEB4',
+            '#FFEAA7'
+          ],
+          borderWidth: 0
+        }
+      ],
+      topSubject,
+      topSubjectTime: maxTime > 0 ? maxTime : 0
+    };
+  }, [progress]);
+
+  const weekData = useMemo(() => {
+     let tTime = watchTimeStats?.totalWatchTime || 0; // minutes
+     let dailys = [0, 0, 0, 0, 0, 0, 0];
+     
+     if (watchTimeStats?.dailyWatchTime && watchTimeStats.dailyWatchTime.length > 0) {
+        const last7 = watchTimeStats.dailyWatchTime.slice(-7);
+        dailys = last7.map(d => d.minutes);
+     }
+
+     return {
+        totalWatchTime: tTime,
+        avgWatchTime: Math.round(tTime / 7),
+        completedLessons: progress.filter(p => p.completed).length,
+        quizzesTaken: quizStats.totalTaken || 0,
+        avgScore: quizStats.averageScore || 0,
+        pointsEarned: user?.points || 0,
+        topSubject: subjectData.topSubject,
+        topSubjectTime: subjectData.topSubjectTime,
+        dailyData: dailys,
+        bestDayValue: Math.max(...dailys, 0)
+     }
+  }, [watchTimeStats, progress, quizStats, user, subjectData]);
+
+  const achievements = user?.Achievements || [];
 
   const handleDownload = () => {
     // Implement PDF download
@@ -92,6 +132,19 @@ const WeeklyReport = () => {
     { icon: TrendingUp, value: `${weekData.avgScore}%`, unit: '', label: 'Avg Score', color: 'warning.main' },
     { icon: EmojiEvents, value: weekData.pointsEarned, unit: '', label: 'Points', color: 'info.main' }
   ];
+
+  if (loading) {
+     return (
+       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+         <CircularProgress />
+       </Box>
+     );
+  }
+
+  const currentDate = new Date();
+  const weekStart = new Date();
+  weekStart.setDate(currentDate.getDate() - 7);
+  const dateString = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
     <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
@@ -116,13 +169,13 @@ const WeeklyReport = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip 
               icon={<CalendarToday sx={{ fontSize: 16 }} />} 
-              label="Jan 8 - Jan 14, 2024" 
+              label={dateString} 
               size="small"
               variant="outlined"
               sx={{ mb: { xs: 1, sm: 0 } }}
             />
             <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-              Week 2 of 2024
+              Current Week Summary
             </Typography>
           </Box>
         </Box>
@@ -190,7 +243,7 @@ const WeeklyReport = () => {
               </Box>
               {isMobile && (
                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
-                  Mon - Sun
+                  Past 7 Days
                 </Typography>
               )}
             </Paper>
@@ -217,7 +270,7 @@ const WeeklyReport = () => {
                         flexShrink: 0
                       }}
                     />
-                    <Typography variant="body2" sx={{ flex: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                    <Typography variant="body2" sx={{ flex: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }} noWrap>
                       {label}
                     </Typography>
                     <Typography variant="body2" fontWeight="bold" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, ml: 0.5 }}>
@@ -254,12 +307,12 @@ const WeeklyReport = () => {
               </Box>
               <Collapse in={!isMobile || expandedAchievements}>
                 <List sx={{ pt: 0 }}>
-                  {achievements.map((achievement, index) => (
+                  {achievements.length > 0 ? achievements.map((achievement, index) => (
                     <React.Fragment key={index}>
                       <ListItem sx={{ px: { xs: 0, sm: 1 }, py: { xs: 1, sm: 1.5 } }}>
                         <ListItemAvatar>
                           <Avatar sx={{ bgcolor: 'warning.light' }}>
-                            <Typography variant="h6">{achievement.icon}</Typography>
+                            <Typography variant="h6">{achievement.icon || '🏆'}</Typography>
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -270,12 +323,12 @@ const WeeklyReport = () => {
                           }
                           secondary={
                             <Typography variant="caption" color="textSecondary">
-                              {achievement.date}
+                              {achievement.date ? new Date(achievement.date).toLocaleDateString() : 'Recently'}
                             </Typography>
                           }
                         />
                         <Chip
-                          label={`+${achievement.points}`}
+                          label={`+${achievement.points || 10}`}
                           size="small"
                           color="success"
                           sx={{ height: { xs: 24, sm: 32 }, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
@@ -283,7 +336,11 @@ const WeeklyReport = () => {
                       </ListItem>
                       {index < achievements.length - 1 && <Divider />}
                     </React.Fragment>
-                  ))}
+                  )) : (
+                     <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                        No achievements unlocked yet. Keep studying!
+                     </Typography>
+                  )}
                 </List>
               </Collapse>
             </Paper>
@@ -318,10 +375,10 @@ const WeeklyReport = () => {
                     borderRadius: 2 
                   }}>
                     <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      🌟 Best Day: Wednesday
+                      🌟 Best Day of Note
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      You studied for 60 minutes and completed 3 lessons!
+                      You studied for a peak of {weekData.bestDayValue} minutes on one of these days!
                     </Typography>
                   </Box>
                   
@@ -332,10 +389,10 @@ const WeeklyReport = () => {
                     borderRadius: 2 
                   }}>
                     <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      📚 Favorite Subject: {weekData.topSubject}
+                      📚 Favorite Subject: {weekData.topSubject !== 'No Activity' ? weekData.topSubject : 'None Yet'}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      You spent most time learning Mathematics (5 hours)
+                      {weekData.topSubject !== 'No Activity' ? `You've focused heavily on ${weekData.topSubject} recently.` : 'Start learning to discover your favorite subject!'}
                     </Typography>
                   </Box>
                   
@@ -345,10 +402,10 @@ const WeeklyReport = () => {
                     borderRadius: 2 
                   }}>
                     <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      🏆 Best Quiz Score: 95%
+                      🏆 Overall Success Rate: {weekData.avgScore}%
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      In "Introduction to Numbers" quiz
+                      You are maintaining a comprehensive quiz success rate around {weekData.avgScore}%.
                     </Typography>
                   </Box>
                 </Box>

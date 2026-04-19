@@ -20,7 +20,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+  Divider
 } from '@mui/material';
 import { Add, Assignment, Delete, Edit, Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +46,8 @@ const emptyForm = {
 
 const AssignmentManagement = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [assignments, setAssignments] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -192,83 +197,145 @@ const AssignmentManagement = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 4, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>Assignments</Typography>
           <Typography variant="body1" color="textSecondary">Create and manage assignments</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}>New Assignment</Button>
+        <Button variant="contained" startIcon={<Add />} onClick={openCreate} sx={{ height: 'fit-content' }}>New Assignment</Button>
       </Box>
 
-      <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <TableContainer>
-          <Table>
-            <TableHead sx={{ bgcolor: 'primary.main' }}>
-              <TableRow>
-                <TableCell sx={{ color: 'white' }}>Title</TableCell>
-                <TableCell sx={{ color: 'white' }}>Subject</TableCell>
-                <TableCell sx={{ color: 'white' }}>Grade</TableCell>
-                <TableCell sx={{ color: 'white' }}>Due Date</TableCell>
-                <TableCell sx={{ color: 'white' }}>Attachment</TableCell>
-                <TableCell sx={{ color: 'white' }}>Status</TableCell>
-                <TableCell sx={{ color: 'white' }}>Submissions</TableCell>
-                <TableCell align="right" sx={{ color: 'white' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {assignments.length > 0 ? (
-                assignments.map((assignment) => (
-                  <TableRow key={assignment.id} hover>
-                    <TableCell><Typography fontWeight="medium">{assignment.title}</Typography></TableCell>
-                    <TableCell>{assignment.Subject?.name || '-'}</TableCell>
-                    <TableCell>{assignment.Grade?.name || '-'}</TableCell>
-                    <TableCell>{assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : '-'}</TableCell>
-                    <TableCell>
-                      {assignment.attachmentUrl ? (
-                        <Button size="small" variant="text" onClick={() => window.open(assignment.attachmentUrl, '_blank')}>
-                          View
-                        </Button>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">—</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={(assignment.Submissions?.length || 0) > 0 ? 'Completed' : 'Pending'}
-                        size="small"
-                        color={(assignment.Submissions?.length || 0) > 0 ? 'success' : 'warning'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {assignment.Submissions?.length || 0}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="View Submissions">
-                        <IconButton color="primary" onClick={() => navigate(`/assignments/${assignment.id}/submissions`)}><Visibility /></IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton color="info" onClick={() => openEdit(assignment)}><Edit /></IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => handleDelete(assignment)}><Delete /></IconButton>
-                      </Tooltip>
+      <Paper sx={{ borderRadius: 3, overflow: 'hidden', p: isMobile ? 2 : 0 }}>
+        {isMobile ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {assignments.length > 0 ? (
+              assignments.map((assignment) => (
+                <Paper key={assignment.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">{assignment.title}</Typography>
+                    <Chip
+                      label={(assignment.Submissions?.length || 0) > 0 ? 'Completed' : 'Pending'}
+                      size="small"
+                      color={(assignment.Submissions?.length || 0) > 0 ? 'success' : 'warning'}
+                    />
+                  </Box>
+                  <Grid container spacing={1} sx={{ mb: 2 }}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Subject</Typography>
+                      <Typography variant="body2">{assignment.Subject?.name || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Grade</Typography>
+                      <Typography variant="body2">{assignment.Grade?.name || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Due Date</Typography>
+                      <Typography variant="body2">{assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="textSecondary">Submissions</Typography>
+                      <Typography variant="body2" fontWeight="bold">{assignment.Submissions?.length || 0}</Typography>
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                    {assignment.attachmentUrl && (
+                      <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => window.open(assignment.attachmentUrl, '_blank')}>
+                        View File
+                      </Button>
+                    )}
+                  </Box>
+
+                  <Divider sx={{ my: 1.5 }} />
+
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button size="small" startIcon={<Visibility />} onClick={() => navigate(`/assignments/${assignment.id}/submissions`)}>
+                      Submissions
+                    </Button>
+                    <Box>
+                      <IconButton size="small" color="info" onClick={() => openEdit(assignment)}><Edit /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleDelete(assignment)}><Delete /></IconButton>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Assignment sx={{ fontSize: 48, color: 'divider', mb: 1 }} />
+                <Typography color="textSecondary">No assignments found</Typography>
+              </Box>
+            )}
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: 'primary.main' }}>
+                <TableRow>
+                  <TableCell sx={{ color: 'white' }}>Title</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Subject</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Grade</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Due Date</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Attachment</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Submissions</TableCell>
+                  <TableCell align="right" sx={{ color: 'white' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {assignments.length > 0 ? (
+                  assignments.map((assignment) => (
+                    <TableRow key={assignment.id} hover>
+                      <TableCell><Typography fontWeight="medium">{assignment.title}</Typography></TableCell>
+                      <TableCell>{assignment.Subject?.name || '-'}</TableCell>
+                      <TableCell>{assignment.Grade?.name || '-'}</TableCell>
+                      <TableCell>{assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell>
+                        {assignment.attachmentUrl ? (
+                          <Button size="small" variant="text" onClick={() => window.open(assignment.attachmentUrl, '_blank')}>
+                            View
+                          </Button>
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">—</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={(assignment.Submissions?.length || 0) > 0 ? 'Completed' : 'Pending'}
+                          size="small"
+                          color={(assignment.Submissions?.length || 0) > 0 ? 'success' : 'warning'}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {assignment.Submissions?.length || 0}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="View Submissions">
+                          <IconButton color="primary" onClick={() => navigate(`/assignments/${assignment.id}/submissions`)}><Visibility /></IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton color="info" onClick={() => openEdit(assignment)}><Edit /></IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton color="error" onClick={() => handleDelete(assignment)}><Delete /></IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                      <Assignment sx={{ fontSize: 64, color: 'divider', mb: 2 }} />
+                      <Typography variant="h6" color="textSecondary">No assignments found</Typography>
+                      <Button variant="text" onClick={openCreate} sx={{ mt: 1 }}>Create your first assignment</Button>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    <Assignment sx={{ fontSize: 64, color: 'divider', mb: 2 }} />
-                    <Typography variant="h6" color="textSecondary">No assignments found</Typography>
-                    <Button variant="text" onClick={openCreate} sx={{ mt: 1 }}>Create your first assignment</Button>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Paper>
 
       <Dialog open={open} onClose={closeDialog} maxWidth="sm" fullWidth>

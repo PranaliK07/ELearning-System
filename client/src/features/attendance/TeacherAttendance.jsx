@@ -15,6 +15,7 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Stack,
   Table,
@@ -24,7 +25,11 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -48,9 +53,10 @@ const PLATFORM_SUBTITLE = 'Learning Platform';
 const STATUS_PRESENT = 'present';
 const STATUS_ABSENT = 'absent';
 
-const formatDateLabel = (dateOnly) => {
+const formatDateLabel = (dateOnly, compact = false) => {
   try {
     const d = new Date(dateOnly);
+    if (compact) return String(d.getDate());
     return new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short' }).format(d);
   } catch {
     return String(dateOnly || '');
@@ -58,6 +64,8 @@ const formatDateLabel = (dateOnly) => {
 };
 
 const TeacherAttendance = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [classes, setClasses] = useState([]);
   const [selectedGradeId, setSelectedGradeId] = useState('');
   const [date, setDate] = useState(todayDateOnly());
@@ -194,14 +202,15 @@ const TeacherAttendance = () => {
   const buildExportMatrix = () => {
     const dates = report.dates || [];
     const students = report.students || [];
+    const isCompact = dates.length > 10;
     const header = [
       'Student',
       'Email',
-      ...dates.map((d) => formatDateLabel(d)),
-      'Present',
-      'Absent',
-      'Marked',
-      'Attendance %'
+      ...dates.map((d) => formatDateLabel(d, isCompact)),
+      'Pres.',
+      'Abs.',
+      'Tot.',
+      'Att. %'
     ];
 
     const body = students.map((s) => {
@@ -212,7 +221,7 @@ const TeacherAttendance = () => {
       const row = [s.name || '', s.email || ''];
       for (const d of dates) {
         const rec = attendanceLookup.get(`${s.id}_${d}`);
-        const status = rec?.status;
+        const status = rec?.status?.toLowerCase();
         const v = status === STATUS_PRESENT ? 'P' : status === STATUS_ABSENT ? 'A' : '-';
         row.push(v);
         if (status === STATUS_PRESENT) presentCount += 1;
@@ -254,26 +263,31 @@ const TeacherAttendance = () => {
     const titleRows = [
       [PLATFORM_NAME],
       [PLATFORM_SUBTITLE],
-      ['────────────────────────────────────────────────────────────'],
-      [
-        `Attendance Report${report?.grade?.name ? ` - ${report.grade.name}` : ''} (${new Date(reportFrom).toLocaleDateString()} to ${new Date(reportTo).toLocaleDateString()})`
-      ],
+      [''],
+      [`Attendance Report${report?.grade?.name ? ` - ${report.grade.name}` : ''}`],
+      [`Period: ${new Date(reportFrom).toLocaleDateString()} to ${new Date(reportTo).toLocaleDateString()}`],
       ['Legend: P = Present, A = Absent, - = Not marked'],
-      []
+      ['']
     ];
+
     const aoa = [...titleRows, header, ...body];
     const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Styling
     worksheet['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: header.length - 1 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: header.length - 1 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: header.length - 1 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: header.length - 1 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: header.length - 1 } }, // Name
+      { s: { r: 1, c: 0 }, e: { r: 1, c: header.length - 1 } }, // Subtitle
+      { s: { r: 3, c: 0 }, e: { r: 3, c: header.length - 1 } }, // Report Title
+      { s: { r: 4, c: 0 }, e: { r: 4, c: header.length - 1 } }, // Period
+      { s: { r: 5, c: 0 }, e: { r: 5, c: header.length - 1 } }  // Legend
     ];
+
     worksheet['!cols'] = [
-      { wch: 22 }, // Student
-      { wch: 26 }, // Email
-      ...Array.from({ length: header.length - 2 }, () => ({ wch: 10 }))
+      { wch: 25 }, // Student
+      { wch: 30 }, // Email
+      ...Array.from({ length: header.length - 2 }, () => ({ wch: 12 }))
     ];
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
     const safeClass = (report?.grade?.name || `class_${selectedGradeId}`).replace(/[^\w\-]+/g, '_');
@@ -288,53 +302,109 @@ const TeacherAttendance = () => {
 
       const manyColumns = header.length > 10;
       const doc = new jsPDF({ orientation: manyColumns ? 'landscape' : 'portrait' });
-      let startY = 14;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      let startY = 15;
 
       const logo = await loadLogo().catch(() => null);
       if (logo?.dataUrl) {
         try {
-          doc.addImage(logo.dataUrl, 'PNG', 14, 10, 18, 18);
-          doc.setFontSize(14);
-          doc.text(PLATFORM_NAME, 36, 16);
+          doc.addImage(logo.dataUrl, 'PNG', 14, 10, 20, 20);
+          doc.setFontSize(22);
+          doc.setTextColor(176, 18, 91); // Dark Pink
+          doc.setFont('helvetica', 'bold');
+          doc.text(PLATFORM_NAME, 38, 20);
+          
           doc.setFontSize(10);
-          doc.text(PLATFORM_SUBTITLE, 36, 22);
-          startY = 28;
+          doc.setTextColor(100);
+          doc.setFont('helvetica', 'normal');
+          doc.text(PLATFORM_SUBTITLE, 38, 26);
+          startY = 35;
         } catch (e) {
-          // ignore addImage failures
+          console.error('Logo add failed', e);
         }
       }
 
-      doc.setFontSize(12);
+      doc.setDrawColor(176, 18, 91);
+      doc.setLineWidth(1);
+      doc.line(14, startY - 5, pageWidth - 14, startY - 5);
+
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'bold');
       const title = `Attendance Report${report?.grade?.name ? ` - ${report.grade.name}` : ''}`;
-      doc.setDrawColor(200);
-      doc.setLineWidth(0.4);
-      doc.line(14, startY, doc.internal.pageSize.getWidth() - 14, startY);
-      const titleY = startY + 6;
-      doc.text(title, 14, titleY);
+      doc.text(title, 14, startY + 5);
+
       doc.setFontSize(10);
-      doc.text(`From: ${new Date(reportFrom).toLocaleDateString()}  To: ${new Date(reportTo).toLocaleDateString()}`, 14, titleY + 7);
-      doc.text('Legend: P = Present, A = Absent, - = Not marked', 14, titleY + 13);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text(`Period: ${new Date(reportFrom).toLocaleDateString()} to ${new Date(reportTo).toLocaleDateString()}`, 14, startY + 12);
+      doc.text('Legend: P = Present, A = Absent, - = Not marked', 14, startY + 18);
+
+      const isCompact = dates.length > 10;
 
       autoTable(doc, {
-        startY: titleY + 18,
+        startY: startY + 25,
         head: [header],
         body,
         theme: 'grid',
-        styles: { fontSize: manyColumns ? 7 : 9, cellPadding: 2, halign: 'center' },
-        headStyles: { fillColor: [63, 81, 181], halign: 'center' },
+        styles: { 
+          fontSize: isCompact ? 6 : 8, 
+          cellPadding: isCompact ? 1 : 2, 
+          halign: 'center', 
+          valign: 'middle',
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
+        },
+        headStyles: { 
+          fillColor: [176, 18, 91], 
+          textColor: 255, 
+          fontStyle: 'bold',
+          fontSize: isCompact ? 6 : 8
+        },
         columnStyles: {
-          0: { halign: 'left' },
-          1: { halign: 'left' }
+          0: { halign: 'left', fontStyle: 'bold', cellWidth: isCompact ? 35 : 45 },
+          1: { halign: 'left', cellWidth: isCompact ? 40 : 50 }
         },
         didParseCell: (data) => {
           const col = data.column.index;
           const isDateCol = col >= 2 && col < 2 + (dates?.length || 0);
-          if (!isDateCol || data.section !== 'body') return;
-          const v = String(data.cell.raw || '').trim().toUpperCase();
-          if (v === 'P') data.cell.styles.textColor = [34, 197, 94];
-          if (v === 'A') data.cell.styles.textColor = [239, 68, 68];
+          const isStatCol = col >= 2 + (dates?.length || 0);
+          
+          if (data.section === 'head' && isDateCol) {
+            data.cell.styles.fontSize = isCompact ? 5 : 7;
+          }
+
+          if (data.section === 'body') {
+            if (isDateCol) {
+              const v = String(data.cell.raw || '').trim().toUpperCase();
+              if (v === 'P') {
+                data.cell.styles.textColor = [34, 197, 94];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (v === 'A') {
+                data.cell.styles.textColor = [239, 68, 68];
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+            if (isStatCol) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [250, 250, 250];
+            }
+          }
         }
       });
+
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - 30, doc.internal.pageSize.getHeight() - 10);
+        doc.text(`Generated on ${new Date().toLocaleString()}`, 14, doc.internal.pageSize.getHeight() - 10);
+      }
+
       const safeClass = (report?.grade?.name || `class_${selectedGradeId}`).replace(/[^\w\-]+/g, '_');
       doc.save(`attendance_report_${safeClass}_${reportFrom}_to_${reportTo}.pdf`);
       toast.success('PDF report downloaded');
@@ -356,18 +426,19 @@ const TeacherAttendance = () => {
       logoArrayBuffer = null;
     }
 
-    const rows = [
+    const tableRows = [
       new DocxTableRow({
         children: header.map((h) =>
           new DocxTableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: String(h), bold: true })] })]
+            shading: { fill: 'B0125B' },
+            children: [new Paragraph({ children: [new TextRun({ text: String(h), bold: true, color: 'FFFFFF' })], alignment: 'center' })]
           })
         )
       }),
       ...body.map(
         (r) =>
           new DocxTableRow({
-            children: r.map((cell) => new DocxTableCell({ children: [new Paragraph(String(cell ?? ''))] }))
+            children: r.map((cell) => new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(cell ?? '') })], alignment: 'center' })] }))
           })
       )
     ];
@@ -388,36 +459,28 @@ const TeacherAttendance = () => {
                   ? [
                       new ImageRun({
                         data: logoArrayBuffer,
-                        transformation: { width: 44, height: 44 }
-                      }),
-                      new TextRun({ text: '  ' })
+                        transformation: { width: 60, height: 60 }
+                      })
                     ]
                   : []),
-                new TextRun({ text: PLATFORM_NAME, bold: true, size: 32 })
               ],
               spacing: { after: 120 }
             }),
             new Paragraph({
-              children: [new TextRun({ text: PLATFORM_SUBTITLE })],
-              spacing: { after: 250 }
+              children: [new TextRun({ text: PLATFORM_NAME, bold: true, size: 40, color: 'B0125B' })],
+              spacing: { after: 60 }
             }),
             new Paragraph({
-              border: {
-                bottom: {
-                  color: 'BDBDBD',
-                  space: 1,
-                  size: 6
-                }
-              },
-              spacing: { after: 250 }
+              children: [new TextRun({ text: PLATFORM_SUBTITLE, color: '666666' })],
+              spacing: { after: 300 }
             }),
             new Paragraph({
               children: [new TextRun({ text: 'Attendance Report', bold: true, size: 28 })],
-              spacing: { after: 250 }
+              spacing: { after: 200 }
             }),
             new Paragraph({
-              children: [new TextRun({ text: `From: ${new Date(reportFrom).toLocaleDateString()}   To: ${new Date(reportTo).toLocaleDateString()}` })],
-              spacing: { after: 250 }
+              children: [new TextRun({ text: `Period: ${new Date(reportFrom).toLocaleDateString()} to ${new Date(reportTo).toLocaleDateString()}` })],
+              spacing: { after: 100 }
             }),
             ...(report?.grade?.name
               ? [
@@ -428,12 +491,16 @@ const TeacherAttendance = () => {
                 ]
               : []),
             new Paragraph({
-              children: [new TextRun({ text: 'Legend: P = Present, A = Absent, - = Not marked' })],
-              spacing: { after: 250 }
+              children: [new TextRun({ text: 'Legend: P = Present, A = Absent, - = Not marked', size: 18, color: '666666' })],
+              spacing: { after: 400 }
             }),
             new DocxTable({
               width: { size: 100, type: WidthType.PERCENTAGE },
-              rows
+              rows: tableRows
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `\nGenerated on ${new Date().toLocaleString()}`, size: 16, color: '999999' })],
+              alignment: 'right'
             })
           ]
         }
@@ -494,36 +561,107 @@ const TeacherAttendance = () => {
           <Divider sx={{ my: 2 }} />
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
-            <Chip label={`Present: ${presentCount}`} color="success" variant="outlined" />
-            <Chip label={`Absent: ${absentCount}`} color="error" variant="outlined" />
-            <Box sx={{ flex: 1 }} />
-            <Button variant="outlined" onClick={() => setAll('present')} disabled={loading || saving}>
-              Mark All Present
-            </Button>
-            <Button variant="outlined" onClick={() => setAll('absent')} disabled={loading || saving}>
-              Mark All Absent
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setReportOpen(true);
-                setReportFrom(shiftDays(-30));
-                setReportTo(todayDateOnly());
-                setReport({ dates: [], students: [], attendance: [] });
-              }}
-              disabled={!selectedGradeId}
-            >
-              Attendance Report
-            </Button>
-            <Button variant="contained" onClick={save} disabled={loading || saving || rows.length === 0}>
-              {saving ? 'Saving...' : 'Save Attendance'}
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
+              <Chip label={`P: ${presentCount}`} color="success" variant="outlined" size="small" />
+              <Chip label={`A: ${absentCount}`} color="error" variant="outlined" size="small" />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button size="small" variant="outlined" onClick={() => setAll('present')} disabled={loading || saving} sx={{ flex: { xs: 1, sm: 'none' } }}>
+                All Present
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => setAll('absent')} disabled={loading || saving} sx={{ flex: { xs: 1, sm: 'none' } }}>
+                All Absent
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
+              <Button
+                fullWidth={isMobile}
+                variant="outlined"
+                onClick={() => {
+                  setReportOpen(true);
+                  setReportFrom(shiftDays(-30));
+                  setReportTo(todayDateOnly());
+                  setReport({ dates: [], students: [], attendance: [] });
+                }}
+                disabled={!selectedGradeId}
+              >
+                Report
+              </Button>
+              <Button fullWidth={isMobile} variant="contained" onClick={save} disabled={loading || saving || rows.length === 0}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </Box>
           </Stack>
 
           <Box sx={{ mt: 2 }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress />
+              </Box>
+            ) : isMobile ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filteredRows.map((r) => (
+                  <Paper key={r.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                      <Box
+                        component="img"
+                        alt={r.name}
+                        src={resolveAvatarSrc(r.avatar)}
+                        sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'grey.100' }}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '';
+                        }}
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {r.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {r.email}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <ToggleButtonGroup
+                        fullWidth
+                        size="small"
+                        value={r.status}
+                        exclusive
+                        onChange={(e, newStatus) => {
+                          if (newStatus) updateRow(r.id, { status: newStatus });
+                        }}
+                        sx={{
+                          '& .MuiToggleButton-root': {
+                            py: 1,
+                            '&.Mui-selected': {
+                              bgcolor: (theme) => r.status === 'present' ? 'success.light' : 'error.light',
+                              color: 'white',
+                            }
+                          }
+                        }}
+                      >
+                        <ToggleButton value="present" color="success">Present</ToggleButton>
+                        <ToggleButton value="absent" color="error">Absent</ToggleButton>
+                      </ToggleButtonGroup>
+                      
+                      <TextField
+                        size="small"
+                        fullWidth
+                        label="Note"
+                        placeholder="Optional note"
+                        value={r.note}
+                        onChange={(e) => updateRow(r.id, { note: e.target.value })}
+                      />
+                    </Box>
+                  </Paper>
+                ))}
+                {filteredRows.length === 0 && (
+                  <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
+                    No students found.
+                  </Typography>
+                )}
               </Box>
             ) : (
               <TableContainer component={Box} sx={{ maxHeight: 520, overflowX: 'auto' }}>
@@ -560,17 +698,36 @@ const TeacherAttendance = () => {
                             </Box>
                           </Box>
                         </TableCell>
-                        <TableCell sx={{ width: 180 }}>
-                          <FormControl fullWidth>
-                            <Select
-                              size="small"
-                              value={r.status}
-                              onChange={(e) => updateRow(r.id, { status: e.target.value })}
-                            >
-                              <MenuItem value="present">Present</MenuItem>
-                              <MenuItem value="absent">Absent</MenuItem>
-                            </Select>
-                          </FormControl>
+                        <TableCell sx={{ width: 220 }}>
+                          <ToggleButtonGroup
+                            size="small"
+                            value={r.status}
+                            exclusive
+                            onChange={(e, newStatus) => {
+                              if (newStatus) updateRow(r.id, { status: newStatus });
+                            }}
+                            sx={{
+                              '& .MuiToggleButton-root': {
+                                px: 2,
+                                py: 0.5,
+                                fontSize: '0.75rem',
+                                '&.Mui-selected': {
+                                  bgcolor: (theme) => r.status === 'present' ? 'success.light' : 'error.light',
+                                  color: 'white',
+                                  '&:hover': {
+                                    bgcolor: (theme) => r.status === 'present' ? 'success.main' : 'error.main',
+                                  }
+                                }
+                              }
+                            }}
+                          >
+                            <ToggleButton value="present" color="success">
+                              Present
+                            </ToggleButton>
+                            <ToggleButton value="absent" color="error">
+                              Absent
+                            </ToggleButton>
+                          </ToggleButtonGroup>
                         </TableCell>
                         <TableCell>
                           <TextField
@@ -635,16 +792,48 @@ const TeacherAttendance = () => {
                 Select a date range and click Load to view the report.
               </Typography>
             ) : (
-              <TableContainer component={Box} sx={{ maxHeight: 560, overflowX: 'auto' }}>
-                <Table stickyHeader size="small" sx={{ minWidth: Math.max(720, 220 + report.dates.length * 90) }}>
+              <TableContainer 
+                component={Paper} 
+                elevation={0}
+                sx={{ 
+                  maxHeight: 600, 
+                  overflowX: 'auto',
+                  borderRadius: 4,
+                  border: '1px solid rgba(0,0,0,0.05)',
+                  '&::-webkit-scrollbar': { height: 8 },
+                  '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 4 }
+                }}
+              >
+                <Table stickyHeader size="small" sx={{ minWidth: Math.max(800, 200 + report.dates.length * 70) }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 2 }}>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 800, 
+                          position: 'sticky', 
+                          left: 0, 
+                          bgcolor: '#f8f9fa', 
+                          zIndex: 3,
+                          borderRight: '1px solid rgba(0,0,0,0.05)',
+                          minWidth: 180
+                        }}
+                      >
                         Student
                       </TableCell>
                       {report.dates.map((d) => (
-                        <TableCell key={d} sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {new Date(d).toLocaleDateString()}
+                        <TableCell 
+                          key={d} 
+                          align="center"
+                          sx={{ 
+                            fontWeight: 800, 
+                            whiteSpace: 'nowrap',
+                            bgcolor: '#f8f9fa',
+                            color: '#0B1F3B',
+                            fontSize: '0.75rem',
+                            minWidth: 60
+                          }}
+                        >
+                          {new Date(d).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -652,7 +841,16 @@ const TeacherAttendance = () => {
                   <TableBody>
                     {report.students.map((s) => (
                       <TableRow key={s.id} hover>
-                        <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+                        <TableCell 
+                          sx={{ 
+                            position: 'sticky', 
+                            left: 0, 
+                            bgcolor: 'background.paper', 
+                            zIndex: 1,
+                            borderRight: '1px solid rgba(0,0,0,0.05)',
+                            py: 1.5
+                          }}
+                        >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Box
                               component="img"

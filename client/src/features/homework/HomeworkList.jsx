@@ -165,9 +165,11 @@ const HomeworkList = () => {
               <Paper key={row.id} sx={{ p: 2, mb: 2, borderRadius: 2, border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>
                 <Stack spacing={0.5}>
                   <Typography variant="subtitle1" fontWeight="bold">{row.title}</Typography>
-                  <Typography variant="caption" color="textSecondary">{row.subject} • {row.topic}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ wordBreak: 'break-word' }}>
+                    {row.subject} - {row.topic}
+                  </Typography>
                   {row.description && (
-                    <Typography variant="caption" color="textSecondary">
+                    <Typography variant="caption" color="textSecondary" sx={{ wordBreak: 'break-word' }}>
                       {row.description.length > 90 ? `${row.description.slice(0, 90)}...` : row.description}
                     </Typography>
                   )}
@@ -177,7 +179,7 @@ const HomeworkList = () => {
                   <Chip icon={row.dueStatus.icon} label={row.dueStatus.label} color={row.dueStatus.color} size="small" variant={row.dueStatus.color === 'default' ? 'outlined' : 'filled'} />
                 </Stack>
                 {row.attachmentUrl && (
-                  <Button size="small" variant="text" sx={{ mt: 1 }} onClick={() => window.open(row.attachmentUrl, '_blank')}>
+                  <Button size="small" variant="text" sx={{ mt: 1, width: { xs: '100%', sm: 'auto' } }} onClick={() => window.open(row.attachmentUrl, '_blank')}>
                     View attachment
                   </Button>
                 )}
@@ -186,6 +188,7 @@ const HomeworkList = () => {
                     size="small"
                     variant={row.status.label === 'Completed' ? 'outlined' : 'contained'}
                     color={row.status.label === 'Completed' ? 'primary' : 'secondary'}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                     onClick={() => navigate(`/assignments/view/${row.id}`)}
                   >
                     {row.status.label === 'Completed' ? 'View' : 'Submit'}
@@ -264,7 +267,7 @@ const HomeworkList = () => {
                           View file
                         </Button>
                       ) : (
-                        <Typography variant="caption" color="textSecondary">—</Typography>
+                        <Typography variant="caption" color="textSecondary">-</Typography>
                       )}
                     </TableCell>
                     <TableCell align="right">

@@ -17,7 +17,7 @@ import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback', 'study-material']),
+  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback', 'study-material']),
   teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'study-material']),
   student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'attendance', 'doubts', 'feedback', 'study-material']),
 };
@@ -39,7 +39,6 @@ const modules = [
   { key: 'content', label: 'Content Management' },
   { key: 'users', label: 'User Management' },
   { key: 'reports', label: 'Reports' },
-  { key: 'reports-issues', label: 'Reports & Issues' },
   { key: 'settings', label: 'System Settings' },
   { key: 'business-settings', label: 'Business Settings' },
   { key: 'feedback', label: 'Feedback & Ratings' },

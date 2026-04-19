@@ -15,7 +15,9 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
@@ -23,6 +25,8 @@ import api from '../../utils/axios';
 const dateOnly = (d) => d.toISOString().slice(0, 10);
 
 const StudentAttendance = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [from, setFrom] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -65,7 +69,7 @@ const StudentAttendance = () => {
   };
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         My Attendance
       </Typography>
@@ -75,28 +79,54 @@ const StudentAttendance = () => {
 
       <Card sx={{ borderRadius: 4 }}>
         <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
-            <TextField
-              fullWidth
-              label="From"
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              fullWidth
-              label="To"
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <Box sx={{ flex: 1 }} />
-            <Chip label={`Present: ${summary.present}`} color="success" variant="outlined" />
-            <Chip label={`Absent: ${summary.absent}`} color="error" variant="outlined" />
-            <Chip label={`Today: ${summary.todayStatus}`} variant="outlined" />
-          </Stack>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 420px) auto' },
+              gap: 2,
+              alignItems: { xs: 'stretch', md: 'end' }
+            }}
+          >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(160px, 1fr))' },
+                gap: 2
+              }}
+            >
+              <TextField
+                fullWidth
+                label="From"
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                fullWidth
+                label="To"
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Box>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              sx={{
+                flexWrap: 'wrap',
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                alignItems: 'center'
+              }}
+            >
+              <Chip label={`Present: ${summary.present}`} color="success" variant="outlined" />
+              <Chip label={`Absent: ${summary.absent}`} color="error" variant="outlined" />
+              <Chip label={`Today: ${summary.todayStatus}`} variant="outlined" />
+            </Stack>
+          </Box>
 
           <Divider sx={{ my: 2 }} />
 
@@ -104,6 +134,39 @@ const StudentAttendance = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
               <CircularProgress />
             </Box>
+          ) : isMobile ? (
+            <Stack spacing={1.5}>
+              {rows.map((r) => (
+                <Card key={`${r.date}-${r.status}`} variant="outlined" sx={{ borderRadius: 3 }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Stack spacing={1}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          gap: 1,
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {new Date(r.date).toLocaleDateString()}
+                        </Typography>
+                        {statusChip(r.status)}
+                      </Box>
+                      <Typography variant="body2" color="textSecondary" sx={{ wordBreak: 'break-word' }}>
+                        {r.note || '-'}
+                      </Typography>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+              {rows.length === 0 && (
+                <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
+                  No attendance records in this date range.
+                </Typography>
+              )}
+            </Stack>
           ) : (
             <TableContainer component={Box} sx={{ maxHeight: 520, overflowX: 'auto' }}>
               <Table stickyHeader size="small" sx={{ minWidth: 560 }}>

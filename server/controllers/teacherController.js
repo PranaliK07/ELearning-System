@@ -1,4 +1,4 @@
-const { User, Progress, Content, Assignment, Submission, Grade, Announcement, Notification, ClassCommunication } = require('../models');
+const { User, Progress, Content, Assignment, Submission, Grade, Announcement, Notification, ClassCommunication, Attendance } = require('../models');
 const { Op } = require('sequelize');
 const { sendSmsAndWhatsappToRecipients, normalizePhone } = require('../utils/parentMessaging');
 
@@ -19,7 +19,7 @@ const getMyStudents = async (req, res) => {
   try {
     const students = await User.findAll({
       where: { role: 'student' },
-      attributes: ['id', 'name', 'avatar', 'grade', 'email', 'points'],
+      attributes: ['id', 'name', 'avatar', 'grade', 'email', 'points', 'parentPhone'],
       include: [{ model: Grade, attributes: ['id', 'name', 'level'] }],
       order: [['updatedAt', 'DESC']]
     });
@@ -32,21 +32,71 @@ const getMyStudents = async (req, res) => {
 
 const getStudentDetails = async (req, res) => {
   try {
-    const student = await User.findByPk(req.params.id, {
-      attributes: ['id', 'name', 'email', 'avatar', 'grade', 'points', 'streak'],
-      include: [{ model: Progress, include: [Content] }]
+    const studentId = req.params.id;
+    const student = await User.findByPk(studentId, {
+      attributes: ['id', 'name', 'email', 'avatar', 'grade', 'points', 'streak', 'GradeId'],
+      include: [
+        { model: Progress, include: [Content] },
+        { model: Grade, attributes: ['id', 'name', 'level'] }
+      ]
     });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
+    // Fetch Attendance
+    const attendance = await Attendance.findAll({ where: { studentId } });
+    const presentCount = attendance.filter(a => a.status === 'present').length;
+    const totalAttendance = attendance.length;
+    const attendancePercentage = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0;
+
+    // Fetch Assignments and Submissions
+    const gradeId = student.GradeId || student.Grade?.id;
+    const gradeLevel = student.grade;
+    
+    const assignments = await Assignment.findAll({
+      where: {
+        [Op.or]: [
+          { gradeId: gradeId || -1 },
+          { LessonId: { [Op.in]: student.Progress.map(p => p.Content?.LessonId).filter(Boolean) } }
+        ]
+      }
+    });
+
+    const submissions = await Submission.findAll({
+      where: { studentId, assignmentId: { [Op.in]: assignments.map(a => a.id) } }
+    });
+
+    const completedAssignments = submissions.length;
+    const totalAssignments = assignments.length;
+    const assignmentCompletion = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
+
     const progressList = student.Progress || [];
     const quizScores = progressList.filter((p) => p.quizScore !== null && p.quizScore !== undefined).map((p) => p.quizScore);
+    const averageQuizScore = quizScores.length ? Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length) : 0;
+    const lessonCompletion = progressList.length > 0 ? Math.round((progressList.filter(p => p.completed).length / progressList.length) * 100) : 0;
+
+    // Overall Performance (Weighted)
+    const overallPerformance = Math.round(
+      (averageQuizScore * 0.3) +
+      (lessonCompletion * 0.3) +
+      (assignmentCompletion * 0.2) +
+      (attendancePercentage * 0.2)
+    );
+
     const stats = {
       totalWatchTime: progressList.reduce((sum, p) => sum + (p.watchTime || 0), 0),
       completedLessons: progressList.filter((p) => p.completed).length,
-      averageQuizScore: quizScores.length ? quizScores.reduce((a, b) => a + b, 0) / quizScores.length : 0
+      averageQuizScore,
+      lessonCompletion,
+      attendancePercentage,
+      assignmentCompletion,
+      overallPerformance,
+      totalAssignments,
+      completedAssignments,
+      totalAttendance,
+      presentCount
     };
 
     res.json({ student, stats });
@@ -379,12 +429,15 @@ const sendClassCommunication = async (req, res) => {
     });
 
     const recipientIds = new Set();
-    if (audience === 'students' || audience === 'both') {
+    const isForStudents = audience === 'students' || audience === 'both';
+    const isForParents = audience === 'parents' || audience === 'both';
+
+    if (isForStudents) {
       students.forEach((student) => recipientIds.add(student.id));
     }
 
     let parentRecipients = [];
-    if (audience === 'parents' || audience === 'both') {
+    if (isForParents) {
       const parentIds = [...new Set(students.map((student) => student.ParentId).filter(Boolean))];
       if (parentIds.length) {
         const parents = await User.findAll({
@@ -426,60 +479,74 @@ const sendClassCommunication = async (req, res) => {
       await Notification.bulkCreate(notifications);
     }
 
-    // Optional: deliver parent communications via SMS + WhatsApp (Twilio) when audience includes parents.
-    if (audience === 'parents' || audience === 'both') {
+    // Deliver parent communications via SMS + WhatsApp (Twilio)
+    if (isForParents) {
       const className = grade ? grade.name : 'All Classes';
       const senderName = req.user?.name || 'Teacher';
+      const defaultCountryCode = process.env.PHONE_DEFAULT_COUNTRY_CODE || '+91';
 
       const recipientByPhone = new Map();
-      const defaultCountryCode = process.env.PHONE_DEFAULT_COUNTRY_CODE;
       const addRecipient = (id, phone) => {
         const normalized = normalizePhone(phone, defaultCountryCode);
-        if (!normalized) return;
-        if (!recipientByPhone.has(normalized)) {
+        if (normalized && !recipientByPhone.has(normalized)) {
           recipientByPhone.set(normalized, { id, parentPhone: phone });
         }
       };
 
+      // First add from dedicted parent users
       parentRecipients.forEach((p) => addRecipient(p.id, p.parentPhone));
+      // Then add from student record parent phone fields (if different or missing parent record)
       students.forEach((s) => addRecipient(`student-${s.id}`, s.parentPhone));
+
       const recipientsToMessage = Array.from(recipientByPhone.values());
+      console.log(`Class Communication SMS: Found ${students.length} students, ${parentRecipients.length} linked parents -> ${recipientsToMessage.length} unique phone recipients`);
 
-      if (!recipientsToMessage.length) {
-        // No valid phone numbers found; notifications already created above.
-        return res.status(201).json({
-          success: true,
-          message: 'Class communication sent successfully',
-          communication,
-          recipients: notifications.length
+      if (recipientsToMessage.length > 0) {
+        setImmediate(() => {
+          sendSmsAndWhatsappToRecipients({
+            recipients: recipientsToMessage,
+            title: communication.title,
+            message: communication.message,
+            senderName,
+            className
+          }).catch((err) => {
+            console.error('Parent SMS/WhatsApp background task error:', err);
+          });
         });
+      } else {
+        console.warn('Class Communication SMS: No valid parent phone numbers found for messaging');
       }
-
-      setImmediate(() => {
-        sendSmsAndWhatsappToRecipients({
-          recipients: recipientsToMessage,
-          title: communication.title,
-          message: communication.message,
-          senderName,
-          className
-        }).then((result) => {
-          if (result?.skipped) {
-            console.warn('Parent SMS/WhatsApp skipped:', result?.reason);
-          }
-        }).catch((err) => {
-          console.error('Parent SMS/WhatsApp send error:', err);
-        });
-      });
     }
 
     res.status(201).json({
       success: true,
       message: 'Class communication sent successfully',
       communication,
-      recipients: notifications.length
+      recipientCount: recipientIds.size
     });
   } catch (error) {
     console.error('Send class communication error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const deleteClassCommunication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comm = await ClassCommunication.findByPk(id);
+
+    if (!comm) {
+      return res.status(404).json({ message: 'Communication not found' });
+    }
+
+    if (req.user.role === 'teacher' && comm.teacherId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only delete your own communications' });
+    }
+
+    await comm.destroy();
+    res.json({ success: true, message: 'Communication deleted successfully' });
+  } catch (error) {
+    console.error('Delete class communication error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -498,5 +565,7 @@ module.exports = {
   getClassCommunications,
   getStudentCommunications,
   getCommunicationById,
-  sendClassCommunication
+  sendClassCommunication,
+  deleteClassCommunication
 };
+

@@ -239,9 +239,18 @@ const TopicContent = () => {
             {homework.map((item) => (
               <Grid item xs={12} sm={6} md={4} key={item.id}>
                 <Card sx={{ borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ height: 140, bgcolor: 'success.light', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Assignment sx={{ fontSize: 56, color: 'white' }} />
-                  </Box>
+                  {item.thumbnail ? (
+                    <CardMedia
+                      component="img"
+                      height="140"
+                      image={normalizeMediaUrl(item.thumbnail)}
+                      alt={item.title}
+                    />
+                  ) : (
+                    <Box sx={{ height: 140, bgcolor: 'success.light', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Assignment sx={{ fontSize: 56, color: 'white' }} />
+                    </Box>
+                  )}
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="subtitle1" fontWeight={700} noWrap>
                       {item.title}
