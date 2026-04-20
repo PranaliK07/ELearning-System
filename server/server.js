@@ -75,7 +75,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static Files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
 
 // Request Logging
 app.use((req, res, next) => {
@@ -145,12 +145,13 @@ sequelize.authenticate()
     logger.info(`🔍 Database Host: ${process.env.DB_HOST}`);
     logger.info(`🔍 Database Name: ${process.env.DB_NAME}`);
     sequelize.sync({ alter: true })
-      .then(() => {
+      .then(async () => {
         logger.info('✅ Database synced successfully (alter: true)');
+        const seedAdmin = require('./utils/seedAdmin');
+        await seedAdmin();
       })
       .catch((err) => {
         logger.error('❌ Database sync FAILED:', err);
-        // We don't exit here if we can still run, but we must log it
       });
     
     app.listen(PORT, () => {

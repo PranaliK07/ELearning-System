@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Confetti from 'react-confetti';
+import axios from '../../utils/axios';
 
 const QuizResult = () => {
   const { quizId } = useParams();
@@ -184,14 +185,15 @@ const QuizResult = () => {
 
             {/* Actions - Single Compact Row */}
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              {!passed && hasRetryAvailable && (
+              {hasRetryAvailable ? (
                 <Button variant="contained" onClick={handleRetry} size="medium" startIcon={<Refresh />} sx={{ px: 4, borderRadius: 2 }}>
-                  Retry Quiz
+                  Get Another Chance
+                </Button>
+              ) : (
+                <Button variant="contained" onClick={() => navigate('/play')} size="medium" startIcon={<Home />} sx={{ px: 4, borderRadius: 2, bgcolor: '#0B1F3B' }}>
+                  Go to Quizzes
                 </Button>
               )}
-              <Button variant={passed ? 'contained' : 'outlined'} onClick={handleHome} size="medium" startIcon={<Home />} sx={{ px: 4, borderRadius: 2, bgcolor: passed ? '#0B1F3B' : 'transparent' }}>
-                Dashboard
-              </Button>
             </Box>
           </Paper>
         </Box>

@@ -13,7 +13,8 @@ const register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, role, grade, parentPhone, parentEmail } = req.body;
+    const { firstName, middleName, lastName, email, password, role, grade, parentPhone, parentEmail } = req.body;
+    const name = `${firstName} ${middleName ? middleName + ' ' : ''}${lastName}`.trim();
 
 
     const normalizedRole = (role || 'student').toString().trim().toLowerCase();
@@ -52,7 +53,9 @@ const register = async (req, res) => {
         } else {
           const temporaryPassword = crypto.randomBytes(6).toString('hex');
           linkedParent = await User.create({
-            name: `Parent of ${String(name || 'Student').trim()}`,
+            name: `Parent of ${String(firstName || 'Student').trim()}`,
+            firstName: 'Parent',
+            lastName: lastName || 'Student',
             email: normalizedParentEmail,
             password: temporaryPassword,
             role: 'parent',
@@ -64,6 +67,9 @@ const register = async (req, res) => {
 
       const nextValues = {
         name,
+        firstName,
+        middleName,
+        lastName,
         email: normalizedEmail,
         password,
         role: normalizedRole,
@@ -224,15 +230,22 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, grade, bio, parentPhone, parentEmail } = req.body;
+    const { firstName, middleName, lastName, grade, bio, parentPhone, parentEmail } = req.body;
     const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (typeof name === 'string' && name.trim().length > 0) {
-      user.name = name.trim();
+    if (firstName !== undefined) user.firstName = firstName;
+    if (middleName !== undefined) user.middleName = middleName;
+    if (lastName !== undefined) user.lastName = lastName;
+    
+    if (firstName || lastName) {
+      const fName = firstName || user.firstName || '';
+      const mName = middleName || user.middleName || '';
+      const lName = lastName || user.lastName || '';
+      user.name = `${fName} ${mName ? mName + ' ' : ''}${lName}`.trim();
     }
 
     if (grade !== undefined) {

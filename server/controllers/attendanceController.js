@@ -1,4 +1,4 @@
-const { Attendance, Grade, User, sequelize } = require('../models');
+const { Attendance, Grade, User, sequelize, Notification } = require('../models');
 const { Op } = require('sequelize');
 
 const normalizeDateOnly = (value) => {
@@ -193,6 +193,23 @@ const markGradeAttendance = async (req, res) => {
     }
 
     await transaction.commit();
+
+    // Notify students
+    try {
+      if (saved.length > 0) {
+        const notifications = saved.map(record => ({
+          userId: record.studentId,
+          type: 'attendance',
+          title: `Attendance Marked: ${record.status.toUpperCase()} 📅`,
+          message: `Your attendance for ${date} has been marked as ${record.status}.`,
+          data: JSON.stringify({ date, status: record.status })
+        }));
+        await Notification.bulkCreate(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Attendance notification error:', notifErr);
+    }
+
     res.json({ success: true, date, grade: { id: grade.id, name: grade.name, level: grade.level }, savedCount: saved.length });
   } catch (error) {
     await transaction.rollback();

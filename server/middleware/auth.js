@@ -25,10 +25,6 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Account is deactivated' });
       }
       
-
-
-
-
       // Update last active
       req.user.lastActive = new Date();
       await req.user.save();
@@ -54,7 +50,10 @@ const authorize = (...roles) => {
       return res.status(401).json({ message: 'Not authorized' });
     }
     
-    if (!roles.includes(req.user.role)) {
+    const userRole = String(req.user.role || '').toLowerCase();
+    const authorizedRoles = roles.map(r => String(r).toLowerCase());
+    
+    if (!authorizedRoles.includes(userRole)) {
       return res.status(403).json({ 
         message: `Access denied. Required roles: ${roles.join(', ')}` 
       });

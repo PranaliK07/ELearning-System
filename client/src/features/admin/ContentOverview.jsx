@@ -370,7 +370,7 @@ const ContentOverview = () => {
                 <Card variant="outlined">
                   <CardContent sx={{ textAlign: 'center' }}>
                     <Typography variant="h6">{content.filter((c) => c.type === 'reading' || c.contentType === 'reading').length}</Typography>
-                    <Typography variant="caption">Study Materials</Typography>
+                    <Typography variant="caption">Notes</Typography>
                   </CardContent>
                 </Card>
               </Grid>

@@ -31,7 +31,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -62,8 +64,12 @@ const Register = () => {
     const newErrors = {};
     
     if (activeStep === 0) {
-      const nameError = validateName(formData.name, 'Full name');
-      if (nameError) newErrors.name = nameError;
+      const firstNameError = validateName(formData.firstName, 'First name');
+      const middleNameError = validateName(formData.middleName, 'Middle name');
+      const lastNameError = validateName(formData.lastName, 'Last name');
+      if (firstNameError) newErrors.firstName = firstNameError;
+      if (middleNameError) newErrors.middleName = middleNameError;
+      if (lastNameError) newErrors.lastName = lastNameError;
     }
     
     if (activeStep === 1) {
@@ -138,15 +144,42 @@ const Register = () => {
           <Box>
             <TextField
               fullWidth
-              label="Full Name"
-              name="name"
-              value={formData.name}
+              label="First Name"
+              name="firstName"
+              value={formData.firstName}
               onChange={handleChange}
-              error={!!errors.name}
-              helperText={errors.name}
+              error={!!errors.firstName}
+              helperText={errors.firstName}
               margin="normal"
               variant="outlined"
-              placeholder="Enter your full name"
+              placeholder="Enter your first name"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Middle Name"
+              name="middleName"
+              value={formData.middleName}
+              onChange={handleChange}
+              error={!!errors.middleName}
+              helperText={errors.middleName}
+              margin="normal"
+              variant="outlined"
+              placeholder="Enter your middle name"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Last Name"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              error={!!errors.lastName}
+              helperText={errors.lastName}
+              margin="normal"
+              variant="outlined"
+              placeholder="Enter your last name"
+              required
             />
           </Box>
         );
@@ -235,7 +268,6 @@ const Register = () => {
             >
               <MenuItem value="student">Student</MenuItem>
               <MenuItem value="teacher">Teacher</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
             </TextField>
 
             {formData.role === 'student' && (
@@ -408,4 +440,3 @@ const Register = () => {
 };
 
 export default Register;
-

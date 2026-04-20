@@ -124,10 +124,12 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const role = user?.role || 'student';
   const roleAccess = loadRoleAccess(accessVersion);
   const baseAllowed = roleAccess[role] || defaultRoleAccess[role] || defaultRoleAccess.student;
-  const studentBaseline = new Set(['dashboard', 'subjects', 'progress', 'achievements', 'profile', 'doubts', 'assignments', 'attendance', 'quizzes']);
-  const allowed = role === 'student'
-    ? new Set([...baseAllowed, ...studentBaseline])
-    : baseAllowed;
+  const studentBaseline = new Set(['dashboard', 'subjects', 'progress', 'achievements', 'profile', 'doubts', 'assignments', 'attendance', 'quizzes', 'communications']);
+  const adminBaseline = new Set(['communications']);
+  const teacherBaseline = new Set(['communications']);
+
+  const baseline = role === 'admin' ? adminBaseline : (role === 'teacher' ? teacherBaseline : studentBaseline);
+  const allowed = new Set([...baseAllowed, ...baseline]);
 
   const currentPath = `${location.pathname}${location.search || ''}`;
   const currentTab = new URLSearchParams(location.search).get('tab');
@@ -152,10 +154,10 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       key: 'doubts', 
       text: role === 'teacher' ? 'Student Doubts' : 'Doubts', 
       icon: <DoubtIcon />, 
-      path: role === 'teacher' ? '/dashboard?tab=1' : '/doubts' 
+      path: '/doubts' 
     },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-    { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
+    { key: 'communications', text: role === 'student' ? 'Teacher Notice' : 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
     { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
     { key: 'feedback', text: 'Feedback & Ratings', icon: <FeedbackIcon />, path: '/feedback' },
@@ -177,13 +179,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   };
 
   const displayItems = items.filter(({ key }) => {
-    if (role === 'student' && key === 'doubts') return true;
+    if ((role === 'student' || role === 'teacher') && key === 'doubts') return true;
     if (configuredModules.has(key)) {
       return allowed.has(key);
     }
     return true;
   }).filter(({ key }) => {
-    if (key === 'assignments' || key === 'reports' || key === 'reports-issues' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications' || key === 'class-management' || key === 'study-material' || key === 'quizzes') {
+    if (key === 'assignments' || key === 'reports' || key === 'reports-issues' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications' || key === 'class-management' || key === 'study-material' || key === 'quizzes' || key === 'doubts') {
       return role === 'teacher' || role === 'admin' || role === 'student' || allowed.has(key);
     }
     if (key === 'feedback') {

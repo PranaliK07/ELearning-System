@@ -119,6 +119,38 @@ const createAssignment = async (req, res) => {
       teacherId: req.user.id
     });
 
+    // Notify students
+    try {
+      const studentQuery = { role: 'student', isDeleted: false };
+      
+      if (gradeId) {
+        const targetGrade = await Grade.findByPk(gradeId);
+        if (targetGrade) {
+          studentQuery[Op.or] = [
+            { GradeId: gradeId },
+            { grade: targetGrade.level }
+          ];
+        } else {
+          studentQuery.GradeId = gradeId;
+        }
+      }
+
+      const students = await User.findAll({ where: studentQuery, attributes: ['id'] });
+
+      if (students.length > 0) {
+        const notifications = students.map(student => ({
+          userId: student.id,
+          type: 'new_assignment',
+          title: 'New Assignment Assigned 📝',
+          message: `${req.user.name} posted a new assignment: ${title}`,
+          data: JSON.stringify({ assignmentId: assignment.id })
+        }));
+        await Notification.bulkCreate(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Assignment notification error:', notifErr);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Assignment created successfully',

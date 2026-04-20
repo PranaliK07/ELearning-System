@@ -196,10 +196,7 @@ const ClassCommunication = () => {
     <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' } }}>
-          Class Communication
-        </Typography>
-        <Typography variant="body1" color="textSecondary">
-          Send updates to students, parents, or both by class.
+          {isStudent ? 'Teacher Notice' : 'Class Communication'}
         </Typography>
       </Box>
 
@@ -223,7 +220,7 @@ const ClassCommunication = () => {
                     }
                   }}
                 >
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 3' } }}>
                     <FormControl fullWidth>
                       <InputLabel>Class</InputLabel>
                       <Select
@@ -263,7 +260,7 @@ const ClassCommunication = () => {
 
                   <Box
                     sx={{
-                      gridColumn: { xs: '1 / -1', md: isAdmin ? 'span 6' : 'span 10' }
+                      gridColumn: { xs: '1 / -1', md: isAdmin ? 'span 5' : 'span 9' }
                     }}
                   >
                     <FormControl fullWidth>
@@ -331,7 +328,7 @@ const ClassCommunication = () => {
         <Grid item xs={12} md={isStudent ? 12 : 7}>
           <Paper sx={{ p: 2, borderRadius: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
-              Communication History
+              {isStudent ? 'Notices' : 'Communication History'}
             </Typography>
 
             {!canViewHistory ? (
@@ -341,203 +338,169 @@ const ClassCommunication = () => {
             ) : (
               <>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} md={4}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Class</InputLabel>
-                      <Select
-                        label="Class"
-                        value={filters.gradeId}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, gradeId: e.target.value }))}
-                      >
-                        <MenuItem value="">All Classes</MenuItem>
-                        {classes.map((grade) => (
-                          <MenuItem key={grade.id} value={grade.id}>
-                            {grade.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
+                  {!isStudent && (
+                    <>
+                      <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Class</InputLabel>
+                          <Select
+                            label="Class"
+                            value={filters.gradeId}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, gradeId: e.target.value }))}
+                            sx={{ minWidth: 120 }}
+                          >
+                            <MenuItem value="">All Classes</MenuItem>
+                            {classes.map((grade) => (
+                              <MenuItem key={grade.id} value={grade.id}>
+                                {grade.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
 
-                  {isAdmin && (
-                    <Grid item xs={12} md={4}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Teacher</InputLabel>
-                        <Select
-                          label="Teacher"
-                          value={filters.teacherId}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, teacherId: e.target.value }))}
-                        >
-                          <MenuItem value="">All Teachers</MenuItem>
-                          {teachers.map((teacher) => (
-                            <MenuItem key={teacher.id} value={teacher.id}>
-                              {teacher.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                      {isAdmin && (
+                        <Grid item xs={12} sm={6} md={3}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Teacher</InputLabel>
+                            <Select
+                              label="Teacher"
+                              value={filters.teacherId}
+                              onChange={(e) => setFilters((prev) => ({ ...prev, teacherId: e.target.value }))}
+                              sx={{ minWidth: 120 }}
+                            >
+                              <MenuItem value="">All Teachers</MenuItem>
+                              {teachers.map((teacher) => (
+                                <MenuItem key={teacher.id} value={teacher.id}>
+                                  {teacher.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      )}
+
+                      <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Audience</InputLabel>
+                          <Select
+                            label="Audience"
+                            value={filters.audience}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, audience: e.target.value }))}
+                            sx={{ minWidth: 120 }}
+                          >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="students">Students</MenuItem>
+                            <MenuItem value="parents">Parents</MenuItem>
+                            <MenuItem value="both">Students + Parents</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </>
                   )}
 
-                  <Grid item xs={12} md={isAdmin ? 4 : 8}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Audience</InputLabel>
-                      <Select
-                        label="Audience"
-                        value={filters.audience}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, audience: e.target.value }))}
-                      >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="students">Students</MenuItem>
-                        <MenuItem value="parents">Parents</MenuItem>
-                        <MenuItem value="both">Students + Parents</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12}>
+                  <Grid item xs={12} md={isStudent ? 12 : (isAdmin ? 3 : 4)}>
                     <TextField
                       fullWidth
                       size="small"
-                      placeholder="Search (title, message, class, sender)"
+                      placeholder="Search notices..."
                       value={filters.search}
                       onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: isStudent ? '30px' : '12px'
+                        }
+                      }}
                     />
                   </Grid>
                 </Grid>
 
-                {isMobile ? (
-                  <Box sx={{ display: 'grid', gap: 1.5 }}>
-                    {loading ? (
-                      <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="body2" color="textSecondary">Loading...</Typography>
-                      </Paper>
-                    ) : filteredCommunications.length === 0 ? (
-                      <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="body2" color="textSecondary">No communication sent yet</Typography>
-                      </Paper>
-                    ) : (
-                      filteredCommunications.map((item) => (
-                        <Paper key={item.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'flex-start' }}>
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 700, wordBreak: 'break-word' }}>
-                                  {item.title}
-                                </Typography>
-                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', wordBreak: 'break-word' }}>
-                                  {item.message?.slice(0, 80)}
-                                  {item.message?.length > 80 ? '...' : ''}
-                                </Typography>
-                                {!isAdmin && (
-                                  <Typography variant="caption" color="textSecondary">
-                                    From: {item.teacher?.name || '-'}
-                                  </Typography>
-                                )}
-                              </Box>
-                              <Chip
-                                label={audienceLabel[item.audience] || item.audience}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                              />
-                            </Box>
-
-                            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
-                              <Box>
-                                <Typography variant="caption" color="textSecondary">Class</Typography>
-                                <Typography variant="body2">{item.Grade?.name || 'All Classes'}</Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" color="textSecondary">Recipients</Typography>
-                                <Typography variant="body2">{item.recipientCount || 0}</Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" color="textSecondary">Date</Typography>
-                                <Typography variant="body2">{new Date(item.createdAt).toLocaleDateString()}</Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" color="textSecondary">Actions</Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                                  <IconButton
-                                    size="small"
-                                    color="primary"
-                                    onClick={() => navigate(`/communications/${item.id}`)}
-                                    title="View Details"
-                                  >
-                                    <Visibility fontSize="small" />
-                                  </IconButton>
-                                  {(isAdmin || (isTeacher && item.teacherId === user.id)) && (
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      onClick={() => handleDelete(item.id)}
-                                      title="Delete"
-                                    >
-                                      <Delete fontSize="small" />
-                                    </IconButton>
-                                  )}
-                                </Box>
-                              </Box>
-                            </Box>
-                          </Box>
-                        </Paper>
-                      ))
-                    )}
+                {loading ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="textSecondary">Loading notices...</Typography>
                   </Box>
-                ) : (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Title</TableCell>
-                        <TableCell>Class</TableCell>
-                        <TableCell>Audience</TableCell>
-                        <TableCell>Recipients</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {loading ? (
-                        <TableRow>
-                          <TableCell colSpan={6} align="center">
-                            Loading...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredCommunications.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} align="center">
-                            No communication sent yet
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredCommunications.map((item) => (
-                          <TableRow key={item.id} hover>
-                            <TableCell>
-                              <Typography variant="subtitle2">{item.title}</Typography>
-                              <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                                {item.message?.slice(0, 50)}
-                                {item.message?.length > 50 ? '...' : ''}
+                ) : filteredCommunications.length === 0 ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="textSecondary">No notices yet</Typography>
+                  </Box>
+                ) : isStudent ? (
+                  <Box sx={{ display: 'grid', gap: 2.5 }}>
+                    {filteredCommunications.map((item) => (
+                      <Paper 
+                        key={item.id} 
+                        variant="outlined" 
+                        sx={{ 
+                          p: 3, 
+                          borderRadius: 3,
+                          borderColor: 'primary.light',
+                          borderWidth: 1.5,
+                          backgroundColor: 'rgba(11, 31, 59, 0.02)',
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: 'rgba(11, 31, 59, 0.05)' }
+                        }}
+                        onClick={() => navigate(`/communications/${item.id}`)}
+                      >
+                        <Typography variant="h6" color="primary" sx={{ fontWeight: 800, mb: 1 }}>
+                          Message
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                          Class: {item.Grade?.name || 'All Classes'} • {new Date(item.createdAt).toLocaleString()}
+                        </Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                          {item.title}
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+                          {item.message}
+                        </Typography>
+                        <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
+                          From: {item.teacher?.name || 'Teacher'}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                ) : isMobile ? (
+                  <Box sx={{ display: 'grid', gap: 1.5 }}>
+                    {filteredCommunications.map((item) => (
+                      <Paper key={item.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'flex-start' }}>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, wordBreak: 'break-word' }}>
+                                {item.title}
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', wordBreak: 'break-word' }}>
+                                {item.message?.slice(0, 80)}
+                                {item.message?.length > 80 ? '...' : ''}
                               </Typography>
                               {!isAdmin && (
                                 <Typography variant="caption" color="textSecondary">
-                                  From: {item.teacher?.name || '—'}
+                                  From: {item.teacher?.name || '-'}
                                 </Typography>
                               )}
-                            </TableCell>
-                            <TableCell>{item.Grade?.name || 'All Classes'}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={audienceLabel[item.audience] || item.audience}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>{item.recipientCount || 0}</TableCell>
-                            <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
-                            <TableCell align="right">
+                            </Box>
+                            <Chip
+                              label={audienceLabel[item.audience] || item.audience}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                            />
+                          </Box>
+
+                          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
+                            <Box>
+                              <Typography variant="caption" color="textSecondary">Class</Typography>
+                              <Typography variant="body2">{item.Grade?.name || 'All Classes'}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="textSecondary">Recipients</Typography>
+                              <Typography variant="body2">{item.recipientCount || 0}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="textSecondary">Date</Typography>
+                              <Typography variant="body2">{new Date(item.createdAt).toLocaleDateString()}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="textSecondary">Actions</Typography>
                               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                                 <IconButton
                                   size="small"
@@ -558,10 +521,75 @@ const ClassCommunication = () => {
                                   </IconButton>
                                 )}
                               </Box>
+                            </Box>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Box>
+                ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Title</TableCell>
+                        <TableCell>Class</TableCell>
+                        <TableCell>Audience</TableCell>
+                        <TableCell>Recipients</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filteredCommunications.map((item) => (
+                        <TableRow key={item.id} hover>
+                          <TableCell>
+                            <Typography variant="subtitle2">{item.title}</Typography>
+                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                              {item.message?.slice(0, 50)}
+                              {item.message?.length > 50 ? '...' : ''}
+                            </Typography>
+                            {!isAdmin && (
+                              <Typography variant="caption" color="textSecondary">
+                                From: {item.teacher?.name || '—'}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>{item.Grade?.name || 'All Classes'}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={audienceLabel[item.audience] || item.audience}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell>{item.recipientCount || 0}</TableCell>
+                          <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell align="right">
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => navigate(`/communications/${item.id}`)}
+                                title="View Details"
+                              >
+                                <Visibility fontSize="small" />
+                              </IconButton>
+                              {(isAdmin || (isTeacher && item.teacherId === user.id)) && (
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDelete(item.id)}
+                                  title="Delete"
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                                )}
+                              </Box>
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
+                        ))}
                     </TableBody>
                   </Table>
                 </TableContainer>

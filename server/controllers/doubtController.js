@@ -18,7 +18,7 @@ const submitDoubt = async (req, res) => {
     // Send notification to the teacher
     try {
       await Notification.create({
-        UserId: teacherId,
+        userId: teacherId,
         type: 'doubt',
         title: 'New Doubt from Student',
         message: `${req.user.name} has asked a doubt: "${question.substring(0, 100)}${question.length > 100 ? '...' : ''}"`,
@@ -104,8 +104,8 @@ const respondToDoubt = async (req, res) => {
     // Send notification to the student
     try {
       await Notification.create({
-        UserId: doubt.studentId,
-        type: 'doubt',
+        userId: doubt.studentId,
+        type: 'doubt_reply',
         title: 'Doubt Resolved ✅',
         message: `${req.user.name} has replied to your doubt: "${answer.substring(0, 100)}${answer.length > 100 ? '...' : ''}"`,
         data: { doubtId: doubt.id, teacherId: req.user.id }

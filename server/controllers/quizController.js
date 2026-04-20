@@ -1,4 +1,4 @@
-const { Quiz, Progress, User, Topic, Lesson, Subject, Grade } = require('../models');
+const { Quiz, Progress, User, Topic, Lesson, Subject, Grade, Notification } = require('../models');
 const { Op } = require('sequelize');
 
 const normalizeQuestions = (questions) => {
@@ -175,6 +175,45 @@ const createQuiz = async (req, res) => {
       isPublished: isPublished !== undefined ? isPublished : true,
       createdBy: req.user.id
     });
+
+    // Notify students
+    try {
+      // Find the grade associated with the topic
+      const topicData = await Topic.findByPk(topicId, {
+        include: [{
+          model: Subject,
+          include: [Grade]
+        }]
+      });
+
+      const gradeId = topicData?.Subject?.GradeId;
+      const targetGrade = topicData?.Subject?.Grade;
+      const studentQuery = { role: 'student', isDeleted: false };
+      
+      if (gradeId) {
+        studentQuery[Op.or] = [
+          { GradeId: gradeId }
+        ];
+        if (targetGrade?.level) {
+          studentQuery[Op.or].push({ grade: targetGrade.level });
+        }
+      }
+
+      const students = await User.findAll({ where: studentQuery, attributes: ['id'] });
+
+      if (students.length > 0) {
+        const notifications = students.map(student => ({
+          userId: student.id,
+          type: 'new_quiz',
+          title: 'New Quiz Added 🧠',
+          message: `${req.user.name} created a new quiz: ${title}`,
+          data: JSON.stringify({ quizId: quiz.id })
+        }));
+        await Notification.bulkCreate(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Quiz notification error:', notifErr);
+    }
 
     res.status(201).json({
       success: true,

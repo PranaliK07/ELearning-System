@@ -67,15 +67,36 @@ const StudyMaterial = () => {
         window.open(resolveUploadSrc(url), '_blank');
     };
 
-    const handleDownload = (url, filename) => {
+    const handleDownload = async (url, filename) => {
         if (!url) return toast.error('File not found');
-        const link = document.createElement('a');
-        link.href = resolveUploadSrc(url);
-        link.setAttribute('download', filename || 'notes.pdf');
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        
+        try {
+            const fullUrl = resolveUploadSrc(url);
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error('Download failed');
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.setAttribute('download', filename || 'notes.pdf');
+            document.body.appendChild(link);
+            link.click();
+            
+            // Cleanup
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(link);
+            }, 100);
+            
+            toast.success('Download started');
+        } catch (error) {
+            console.error('Download error:', error);
+            toast.error('Failed to download file');
+            // Fallback to simple link if fetch fails (e.g. CORS)
+            window.open(resolveUploadSrc(url), '_blank');
+        }
     };
 
     // Group materials

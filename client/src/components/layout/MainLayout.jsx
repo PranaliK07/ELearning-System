@@ -7,7 +7,15 @@ import {
   Notifications as NotificationsIcon,
   Brightness4 as DarkIcon,
   Brightness7 as LightIcon,
-  Home as HomeIcon
+  Home as HomeIcon,
+  VideoLibrary,
+  Description,
+  Assignment,
+  Quiz,
+  EventAvailable,
+  QuestionAnswer,
+  Star,
+  Campaign
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -18,6 +26,30 @@ import { resolveAvatarSrc } from '../../utils/media';
 import { useNotification } from '../../context/notificationContext';
 import ConfirmDialog from '../common/ConfirmDialog';
 
+const getNotificationStyle = (type) => {
+  switch (type) {
+    case 'new_video':
+      return { icon: <VideoLibrary fontSize="small" />, color: '#f44336' };
+    case 'new_notes':
+      return { icon: <Description fontSize="small" />, color: '#2196f3' };
+    case 'new_assignment':
+      return { icon: <Assignment fontSize="small" />, color: '#4caf50' };
+    case 'new_quiz':
+      return { icon: <Quiz fontSize="small" />, color: '#9c27b0' };
+    case 'attendance':
+      return { icon: <EventAvailable fontSize="small" />, color: '#ff9800' };
+    case 'doubt':
+    case 'doubt_reply':
+      return { icon: <QuestionAnswer fontSize="small" />, color: '#00bcd4' };
+    case 'achievement':
+      return { icon: <Star fontSize="small" />, color: '#ffeb3b' };
+    case 'announcement':
+      return { icon: <Campaign fontSize="small" />, color: '#3f51b5' };
+    default:
+      return { icon: <NotificationsIcon fontSize="small" />, color: '#9e9e9e' };
+  }
+};
+
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const { mode, setMode } = React.useContext(ThemeContext);
@@ -27,7 +59,8 @@ const MainLayout = () => {
     loadingNotifications, 
     fetchNotifications, 
     markAsRead, 
-    markAllAsRead 
+    markAllAsRead,
+    deleteNotification
   } = useNotification();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -53,18 +86,52 @@ const MainLayout = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    if (!notification?.isRead) {
-      markAsRead(notification.id);
-    }
+    // Automatically delete notification once it is opened/clicked
+    deleteNotification(notification.id);
 
     const source = notification?.data?.source;
     const communicationId = notification?.data?.communicationId;
+    
     if (source === 'class_communication' && communicationId) {
       handleNotificationsClose();
       navigate(`/communications/${communicationId}`);
-    } else if (notification.type === 'doubt') {
-      handleNotificationsClose();
-      navigate('/doubts');
+      return;
+    }
+
+    switch (notification.type) {
+      case 'doubt':
+      case 'doubt_reply':
+        handleNotificationsClose();
+        navigate('/doubts');
+        break;
+      case 'new_video':
+      case 'new_notes':
+        handleNotificationsClose();
+        if (notification.data?.contentId) {
+          navigate(`/study/content/${notification.data.contentId}`);
+        } else {
+          navigate('/study');
+        }
+        break;
+      case 'new_assignment':
+        handleNotificationsClose();
+        if (notification.data?.assignmentId) {
+          navigate(`/assignments/view/${notification.data.assignmentId}`);
+        }
+        break;
+      case 'new_quiz':
+        handleNotificationsClose();
+        if (notification.data?.quizId) {
+          navigate(`/quiz/${notification.data.quizId}/start`);
+        }
+        break;
+      case 'attendance':
+        handleNotificationsClose();
+        navigate('/attendance');
+        break;
+      default:
+        handleNotificationsClose();
+        break;
     }
   };
 
@@ -211,27 +278,41 @@ const MainLayout = () => {
                 </Typography>
               </Box>
             )}
-            {!loadingNotifications && notifications.map((item) => (
-              <MenuItem
-                key={item.id}
-                onClick={() => handleNotificationClick(item)}
-                sx={{
-                  alignItems: 'flex-start',
-                  whiteSpace: 'normal',
-                  gap: 1,
-                  bgcolor: item.isRead ? 'transparent' : 'rgba(176,18,91,0.08)'
-                }}
-              >
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: item.isRead ? 500 : 700 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {item.message}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
+            {!loadingNotifications && notifications.map((item) => {
+              const { icon, color } = getNotificationStyle(item.type);
+              return (
+                <MenuItem
+                  key={item.id}
+                  onClick={() => handleNotificationClick(item)}
+                  sx={{
+                    alignItems: 'flex-start',
+                    whiteSpace: 'normal',
+                    gap: 2,
+                    py: 1.5,
+                    bgcolor: item.isRead ? 'transparent' : 'rgba(176,18,91,0.08)',
+                    borderLeft: item.isRead ? 'none' : `4px solid ${color}`,
+                    '&:hover': {
+                      bgcolor: item.isRead ? 'rgba(0,0,0,0.04)' : 'rgba(176,18,91,0.12)'
+                    }
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: `${color}15`, color: color, width: 36, height: 36 }}>
+                    {icon}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: item.isRead ? 600 : 800, color: item.isRead ? 'text.primary' : 'primary.main' }}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                      {item.message}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                      {new Date(item.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              );
+            })}
           </Menu>
         </Toolbar>
       </AppBar>

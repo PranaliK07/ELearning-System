@@ -22,6 +22,7 @@ import { motion } from 'framer-motion';
 import axios from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 import Confetti from 'react-confetti';
+import jsPDF from 'jspdf';
 
 const AchievementsPage = () => {
   const { user } = useAuth();
@@ -29,9 +30,13 @@ const AchievementsPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Mock Certificates - Represents monthly progress rewards
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+  const prevMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleString('default', { month: 'long' });
+
   const certificates = [
-    { id: 1, month: 'April 2024', title: 'Stellar Student Award', stars: 45, totalStars: 50, earned: true },
-    { id: 2, month: 'May 2024', title: 'Creative Explorer Award', stars: 12, totalStars: 60, earned: false },
+    { id: 1, month: `${prevMonth} ${currentYear}`, title: 'Superstar Student Award', stars: 45, totalStars: 50, earned: true },
+    { id: 2, month: `${currentMonth} ${currentYear}`, title: 'Creative Champion Award', stars: 12, totalStars: 60, earned: false },
   ];
 
   useEffect(() => {
@@ -52,33 +57,84 @@ const AchievementsPage = () => {
   };
 
   const handleDownload = (certTitle) => {
-    // Generate a simple text-based "certificate" as a blob to simulate real download
-    const content = `
-      CERTIFICATE OF ACHIEVEMENT
-      --------------------------
-      This certifies that 
-      
-      [ STUDENT NAME ]
-      
-      has successfully earned the 
-      ${certTitle.toUpperCase()}
-      
-      for their outstanding dedication and 
-      daily star achievements in the 
-      E-Learning Platform.
-      
-      Keep up the great work!
-      --------------------------
-    `;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${certTitle.replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const studentName = user?.name || 'Valued Student';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // 1. Background / Border
+    doc.setDrawColor(11, 31, 59); // Dark blue primary
+    doc.setLineWidth(5);
+    doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
+    
+    doc.setDrawColor(255, 217, 61); // Gold secondary
+    doc.setLineWidth(1);
+    doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+
+    // 2. Decorative Corners
+    doc.setFillColor(255, 217, 61);
+    doc.triangle(8, 8, 25, 8, 8, 25, 'F');
+    doc.triangle(pageWidth - 8, 8, pageWidth - 25, 8, pageWidth - 8, 25, 'F');
+    doc.triangle(8, pageHeight - 8, 25, pageHeight - 8, 8, pageHeight - 25, 'F');
+    doc.triangle(pageWidth - 8, pageHeight - 8, pageWidth - 25, pageHeight - 8, pageWidth - 8, pageHeight - 25, 'F');
+
+    // 3. Header
+    doc.setTextColor(11, 31, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(40);
+    doc.text('CERTIFICATE OF ACHIEVEMENT', pageWidth / 2, 45, { align: 'center' });
+
+    // 4. Sub-header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'italic');
+    doc.text('This is to certify that', pageWidth / 2, 65, { align: 'center' });
+
+    // 5. Student Name
+    doc.setTextColor(176, 18, 91); // Crimson/Pink from the theme
+    doc.setFontSize(45);
+    doc.setFont('helvetica', 'bold');
+    doc.text(studentName.toUpperCase(), pageWidth / 2, 85, { align: 'center' });
+
+    // 6. Description
+    doc.setTextColor(11, 31, 59);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'normal');
+    doc.text('has successfully earned the', pageWidth / 2, 105, { align: 'center' });
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(255, 132, 0); // Orange
+    doc.text(certTitle.toUpperCase(), pageWidth / 2, 120, { align: 'center' });
+
+    // 7. Footer
+    doc.setTextColor(11, 31, 59);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'normal');
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    doc.text(`Awarded on ${today}`, pageWidth / 2, 140, { align: 'center' });
+
+    // 8. Signatures
+    doc.setLineWidth(0.5);
+    doc.line(40, 170, 110, 170);
+    doc.line(pageWidth - 110, 170, pageWidth - 40, 170);
+    
+    doc.setFontSize(12);
+    doc.text('Class Teacher', 75, 175, { align: 'center' });
+    doc.text('Academic Head', pageWidth - 75, 175, { align: 'center' });
+
+    // 9. Badge/Seal
+    doc.setFillColor(255, 217, 61);
+    doc.circle(pageWidth / 2, 170, 15, 'F');
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.text('EL-PRO', pageWidth / 2, 172, { align: 'center' });
+
+    doc.save(`${certTitle.replace(/\s+/g, '_')}_Certificate.pdf`);
   };
 
   const renderStars = (count, total = 5, size = 30) => {
@@ -133,7 +189,8 @@ const AchievementsPage = () => {
               background: 'linear-gradient(45deg, #FFD93D 30%, #FF8400 90%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              mb: 1
+              mb: 1,
+              fontSize: { xs: '1.6rem', sm: '3rem' }
             }}
           >
             {user?.name?.split(' ')[0] || 'Student'} you get {dailyGoal.starsEarned > 0 ? '⭐'.repeat(dailyGoal.starsEarned) : '⭐'} today .
@@ -197,7 +254,9 @@ const AchievementsPage = () => {
                         <StarBorder sx={{ fontSize: 40, color: 'rgba(255,255,255,0.3)', mb: 1 }} />
                       )}
                     </motion.div>
-                    <Typography variant="subtitle2" fontWeight="800">{goal.label}</Typography>
+                    <Typography variant="subtitle2" fontWeight="800">
+                      {goal.label === 'Lesson Practice' ? 'Notes' : (goal.label || goal.id)}
+                    </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7, fontWeight: 700, fontSize: '0.6rem', display: 'block' }}>
                         {goal.completed ? 'DONE ✨' : 'PENDING'}
                     </Typography>
@@ -214,7 +273,7 @@ const AchievementsPage = () => {
 
         <Grid container spacing={4}>
           {certificates.map((cert) => (
-            <Grid item xs={12} md={6} key={cert.id}>
+            <Grid size={{ xs: 12, md: 6 }} key={cert.id}>
               <Card sx={{ 
                 borderRadius: 5, 
                 border: cert.earned ? '2px solid #FFD93D' : '1px solid rgba(0,0,0,0.05)',

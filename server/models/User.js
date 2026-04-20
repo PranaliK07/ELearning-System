@@ -15,6 +15,18 @@ const User = sequelize.define('User', {
       len: [2, 100]
     }
   },
+  firstName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  middleName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -129,6 +141,9 @@ User.prototype.getPublicProfile = function() {
   return {
     id: this.id,
     name: this.name,
+    firstName: this.firstName,
+    middleName: this.middleName,
+    lastName: this.lastName,
     email: this.email,
     role: this.role,
     grade: this.grade,

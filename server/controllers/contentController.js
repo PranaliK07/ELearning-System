@@ -1,4 +1,4 @@
-const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject, Lesson } = require('../models');
+const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject, Lesson, Notification } = require('../models');
 const { Op } = require('sequelize');
 
 const resolveStudentGradeId = async (user) => {
@@ -194,6 +194,38 @@ const createContent = async (req, res) => {
       isPublished: isPublished !== undefined ? isPublished : true,
       createdBy: req.user.id
     });
+
+    // Notify students
+    try {
+      const studentQuery = { role: 'student', isDeleted: false };
+      
+      if (finalGradeId) {
+        const targetGrade = await Grade.findByPk(finalGradeId);
+        if (targetGrade) {
+          studentQuery[Op.or] = [
+            { GradeId: finalGradeId },
+            { grade: targetGrade.level }
+          ];
+        } else {
+          studentQuery.GradeId = finalGradeId;
+        }
+      }
+      
+      const students = await User.findAll({ where: studentQuery, attributes: ['id'] });
+      
+      if (students.length > 0) {
+        const notifications = students.map(student => ({
+          userId: student.id,
+          type: type === 'video' ? 'new_video' : 'new_notes',
+          title: `New ${type === 'video' ? 'Video' : 'Notes'} Uploaded 📚`,
+          message: `${req.user.name} uploaded: ${title}`,
+          data: typeof data === 'string' ? data : JSON.stringify({ contentId: content.id, type })
+        }));
+        await Notification.bulkCreate(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Content notification error:', notifErr);
+    }
 
     res.status(201).json({
       success: true,

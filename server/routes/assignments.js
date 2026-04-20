@@ -196,6 +196,42 @@ router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
       ...payload,
       teacherId: req.user.id
     });
+
+    // Notify students
+    try {
+      const studentQuery = { role: 'student', isDeleted: false };
+      
+      if (payload.gradeId) {
+        // Find the level of the grade to be more inclusive
+      const targetGrade = await Grade.findByPk(payload.gradeId);
+      if (targetGrade) {
+        studentQuery[Op.or] = [
+          { GradeId: payload.gradeId },
+          { grade: targetGrade.level }
+        ];
+      } else {
+        studentQuery.GradeId = payload.gradeId;
+      }
+    }
+
+    console.log('[Notification Debug] Query:', JSON.stringify(studentQuery));
+      const students = await User.findAll({ where: studentQuery, attributes: ['id'] });
+      console.log(`[Notification Debug] Found ${students.length} students for grade ${payload.gradeId}`);
+
+      if (students.length > 0) {
+        const notifications = students.map(student => ({
+          userId: student.id,
+          type: 'new_assignment',
+          title: 'New Assignment Assigned 📝',
+          message: `${req.user.name} posted a new assignment: ${payload.title}`,
+          data: JSON.stringify({ assignmentId: assignment.id })
+        }));
+        await Notification.bulkCreate(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Assignment notification error:', notifErr);
+    }
+
     res.status(201).json(assignment);
   } catch (error) {
     res.status(400).json({ message: error.message });

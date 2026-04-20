@@ -19,7 +19,7 @@ import toast from 'react-hot-toast';
 const defaultRoleAccess = {
   admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback', 'study-material']),
   teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'study-material']),
-  student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'attendance', 'doubts', 'feedback', 'study-material']),
+  student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'attendance', 'doubts', 'feedback', 'study-material', 'communications']),
 };
 
 const modules = [
@@ -35,14 +35,14 @@ const modules = [
   { key: 'attendance', label: 'Attendance' },
   { key: 'class-management', label: 'Class Management' },
   { key: 'doubts', label: 'Doubts' },
-  { key: 'communications', label: 'Class Communication' },
+  { key: 'communications', label: 'Teacher Notice' },
   { key: 'content', label: 'Content Management' },
   { key: 'users', label: 'User Management' },
   { key: 'reports', label: 'Reports' },
   { key: 'settings', label: 'System Settings' },
   { key: 'business-settings', label: 'Business Settings' },
   { key: 'feedback', label: 'Feedback & Ratings' },
-  { key: 'study-material', label: 'Study Material' },
+  { key: 'study-material', label: 'Notes' },
 ];
 
 const roles = ['admin', 'teacher', 'student'];
