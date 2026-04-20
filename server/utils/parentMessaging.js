@@ -52,29 +52,38 @@ const mapWithConcurrency = async (items, concurrency, fn) => {
 };
 
 const sendSmsAndWhatsappToRecipients = async ({ recipients, title, message, senderName, className }) => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const smsFrom = process.env.TWILIO_SMS_FROM;
-  const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
-  const defaultCountryCode = process.env.PHONE_DEFAULT_COUNTRY_CODE;
+  const accountSid = String(process.env.TWILIO_ACCOUNT_SID || '').trim();
+  const authToken = String(process.env.TWILIO_AUTH_TOKEN || '').trim();
+  const smsFrom = String(process.env.TWILIO_SMS_FROM || '').trim();
+  const whatsappFrom = String(process.env.TWILIO_WHATSAPP_FROM || '').trim();
+  const defaultCountryCode = String(process.env.PHONE_DEFAULT_COUNTRY_CODE || '').trim();
 
-  const smsEnabled = truthy(process.env.PARENTS_SMS_ENABLED) || Boolean(smsFrom);
-  const whatsappEnabled = truthy(process.env.PARENTS_WHATSAPP_ENABLED) || Boolean(whatsappFrom);
+  const smsEnabled = (truthy(process.env.PARENTS_SMS_ENABLED) || Boolean(smsFrom)) && !!smsFrom;
+  const whatsappEnabled = (truthy(process.env.PARENTS_WHATSAPP_ENABLED) || Boolean(whatsappFrom)) && !!whatsappFrom;
+
 
   if (!accountSid || !authToken) {
-    logger.warn('Parent messaging skipped: Twilio not configured');
+    const msg = 'Parent messaging skipped: Twilio not configured';
+    logger.warn(msg);
+    console.warn(msg);
     return { skipped: true, reason: 'Twilio not configured' };
   }
   if (!smsEnabled && !whatsappEnabled) {
-    logger.info('Parent messaging skipped: Messaging disabled');
+    const msg = 'Parent messaging skipped: Messaging disabled (check PARENTS_SMS_ENABLED)';
+    logger.info(msg);
+    console.warn(msg);
     return { skipped: true, reason: 'Messaging disabled' };
   }
 
   const recipientList = Array.isArray(recipients) ? recipients : [];
   if (!recipientList.length) {
-    logger.info('Parent messaging skipped: No recipients');
+    const msg = 'Parent messaging skipped: No recipients found with valid phone numbers';
+    logger.info(msg);
+    console.warn(msg);
     return { skipped: true, reason: 'No recipients' };
   }
+
+  console.log(`Parent messaging: Sending ${title} to ${recipientList.length} recipients...`);
 
   const body = [
     String(title || '').trim(),

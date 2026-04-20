@@ -49,8 +49,17 @@ const ReelPlayer = ({
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const flushWatchTime = () => {
     if (typeof onWatchTime !== 'function') return;
@@ -73,7 +82,9 @@ const ReelPlayer = ({
     if (open && videoRef.current) {
       setIsLoading(true);
       setProgress(0);
+      setCurrentTime(0);
       setIsPlaying(false);
+      setIsCompleted(false);
       lastTimeRef.current = 0;
       watchAccumulatorRef.current = 0;
     }
@@ -84,14 +95,19 @@ const ReelPlayer = ({
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const currentProgress =
-        (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      const time = videoRef.current.currentTime;
+      setCurrentTime(time);
+      const currentProgress = (time / videoRef.current.duration) * 100;
       setProgress(currentProgress || 0);
 
+      // Simple completion threshold (e.g., 98% watched)
+      if (currentProgress > 98 && !isCompleted) {
+        setIsCompleted(true);
+      }
+
       if (typeof onWatchTime === 'function') {
-        const currentTime = videoRef.current.currentTime || 0;
-        const delta = currentTime - (lastTimeRef.current || 0);
-        lastTimeRef.current = currentTime;
+        const delta = time - (lastTimeRef.current || 0);
+        lastTimeRef.current = time;
         if (delta > 0 && delta < 3) {
           watchAccumulatorRef.current += delta;
           if (watchAccumulatorRef.current >= 5) {
@@ -136,8 +152,12 @@ const ReelPlayer = ({
   const handleSeek = (e, newValue) => {
     e.stopPropagation();
     if (videoRef.current) {
-      const time = (newValue / 100) * videoRef.current.duration;
-      videoRef.current.currentTime = time;
+      const targetTime = (newValue / 100) * videoRef.current.duration;
+      // Block forward seeking unless already completed
+      if (targetTime > videoRef.current.currentTime && !isCompleted) {
+        return;
+      }
+      videoRef.current.currentTime = targetTime;
       setProgress(newValue);
     }
   };
@@ -168,10 +188,12 @@ const ReelPlayer = ({
 
     const isQuickSwipe = absDiff > 60 && elapsed < 500;
     if (isQuickSwipe && !swipeLock.current) {
-      swipeLock.current = true;
       if (diffY > 0 && hasMore) {
+        if (!isCompleted) return; // Prevent skip
+        swipeLock.current = true;
         onNext();
       } else if (diffY < 0 && hasPrev) {
+        swipeLock.current = true;
         onPrev();
       }
     }
@@ -189,10 +211,12 @@ const ReelPlayer = ({
     if (swipeLock.current) return;
     const diffY = pointerStartY.current - event.clientY;
     if (Math.abs(diffY) > 80) {
-      swipeLock.current = true;
       if (diffY > 0 && hasMore) {
+        if (!isCompleted) return; // Prevent skip
+        swipeLock.current = true;
         onNext();
       } else if (diffY < 0 && hasPrev) {
+        swipeLock.current = true;
         onPrev();
       }
       setTimeout(() => {
@@ -238,6 +262,7 @@ const ReelPlayer = ({
         onWheel={(event) => {
           if (swipeLock.current) return;
           if (event.deltaY > 50 && hasMore) {
+            if (!isCompleted) return; // Prevent skip
             swipeLock.current = true;
             onNext();
             setTimeout(() => {
@@ -272,12 +297,14 @@ const ReelPlayer = ({
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {
             setIsPlaying(false);
+            setIsCompleted(true);
             setShowControls(true);
             flushWatchTime();
           }}
           onClick={togglePlay}
         />
 
+        {/* Top Header */}
         <Box
           sx={{
             position: 'absolute',
@@ -313,6 +340,7 @@ const ReelPlayer = ({
           </IconButton>
         </Box>
 
+        {/* Bottom Controls / Progress */}
         <Box
           sx={{
             position: 'absolute',
@@ -321,18 +349,29 @@ const ReelPlayer = ({
             right: 0,
             p: 3,
             background: 'linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%)',
-            zIndex: 20
+            zIndex: 20,
+            transition: 'opacity 0.3s',
+            opacity: showControls ? 1 : 0
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
+              <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
+                {formatTime(currentTime)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+                {formatTime(duration)}
+              </Typography>
+            </Box>
             <Slider
               value={progress}
               onChange={handleSeek}
               sx={{
                 color: '#4ECDC4',
+                py: 1,
                 '& .MuiSlider-thumb': {
-                  width: 12,
-                  height: 12,
+                  width: 14,
+                  height: 14,
                   transition: '0.3s',
                   '&:hover, &.Mui-focusVisible': {
                     boxShadow: '0px 0px 0px 8px rgba(78, 205, 196, 0.16)'
@@ -341,12 +380,23 @@ const ReelPlayer = ({
                     width: 20,
                     height: 20
                   }
+                },
+                '& .MuiSlider-track': {
+                  height: 6,
+                  borderRadius: 3
+                },
+                '& .MuiSlider-rail': {
+                  height: 6,
+                  borderRadius: 3,
+                  opacity: 0.3,
+                  bgcolor: 'white'
                 }
               }}
             />
           </Box>
         </Box>
 
+        {/* Navigation Arrows */}
         {hasPrev && (
           <IconButton
             onClick={(e) => {
@@ -359,7 +409,8 @@ const ReelPlayer = ({
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'rgba(255,255,255,0.3)',
-              '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+              '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+              zIndex: 30
             }}
           >
             <ArrowBackIosNew />
@@ -369,15 +420,24 @@ const ReelPlayer = ({
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
-              onNext();
+              if (isCompleted) {
+                onNext();
+              }
             }}
+            disabled={!isCompleted}
             sx={{
               position: 'absolute',
               right: 8,
               top: '50%',
               transform: 'translateY(-50%)',
-              color: 'rgba(255,255,255,0.3)',
-              '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+              color: isCompleted ? 'white' : 'rgba(255,255,255,0.1)',
+              bgcolor: 'rgba(0,0,0,0.3)',
+              '&:hover': { 
+                color: 'white', 
+                bgcolor: isCompleted ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)' 
+              },
+              zIndex: 30,
+              cursor: isCompleted ? 'pointer' : 'not-allowed'
             }}
           >
             <ArrowForwardIos />

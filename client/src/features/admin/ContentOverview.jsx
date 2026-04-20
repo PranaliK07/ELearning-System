@@ -22,7 +22,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { Add, Edit, Delete, Source as ContentOverviewIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +33,8 @@ import toast from 'react-hot-toast';
 
 const ContentOverview = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -100,9 +104,18 @@ const ContentOverview = () => {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'center' },
+            gap: 2,
+            mb: 3
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <ContentOverviewIcon color="primary" />
             <Typography variant="h6">Content Management</Typography>
@@ -111,6 +124,7 @@ const ContentOverview = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={() => navigate('/content/create')}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Add Content
           </Button>
@@ -120,9 +134,109 @@ const ContentOverview = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
+        ) : isMobile ? (
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            {content.length === 0 ? (
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="textSecondary" gutterBottom>
+                  No content available
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => navigate('/content/create')}
+                  sx={{ mt: 1, width: { xs: '100%', sm: 'auto' } }}
+                >
+                  Create your first content
+                </Button>
+              </Paper>
+            ) : (
+              content.map((item) => (
+                <Paper key={item.id || item._id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'flex-start' }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, wordBreak: 'break-word' }}>
+                          {item.title || item.name || 'Untitled'}
+                        </Typography>
+                        {item.description && (
+                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', wordBreak: 'break-word' }}>
+                            {item.description.substring(0, 80)}{item.description.length > 80 ? '...' : ''}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Chip
+                        label={item.type || item.contentType || 'unknown'}
+                        size="small"
+                        color={
+                          item.type === 'video'
+                            ? 'primary'
+                            : item.type === 'quiz'
+                              ? 'warning'
+                              : item.type === 'assignment'
+                                ? 'success'
+                                : item.type === 'reading'
+                                  ? 'info'
+                                  : 'secondary'
+                        }
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Grade</Typography>
+                        <Typography variant="body2">
+                          {item.Grade ? `Class ${item.Grade.level}` : (item.grade || item.gradeLevel || 'N/A')}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Subject</Typography>
+                        <Typography variant="body2" noWrap>
+                          {item.Subject?.name || item.subject || 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Views/Attempts</Typography>
+                        <Typography variant="body2">
+                          {item.views || item.attempts || item.downloads || 0}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Status</Typography>
+                        <Box>
+                          <Chip
+                            label={item.isPublished ? 'published' : (item.status || 'draft')}
+                            size="small"
+                            color={(item.isPublished || item.status === 'published') ? 'success' : 'default'}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/content/edit/${item.id || item._id}`)}
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => openDeleteDialog(item.id || item._id)}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))
+            )}
+          </Box>
         ) : (
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
@@ -278,6 +392,8 @@ const ContentOverview = () => {
         onClose={() => setDeleteDialogOpen(false)}
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
+        fullWidth
+        maxWidth="sm"
       >
         <DialogTitle id="delete-dialog-title">
           {"Confirm Deletion"}

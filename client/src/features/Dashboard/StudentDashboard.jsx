@@ -57,7 +57,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
-import axios from '../../utils/axios';
+import { resolveAvatarSrc } from '../../utils/media';
+import axios from 'axios';
 import ReelPlayer from '../../components/common/ReelPlayer';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -775,10 +776,11 @@ const StudentDashboard = () => {
 
   const gradeProgress = getGradeProgress(user?.grade);
   const quizStats = getQuizStats();
+  const formatProgress = (value) => `${Math.max(0, Math.min(100, Math.round(Number(value) || 0)))}%`;
   
   const progressItems = [
     { label: 'Grade', value: user?.grade || 'N/A', icon: School, color: '#FF6B6B' },
-    { label: 'Progress', value: `${gradeProgress}%`, icon: AutoGraph, color: '#4ECDC4' },
+    { label: 'Progress', value: formatProgress(gradeProgress), icon: AutoGraph, color: '#4ECDC4' },
     { label: 'Watch Time', value: formatWatchTime(watchTimeStats?.totalWatchTime || 0), icon: Schedule, color: '#FFD93D' },
     { label: 'Points', value: user?.points || 0, icon: Star, color: '#6C5CE7' }
   ];
@@ -887,7 +889,7 @@ const StudentDashboard = () => {
             }
           >
             <Avatar 
-              src={user?.avatar} 
+              src={resolveAvatarSrc(user?.avatar)} 
               sx={{ 
                 border: '2px solid rgba(255,255,255,0.5)',
                 cursor: 'pointer',

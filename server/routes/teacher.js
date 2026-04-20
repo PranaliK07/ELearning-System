@@ -15,8 +15,10 @@ const {
   getClassCommunications,
   getStudentCommunications,
   getCommunicationById,
-  sendClassCommunication
+  sendClassCommunication,
+  deleteClassCommunication
 } = require('../controllers/teacherController');
+
 
 router.use(protect);
 const requireTeacher = authorize('teacher');
@@ -47,5 +49,7 @@ router.get('/communications', requireTeacherOrAdmin, getClassCommunications);
 router.get('/communications/feed', requireStudentOrHigher, getStudentCommunications);
 router.get('/communications/item/:id', requireAuthenticatedUser, getCommunicationById);
 router.post('/communications', requireTeacherOrAdmin, sendClassCommunication);
+router.delete('/communications/:id', requireTeacherOrAdmin, deleteClassCommunication);
+
 
 module.exports = router;

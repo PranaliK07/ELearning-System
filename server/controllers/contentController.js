@@ -225,6 +225,7 @@ const updateContent = async (req, res) => {
       order,
       tags,
       metadata,
+      thumbnail,
       topicId,
       TopicId,
       lessonId,
@@ -286,6 +287,7 @@ const updateContent = async (req, res) => {
     if (isPublished !== undefined) content.isPublished = isPublished;
     if (order !== undefined) content.order = order;
     if (tags !== undefined) content.tags = tags;
+    if (thumbnail !== undefined) content.thumbnail = thumbnail;
     if (metadata !== undefined) content.metadata = { ...content.metadata, ...metadata };
 
     await content.save();

@@ -87,8 +87,12 @@ const EditProfile = () => {
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('grade', formData.grade);
-      formDataToSend.append('parentPhone', formData.parentPhone);
-      formDataToSend.append('parentEmail', formData.parentEmail);
+      // Only send parent fields when they are actually used. Sending empty strings
+      // for non-student roles can trigger backend validation and block avatar updates.
+      if (user?.role === 'student') {
+        formDataToSend.append('parentPhone', formData.parentPhone);
+        formDataToSend.append('parentEmail', formData.parentEmail);
+      }
       if (formData.avatar) {
         formDataToSend.append('avatar', formData.avatar);
       }

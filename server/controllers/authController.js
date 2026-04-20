@@ -227,11 +227,17 @@ const updateProfile = async (req, res) => {
     const { name, grade, bio, parentPhone, parentEmail } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    if (typeof name === 'string' && name.length > 0) user.name = name;
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (typeof name === 'string' && name.trim().length > 0) {
+      user.name = name.trim();
+    }
 
     if (grade !== undefined) {
       const trimmedGrade = typeof grade === 'string' ? grade.trim() : grade;
-      if (trimmedGrade === '' || trimmedGrade === null) {
+      if (trimmedGrade === '' || trimmedGrade === null || trimmedGrade === 'null') {
         user.grade = null;
       } else {
         const parsedGrade = Number.parseInt(trimmedGrade, 10);
@@ -240,16 +246,20 @@ const updateProfile = async (req, res) => {
     }
 
     if (typeof bio === 'string') user.bio = bio;
+    if (parentPhone !== undefined) user.parentPhone = parentPhone;
+    if (parentEmail !== undefined) user.parentEmail = parentEmail;
 
     // Handle avatar upload
     if (req.file) {
-      user.avatar = req.file.filename;
+      console.log('Received file for avatar:', req.file.filename);
+      user.setDataValue('avatar', req.file.filename);
+      user.changed('avatar', true);
     }
 
     await user.save();
 
+    // Fetch updated user with inclusions
     const updatedUser = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken'] },
       include: [
         {
           model: Achievement,
@@ -258,7 +268,15 @@ const updateProfile = async (req, res) => {
       ]
     });
 
-    res.json(updatedUser);
+    const publicUser = updatedUser.getPublicProfile();
+    console.log('Returning updated avatar:', publicUser.avatar);
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: publicUser,
+      achievements: updatedUser.Achievements || []
+    });
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, Progress, Content, Topic, Subject, WatchTime, Grade, Assignment, Submission } = require('../models');
+const { User, Progress, Content, Topic, Subject, WatchTime, Grade, Assignment, Submission, Attendance } = require('../models');
 
 const toNumber = (value, fallback = 0) => {
   if (value === null || value === undefined) return fallback;
@@ -20,9 +20,9 @@ const getReportProgressRows = async (start, end) => {
     attributes: ['id', 'UserId', 'completed', 'completedAt', 'quizScore', 'lastWatched', 'updatedAt'],
     where: {
       [Op.or]: [
-        { updatedAt: { [Op.between]: [start, end] } },
-        { completedAt: { [Op.between]: [start, end] } },
-        { lastWatched: { [Op.between]: [start, end] } }
+        { updatedAt: { [Op.gte]: start } },
+        { completedAt: { [Op.gte]: start } },
+        { lastWatched: { [Op.gte]: start } }
       ]
     },
     include: [
@@ -150,7 +150,24 @@ const getStudentAssignmentIds = (user, assignmentStats) => {
   return assignmentIds;
 };
 
-const buildStudentProgress = (rows, assignmentStats, limit = 10) => {
+const getAttendanceStats = async (start, end) => {
+  const attendance = await Attendance.findAll({
+    where: {
+      date: { [Op.between]: [start, end] }
+    }
+  });
+
+  const stats = new Map();
+  attendance.forEach((a) => {
+    if (!stats.has(a.studentId)) stats.set(a.studentId, { present: 0, total: 0 });
+    const s = stats.get(a.studentId);
+    s.total += 1;
+    if (a.status === 'present') s.present += 1;
+  });
+  return stats;
+};
+
+const buildStudentProgress = (rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, limit = 10) => {
   const perStudent = new Map();
   const userById = new Map();
 
@@ -185,19 +202,37 @@ const buildStudentProgress = (rows, assignmentStats, limit = 10) => {
   return [...perStudent.values()]
     .map((s) => {
       const user = userById.get(s.userId) || {};
+      
+      // Assignments
       const assignmentIds = getStudentAssignmentIds(user, assignmentStats);
       const submittedIds = assignmentStats.submittedByStudent.get(s.userId) || new Set();
       let completedAssignments = 0;
-
       assignmentIds.forEach((assignmentId) => {
         if (submittedIds.has(assignmentId)) completedAssignments += 1;
       });
-
       const assignmentCompletion = assignmentIds.size > 0
-        ? Math.round((completedAssignments / assignmentIds.size) * 1000) / 10
+        ? Math.round((completedAssignments / assignmentIds.size) * 100)
         : 0;
+
+      // Attendance
+      const att = attendanceStats.get(s.userId) || { present: 0, total: 0 };
+      const attendancePercentage = att.total > 0 ? Math.round((att.present / att.total) * 100) : 0;
+
+      // Video Watching (minutes)
+      const videoMinutes = watchTimeStatsPerStudent.get(s.userId) || 0;
+
       const score = s.quizCount > 0 ? Math.round(s.quizSum / s.quizCount) : 0;
       const progress = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
+
+      // Overall Performance Calculation (Weighted)
+      // 30% Quiz, 30% Progress, 20% Assignments, 20% Attendance
+      const overallPerformance = Math.round(
+        (score * 0.3) + 
+        (progress * 0.3) + 
+        (assignmentCompletion * 0.2) + 
+        (attendancePercentage * 0.2)
+      );
+
       return {
         userId: s.userId,
         name: s.name,
@@ -205,10 +240,13 @@ const buildStudentProgress = (rows, assignmentStats, limit = 10) => {
         score,
         progress,
         assignmentCompletion,
+        attendancePercentage,
+        videoMinutes,
+        overallPerformance,
         lastActive: s.lastActive
       };
     })
-    .sort((a, b) => b.score - a.score || b.progress - a.progress)
+    .sort((a, b) => b.overallPerformance - a.overallPerformance || b.score - a.score)
     .slice(0, limit);
 };
 
@@ -255,7 +293,7 @@ const getAverageProgressPerStudent = (rows) => {
     assignmentIdsByGradeId: new Map(),
     assignmentIdsByLevel: new Map(),
     submittedByStudent: new Map()
-  }, Number.MAX_SAFE_INTEGER);
+  }, new Map(), new Map(), Number.MAX_SAFE_INTEGER);
   if (!students.length) return 0;
   const avg = students.reduce((sum, s) => sum + toNumber(s.progress), 0) / students.length;
   return Math.round(avg * 10) / 10;
@@ -333,12 +371,26 @@ const getTotalWatchHours = async (start, end) => {
   return Math.round((toNumber(minutes) / 60) * 10) / 10;
 };
 
+const getWatchTimePerStudent = async (start, end) => {
+  const watchTimes = await WatchTime.findAll({
+    where: { date: { [Op.between]: [start, end] } },
+    attributes: ['UserId', 'minutes']
+  });
+  const stats = new Map();
+  watchTimes.forEach(wt => {
+    stats.set(wt.UserId, (stats.get(wt.UserId) || 0) + wt.minutes);
+  });
+  return stats;
+};
+
 const getDailyReport = async (req, res) => {
   try {
     const { start, end } = buildDateRange(1);
-    const [rows, assignmentStats, totalHours, activeStudents, newEnrollmentsToday] = await Promise.all([
+    const [rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, totalHours, activeStudents, newEnrollmentsToday] = await Promise.all([
       getReportProgressRows(start, end),
       getAssignmentStats(start, end),
+      getAttendanceStats(start, end),
+      getWatchTimePerStudent(start, end),
       getTotalWatchHours(start, end),
       User.count({
         where: {
@@ -355,7 +407,7 @@ const getDailyReport = async (req, res) => {
       })
     ]);
 
-    const studentProgress = buildStudentProgress(rows, assignmentStats, 10);
+    const studentProgress = buildStudentProgress(rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, 10);
     const classPerformance = buildClassPerformance(studentProgress);
     const assignmentCompletionPercentage = getAverageAssignmentCompletion(studentProgress);
     const avgScore = studentProgress.length
@@ -367,10 +419,10 @@ const getDailyReport = async (req, res) => {
       period: 'daily',
       range: { start, end },
       summary: {
-        activeStudentsToday: activeStudents,
-        videosWatchedToday: countVideosWatched(rows, start, end),
-        topicsCompletedToday: countCompletedTopics(rows, start, end),
-        newEnrollmentsToday,
+        activeStudents: activeStudents,
+        videosWatched: countVideosWatched(rows, start, end),
+        lessonsCompleted: countCompletedTopics(rows, start, end),
+        topPerformingClass: classPerformance.length > 0 ? classPerformance[0].className : 'N/A',
         assignmentCompletionPercentage
       },
       performanceMetrics: {
@@ -392,9 +444,11 @@ const getDailyReport = async (req, res) => {
 const getWeeklyReport = async (req, res) => {
   try {
     const { start, end } = buildDateRange(7);
-    const [rows, assignmentStats, totalHours, activeUsersThisWeek] = await Promise.all([
+    const [rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, totalHours, activeUsersThisWeek] = await Promise.all([
       getReportProgressRows(start, end),
       getAssignmentStats(start, end),
+      getAttendanceStats(start, end),
+      getWatchTimePerStudent(start, end),
       getTotalWatchHours(start, end),
       User.count({
         where: {
@@ -407,7 +461,7 @@ const getWeeklyReport = async (req, res) => {
 
     const averageProgressPerStudent = getAverageProgressPerStudent(rows);
     const mostActiveSubject = getMostActiveSubject(rows, start, end);
-    const studentProgress = buildStudentProgress(rows, assignmentStats, 10);
+    const studentProgress = buildStudentProgress(rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, 10);
     const classPerformance = buildClassPerformance(studentProgress);
     const assignmentCompletionPercentage = getAverageAssignmentCompletion(studentProgress);
     const avgScore = studentProgress.length
@@ -418,9 +472,10 @@ const getWeeklyReport = async (req, res) => {
       period: 'weekly',
       range: { start, end },
       summary: {
-        totalActiveUsersThisWeek: activeUsersThisWeek,
-        totalVideosWatched: countVideosWatched(rows, start, end),
-        averageProgressPerStudent,
+        activeStudents: activeUsersThisWeek,
+        videosWatched: countVideosWatched(rows, start, end),
+        lessonsCompleted: countCompletedTopics(rows, start, end),
+        averageProgress: averageProgressPerStudent,
         mostActiveSubject: mostActiveSubject ? mostActiveSubject.name : 'N/A',
         assignmentCompletionPercentage
       },
@@ -443,14 +498,16 @@ const getWeeklyReport = async (req, res) => {
 const getMonthlyReport = async (req, res) => {
   try {
     const { start, end } = buildDateRange(30);
-    const [rows, assignmentStats, totalHours, totalUsers] = await Promise.all([
+    const [rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, totalHours, totalUsers] = await Promise.all([
       getReportProgressRows(start, end),
       getAssignmentStats(start, end),
+      getAttendanceStats(start, end),
+      getWatchTimePerStudent(start, end),
       getTotalWatchHours(start, end),
       User.count()
     ]);
 
-    const topPerformingStudents = buildStudentProgress(rows, assignmentStats, 5);
+    const topPerformingStudents = buildStudentProgress(rows, assignmentStats, attendanceStats, watchTimeStatsPerStudent, 5);
     const classPerformance = buildClassPerformance(topPerformingStudents);
     const assignmentCompletionPercentage = getAverageAssignmentCompletion(topPerformingStudents);
     const total = rows.length;
@@ -465,11 +522,11 @@ const getMonthlyReport = async (req, res) => {
       period: 'monthly',
       range: { start, end },
       summary: {
-        totalUsers,
-        totalCompletedTopics: countCompletedTopics(rows, start, end),
-        totalVideosWatched: countVideosWatched(rows, start, end),
+        activeStudents: totalUsers,
+        lessonsCompleted: countCompletedTopics(rows, start, end),
+        videosWatched: countVideosWatched(rows, start, end),
         topPerformingStudents,
-        overallProgressPercentage,
+        overallProgress: overallProgressPercentage,
         assignmentCompletionPercentage
       },
       performanceMetrics: {

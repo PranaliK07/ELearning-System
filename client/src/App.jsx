@@ -36,7 +36,6 @@ import UploadedContent from './features/admin/UploadedContent';
 import UserManagement from './features/admin/UserManagement';
 import ContentOverview from './features/admin/ContentOverview';
 import BusinessSettings from './features/admin/BusinessSettings';
-import ReportsIssues from './features/admin/ReportsIssues';
 import SystemSettings from './features/admin/SystemSettings';
 import AssignmentManagement from './features/teacher/AssignmentManagement';
 import Reports from './features/teacher/Reports';
@@ -207,14 +206,7 @@ function App() {
                       }
                     />
 
-                    <Route
-                      path="admin/reports"
-                      element={
-                        <ProtectedRoute roles={['admin']}>
-                          <ReportsIssues />
-                        </ProtectedRoute>
-                      }
-                    />
+
 
                     <Route
                       path="admin/business-settings"
@@ -236,6 +228,15 @@ function App() {
 
                     <Route
                       path="content/create"
+                      element={
+                        <ProtectedRoute roles={['admin', 'teacher']}>
+                          <ContentManagement />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="content/edit/:contentId"
                       element={
                         <ProtectedRoute roles={['admin', 'teacher']}>
                           <ContentManagement />

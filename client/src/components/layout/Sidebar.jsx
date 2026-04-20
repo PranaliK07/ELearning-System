@@ -62,7 +62,6 @@ const configuredModules = new Set([
   'content',
   'users',
   'reports',
-  'reports-issues',
   'settings',
   'business-settings',
   'doubts',
@@ -156,7 +155,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       path: role === 'teacher' ? '/dashboard?tab=1' : '/doubts' 
     },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-    { key: 'reports-issues', text: 'Reports & Issues', icon: <ReportsIcon />, path: '/admin/reports' },
     { key: 'communications', text: 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
     { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
