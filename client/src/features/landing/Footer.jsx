@@ -23,7 +23,7 @@ import {
   Star,
   Contacts
 } from '@mui/icons-material';
-import elsLogo from '../../img/els-logo.png';
+import elsLogo from '../../img/els-logo-footer.png';
 
 const footerLinks = [
   { label: 'Home', to: '/', icon: <Home fontSize="small" /> },

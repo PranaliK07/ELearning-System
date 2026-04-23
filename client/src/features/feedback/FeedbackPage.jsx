@@ -17,13 +17,14 @@ import {
   TableHead,
   TableRow,
   Chip,
-  useMediaQuery,
-  useTheme
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import toast from 'react-hot-toast';
 import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 import { resolveAvatarSrc } from '../../utils/media';
+import { isAdminLikeRole } from '../../utils/roles';
 
 const formatWhen = (value) => {
   try {
@@ -34,11 +35,9 @@ const formatWhen = (value) => {
 };
 
 const FeedbackPage = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const role = user?.role || 'student';
-  const isStaff = role === 'teacher' || role === 'admin';
+  const isStaff = role === 'teacher' || isAdminLikeRole(role);
 
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState([]);
@@ -146,44 +145,48 @@ const FeedbackPage = () => {
     }
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-        >
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: 1, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          gap: 2, 
+          mb: 3 
+        }}>
           <Box>
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              sx={{ fontSize: { xs: '1.7rem', sm: '2.125rem' } }}
-            >
-              Feedback & Ratings
+            <Typography variant={isMobile ? "h4" : "h3"} fontWeight="900" sx={{ 
+              background: 'linear-gradient(45deg, #FFB300 30%, #F57C00 90%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              Feedback & Ratings ⭐
             </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {isStaff ? 'Give rating and comments to students.' : 'View your personal ratings and comments.'}
+            <Typography variant="body1" color="textSecondary" sx={{ mt: 0.5, fontWeight: 500 }}>
+              {isStaff ? 'Evaluate and provide constructive feedback to students.' : 'Review your performance insights and teacher comments.'}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
-            <Chip label={`Avg: ${averageRating || 0}`} color="primary" variant="outlined" />
-            <Chip label={`${feedbackItems.length} entries`} variant="outlined" />
+          <Stack direction="row" spacing={1.5}>
+            <Paper variant="outlined" sx={{ px: 2, py: 0.75, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'primary.50' }}>
+              <Typography variant="caption" fontWeight="bold">AVG</Typography>
+              <Typography variant="subtitle2" color="primary.main" fontWeight="bold">
+                {averageRating || 0.0}
+              </Typography>
+            </Paper>
+            <Chip label={`${feedbackItems.length} Entries`} variant="outlined" sx={{ borderRadius: 2, fontWeight: 'bold' }} />
           </Stack>
-        </Stack>
+        </Box>
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ mb: 4 }} />
 
         {isStaff && (
           <Box sx={{ mb: 3 }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 2,
-                gridTemplateColumns: '1fr'
-              }}
-            >
+            <Stack spacing={2}>
               <Autocomplete
                 options={students}
                 value={selectedStudent}
@@ -195,12 +198,8 @@ const FeedbackPage = () => {
                     <Avatar src={resolveAvatarSrc(option.avatar)} sx={{ width: 28, height: 28 }}>
                       {option?.name?.charAt(0)?.toUpperCase() || 'S'}
                     </Avatar>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" noWrap>{option?.name}</Typography>
-                      <Typography variant="caption" color="textSecondary" noWrap>
-                        {option?.email}
-                      </Typography>
-                    </Box>
+                    <Typography variant="body2">{option?.name}</Typography>
+                    <Typography variant="caption" color="textSecondary">{option?.email}</Typography>
                   </Box>
                 )}
                 renderInput={(params) => (
@@ -208,144 +207,113 @@ const FeedbackPage = () => {
                 )}
               />
 
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', md: 'auto minmax(0, 1fr) auto' },
-                  gap: 2,
-                  alignItems: { xs: 'stretch', md: 'center' }
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                <Box>
                   <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Rating</Typography>
                   <Rating
                     value={rating}
                     onChange={(_, value) => setRating(value || 0)}
-                    size={isMobile ? 'large' : 'medium'}
                   />
                 </Box>
-
                 <TextField
                   fullWidth
                   label="Comment (optional)"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   multiline
-                  minRows={isMobile ? 3 : 2}
+                  minRows={2}
                 />
-
-                <Button
-                  variant="contained"
-                  onClick={submitFeedback}
-                  disabled={loading}
-                  sx={{ width: { xs: '100%', md: 'auto' }, minHeight: 56 }}
-                >
+                <Button variant="contained" onClick={submitFeedback} disabled={loading}>
                   Save
                 </Button>
-              </Box>
-            </Box>
+              </Stack>
+            </Stack>
           </Box>
         )}
 
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          {isStaff ? (selectedStudent ? `Feedback for ${selectedStudent.name}` : 'Select a student to view feedback') : 'My Feedback'}
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, mt: isStaff ? 4 : 0 }}>
+          {isStaff ? (selectedStudent ? `Recent Feedback for ${selectedStudent.name}` : 'Select a student to view history') : 'My Feedback History'}
         </Typography>
 
-        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-          {isMobile ? (
-            <Box sx={{ p: 2 }}>
-              {feedbackItems.length === 0 ? (
-                <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
-                  {loading ? 'Loading...' : 'No feedback yet.'}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            Loading feedback records...
+          </Box>
+        ) : feedbackItems.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 6, border: '1px dashed #ccc', borderRadius: 3, bgcolor: 'action.hover' }}>
+             <Typography variant="body1" color="textSecondary">
+               No feedback entries found yet.
+             </Typography>
+          </Box>
+        ) : isMobile ? (
+          <Stack spacing={2}>
+            {feedbackItems.map((item) => (
+              <Paper key={item.id} variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Avatar src={resolveAvatarSrc(item?.author?.avatar)} sx={{ width: 32, height: 32 }}>
+                      {item?.author?.name?.charAt(0) || 'U'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="bold">{item?.author?.name}</Typography>
+                      <Typography variant="caption" color="textSecondary">{item?.author?.role}</Typography>
+                    </Box>
+                  </Stack>
+                  <Rating value={Number(item.rating)} size="small" readOnly />
+                </Box>
+                <Typography variant="body2" color="textPrimary" sx={{ fontStyle: item.comment ? 'normal' : 'italic', mb: 2 }}>
+                  {item.comment || 'No comment provided.'}
                 </Typography>
-              ) : (
-                <Stack spacing={1.5}>
-                  {feedbackItems.map((item) => (
-                    <Paper key={item.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                      <Stack spacing={1}>
-                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                          <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-                            <Avatar src={resolveAvatarSrc(item?.author?.avatar)} sx={{ width: 32, height: 32 }}>
-                              {item?.author?.name?.charAt(0)?.toUpperCase() || 'U'}
-                            </Avatar>
-                            <Box sx={{ minWidth: 0 }}>
-                              <Typography variant="body2" fontWeight={600} noWrap>
-                                {item?.author?.name || 'Unknown'}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary" noWrap>
-                                {item?.author?.role || ''}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                          <Rating value={Number(item.rating) || 0} readOnly size="small" />
-                        </Stack>
-
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                          {item.comment || '-'}
-                        </Typography>
-
-                        <Typography variant="caption" color="textSecondary">
-                          {formatWhen(item.createdAt)}
-                        </Typography>
-                      </Stack>
-                    </Paper>
-                  ))}
-                </Stack>
-              )}
-            </Box>
-          ) : (
-            <Table size="small">
+                <Typography variant="caption" color="textSecondary">
+                  {formatWhen(item.createdAt)}
+                </Typography>
+              </Paper>
+            ))}
+          </Stack>
+        ) : (
+          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            <TableContainer>
+            <Table size="medium">
               <TableHead>
                 <TableRow>
-                  <TableCell>From</TableCell>
-                  <TableCell>Rating</TableCell>
-                  <TableCell>Comment</TableCell>
-                  <TableCell>When</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>From</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Rating</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Comment</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {feedbackItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4}>
-                      <Typography variant="body2" color="textSecondary">
-                        {loading ? 'Loading...' : 'No feedback yet.'}
+                {feedbackItems.map((item) => (
+                  <TableRow key={item.id} hover>
+                    <TableCell>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Avatar src={resolveAvatarSrc(item?.author?.avatar)} sx={{ width: 32, height: 32 }} />
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight="bold">{item?.author?.name || 'Unknown'}</Typography>
+                          <Typography variant="caption" color="textSecondary">{item?.author?.role || ''}</Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Rating value={Number(item.rating) || 0} readOnly size="small" />
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 400 }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {item.comment || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="textSecondary">
+                        {formatWhen(item.createdAt)}
                       </Typography>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  feedbackItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Avatar src={resolveAvatarSrc(item?.author?.avatar)} sx={{ width: 28, height: 28 }}>
-                            {item?.author?.name?.charAt(0)?.toUpperCase() || 'U'}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2">{item?.author?.name || 'Unknown'}</Typography>
-                            <Typography variant="caption" color="textSecondary">{item?.author?.role || ''}</Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Rating value={Number(item.rating) || 0} readOnly size="small" />
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 520 }}>
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                          {item.comment || '-'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" color="textSecondary">
-                          {formatWhen(item.createdAt)}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
-          )}
-        </Paper>
+            </TableContainer>
+          </Paper>
+        )}
       </Paper>
     </Container>
   );

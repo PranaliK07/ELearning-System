@@ -21,6 +21,7 @@ import {
   Stack,
   InputAdornment
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
 import {
   Edit,
@@ -41,6 +42,8 @@ import { validateRequiredText, validateSelectRequired } from '../../utils/valida
 
 const TopicManager = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -250,9 +253,14 @@ const TopicManager = () => {
 
   const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(searchSubject.toLowerCase()));
   const filteredTopics = topics.filter(t => t.name.toLowerCase().includes(searchTopic.toLowerCase()));
+  const surfaceBorder = theme.palette.divider;
+  const softSurface = theme.palette.background.default;
+  const iconSurface = (color) => alpha(color, isDarkMode ? 0.2 : 0.12);
+  const highlightSurface = (color) => alpha(color, isDarkMode ? 0.24 : 0.08);
+  const subtleText = theme.palette.text.secondary;
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4, minHeight: '100vh', bgcolor: '#f8fafc' }}>
+    <Container maxWidth="xl" sx={{ py: 4, minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Header */}
       <Box sx={{ mb: 5, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Button
@@ -270,16 +278,16 @@ const TopicManager = () => {
         <Grid size={{ xs: 12, lg: 6 }}>
           <Stack spacing={3}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ p: 1, bgcolor: '#e0f2fe', borderRadius: '10px', display: 'flex' }}>
-                <SubjectIcon sx={{ color: '#0284c7' }} />
+              <Box sx={{ p: 1, bgcolor: iconSurface(theme.palette.primary.main), borderRadius: '10px', display: 'flex' }}>
+                <SubjectIcon sx={{ color: theme.palette.primary.main }} />
               </Box>
-              <Typography variant="h5" fontWeight="700" sx={{ color: '#0f172a' }}>
+              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary' }}>
                 Add Subject
               </Typography>
             </Box>
 
-            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" sx={{ mb: 2, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+              <Typography variant="subtitle2" sx={{ mb: 2, color: subtleText, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Create New Subject
               </Typography>
               <Stack spacing={2}>
@@ -292,7 +300,7 @@ const TopicManager = () => {
                   error={!!errors.gradeId}
                   helperText={errors.gradeId}
                   InputProps={{
-                    startAdornment: <InputAdornment position="start"><School sx={{ color: '#94a3b8' }} /></InputAdornment>,
+                    startAdornment: <InputAdornment position="start"><School sx={{ color: subtleText }} /></InputAdornment>,
                   }}
                 >
                   {grades.map((g) => (
@@ -334,7 +342,7 @@ const TopicManager = () => {
                     textTransform: 'none',
                     fontSize: '1rem',
                     fontWeight: 600,
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
+                    boxShadow: isDarkMode ? 2 : '0 4px 12px rgba(37, 99, 235, 0.2)'
                   }}
                 >
                   Add Subject
@@ -342,8 +350,8 @@ const TopicManager = () => {
               </Stack>
             </Paper>
 
-            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', border: '1px solid #e2e8f0' }}>
-              <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+              <Box sx={{ p: 2.5, bgcolor: softSurface, borderBottom: `1px solid ${surfaceBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Typography variant="h6" fontWeight="700">Subjects {selectedClass ? `for Class ${selectedClass.level}` : ''}</Typography>
                 <TextField
                   size="small"
@@ -353,7 +361,7 @@ const TopicManager = () => {
                   InputProps={{
                     startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment>,
                   }}
-                  sx={{ width: 160 }}
+                  sx={{ width: { xs: '100%', sm: 160 } }}
                 />
               </Box>
               <List sx={{ p: 0, height: 400, overflow: 'auto' }}>
@@ -365,16 +373,16 @@ const TopicManager = () => {
                         sx={{
                           cursor: 'pointer',
                           transition: '0.2s',
-                          bgcolor: String(form.subjectId) === String(s.id) ? '#eff6ff' : 'transparent',
-                          '&:hover': { bgcolor: String(form.subjectId) === String(s.id) ? '#eff6ff' : '#f1f5f9' },
+                          bgcolor: String(form.subjectId) === String(s.id) ? highlightSurface(theme.palette.primary.main) : 'transparent',
+                          '&:hover': { bgcolor: String(form.subjectId) === String(s.id) ? highlightSurface(theme.palette.primary.main) : theme.palette.action.hover },
                           px: 3, py: 2
                         }}
                         secondaryAction={
                           <Box>
-                            <IconButton onClick={(e) => { e.stopPropagation(); openEditDialog('subject', s); }} size="small" sx={{ color: '#64748b' }}>
+                            <IconButton onClick={(e) => { e.stopPropagation(); openEditDialog('subject', s); }} size="small" sx={{ color: subtleText }}>
                               <Edit fontSize="small" />
                             </IconButton>
-                            <IconButton onClick={(e) => { e.stopPropagation(); handleDelete('subject', s.id); }} size="small" sx={{ color: '#ef4444' }}>
+                            <IconButton onClick={(e) => { e.stopPropagation(); handleDelete('subject', s.id); }} size="small" sx={{ color: theme.palette.error.main }}>
                               <Delete fontSize="small" />
                             </IconButton>
                           </Box>
@@ -383,14 +391,15 @@ const TopicManager = () => {
                         <ListItemText
                           primary={s.name}
                           secondary={s.description || 'No description provided'}
-                          primaryTypographyProps={{ fontWeight: 600, color: '#1e293b' }}
+                          primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                          secondaryTypographyProps={{ color: subtleText }}
                         />
                       </ListItem>
                       {index < filteredSubjects.length - 1 && <Divider />}
                     </React.Fragment>
                   ))
                 ) : (
-                  <Box sx={{ py: 6, textAlign: 'center', color: '#94a3b8' }}>
+                  <Box sx={{ py: 6, textAlign: 'center', color: subtleText }}>
                     <SubjectIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
                     <Typography>No subjects found</Typography>
                   </Box>
@@ -404,16 +413,16 @@ const TopicManager = () => {
         <Grid size={{ xs: 12, lg: 6 }}>
           <Stack spacing={3}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ p: 1, bgcolor: '#fef2f2', borderRadius: '10px', display: 'flex' }}>
-                <TopicIcon sx={{ color: '#dc2626' }} />
+              <Box sx={{ p: 1, bgcolor: iconSurface(theme.palette.secondary.main), borderRadius: '10px', display: 'flex' }}>
+                <TopicIcon sx={{ color: theme.palette.secondary.main }} />
               </Box>
-              <Typography variant="h5" fontWeight="700" sx={{ color: '#0f172a' }}>
+              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary' }}>
                 Add Topic
               </Typography>
             </Box>
 
-            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" sx={{ mb: 2, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+              <Typography variant="subtitle2" sx={{ mb: 2, color: subtleText, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Add Topic to {selectedSubject ? selectedSubject.name : 'Selected Subject'}
               </Typography>
               <Stack spacing={2}>
@@ -427,7 +436,7 @@ const TopicManager = () => {
                   error={!!errors.subjectId}
                   helperText={errors.subjectId}
                   InputProps={{
-                    startAdornment: <InputAdornment position="start"><SubjectIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
+                    startAdornment: <InputAdornment position="start"><SubjectIcon sx={{ color: subtleText }} /></InputAdornment>,
                   }}
                 >
                   {subjects.map((s) => (
@@ -470,7 +479,7 @@ const TopicManager = () => {
                     textTransform: 'none',
                     fontSize: '1rem',
                     fontWeight: 600,
-                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.1)'
+                    boxShadow: isDarkMode ? 2 : '0 4px 12px rgba(220, 38, 38, 0.1)'
                   }}
                 >
                   Add Topic
@@ -478,8 +487,8 @@ const TopicManager = () => {
               </Stack>
             </Paper>
 
-            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', border: '1px solid #e2e8f0' }}>
-              <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+              <Box sx={{ p: 2.5, bgcolor: softSurface, borderBottom: `1px solid ${surfaceBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Typography variant="h6" fontWeight="700">Topics {selectedSubject ? `in ${selectedSubject.name}` : ''}</Typography>
                 <TextField
                   size="small"
@@ -489,7 +498,7 @@ const TopicManager = () => {
                   InputProps={{
                     startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment>,
                   }}
-                  sx={{ width: 160 }}
+                  sx={{ width: { xs: '100%', sm: 160 } }}
                 />
               </Box>
               <List sx={{ p: 0, height: 400, overflow: 'auto' }}>
@@ -497,13 +506,17 @@ const TopicManager = () => {
                   filteredTopics.map((t, index) => (
                     <React.Fragment key={t.id}>
                       <ListItem
-                        sx={{ px: 3, py: 2 }}
+                        sx={{
+                          px: 3,
+                          py: 2,
+                          '&:hover': { bgcolor: theme.palette.action.hover }
+                        }}
                         secondaryAction={
                           <Box>
-                            <IconButton onClick={() => openEditDialog('topic', t)} size="small" sx={{ color: '#64748b' }}>
+                            <IconButton onClick={() => openEditDialog('topic', t)} size="small" sx={{ color: subtleText }}>
                               <Edit fontSize="small" />
                             </IconButton>
-                            <IconButton onClick={() => handleDelete('topic', t.id)} size="small" sx={{ color: '#ef4444' }}>
+                            <IconButton onClick={() => handleDelete('topic', t.id)} size="small" sx={{ color: theme.palette.error.main }}>
                               <Delete fontSize="small" />
                             </IconButton>
                           </Box>
@@ -512,14 +525,15 @@ const TopicManager = () => {
                         <ListItemText
                           primary={t.name}
                           secondary={t.description || 'No description provided'}
-                          primaryTypographyProps={{ fontWeight: 600, color: '#1e293b' }}
+                          primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                          secondaryTypographyProps={{ color: subtleText }}
                         />
                       </ListItem>
                       {index < filteredTopics.length - 1 && <Divider />}
                     </React.Fragment>
                   ))
                 ) : (
-                  <Box sx={{ py: 6, textAlign: 'center', color: '#94a3b8' }}>
+                  <Box sx={{ py: 6, textAlign: 'center', color: subtleText }}>
                     <TopicIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
                     <Typography>No topics found</Typography>
                   </Box>
@@ -537,10 +551,10 @@ const TopicManager = () => {
         fullWidth 
         maxWidth="sm"
         PaperProps={{
-          sx: { borderRadius: '20px', p: 1 }
+          sx: { borderRadius: '20px', p: 1, bgcolor: 'background.paper', backgroundImage: 'none' }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>Edit {editDialog.type === 'subject' ? 'Subject' : 'Topic'}</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, color: 'text.primary' }}>Edit {editDialog.type === 'subject' ? 'Subject' : 'Topic'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
           <TextField 
             label="Name" 
@@ -560,7 +574,7 @@ const TopicManager = () => {
           />
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={closeEditDialog} sx={{ color: '#64748b', fontWeight: 600 }}>Cancel</Button>
+          <Button onClick={closeEditDialog} sx={{ color: 'text.secondary', fontWeight: 600 }}>Cancel</Button>
           <Button 
             variant="contained" 
             onClick={handleEditSave} 

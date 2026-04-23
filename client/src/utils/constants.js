@@ -48,6 +48,7 @@ export const QUIZ_TYPES = {
 
 export const ROLES = {
   admin: 'Admin',
+  demo: 'Demo User',
   teacher: 'Teacher',
   student: 'Student',
   parent: 'Parent'

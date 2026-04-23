@@ -20,6 +20,7 @@ const {
   restoreDatabase
 } = require('../controllers/adminController');
 const { createUser, linkParent } = require('../controllers/userController');
+const { respondToDoubt } = require('../controllers/doubtController');
 
 router.use(protect);
 
@@ -54,6 +55,9 @@ router.post('/announcements', createAnnouncement);
 // Reports
 router.get('/reports', getReports);
 router.post('/reports/:id/resolve', resolveReport);
+
+// Doubts
+router.put('/doubts/:id/respond', respondToDoubt);
 
 // System
 router.get('/logs', getSystemLogs);

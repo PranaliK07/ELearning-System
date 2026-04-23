@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Avatar,
   Box,
   Button,
   Card,
@@ -65,7 +66,7 @@ const formatDateLabel = (dateOnly, compact = false) => {
 
 const TeacherAttendance = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [classes, setClasses] = useState([]);
   const [selectedGradeId, setSelectedGradeId] = useState('');
   const [date, setDate] = useState(todayDateOnly());
@@ -514,8 +515,8 @@ const TeacherAttendance = () => {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.6rem', sm: '2.125rem' } }}>
         Attendance Management
       </Typography>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
@@ -523,9 +524,10 @@ const TeacherAttendance = () => {
       </Typography>
 
       <Card sx={{ borderRadius: 4 }}>
-        <CardContent>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          {/* ── Filters row ── */}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
-            <FormControl fullWidth sx={{ minWidth: 220 }}>
+            <FormControl fullWidth>
               <InputLabel id="attendance-class-label">Class</InputLabel>
               <Select
                 labelId="attendance-class-label"
@@ -593,6 +595,7 @@ const TeacherAttendance = () => {
             </Box>
           </Stack>
 
+          {/* ── Student list ── */}
           <Box sx={{ mt: 2 }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -664,12 +667,13 @@ const TeacherAttendance = () => {
                 )}
               </Box>
             ) : (
+              // ── Desktop table layout ──────────────────────────────────
               <TableContainer component={Box} sx={{ maxHeight: 520, overflowX: 'auto' }}>
-                <Table stickyHeader size="small" sx={{ minWidth: 720 }}>
+                <Table stickyHeader size="small" sx={{ minWidth: 600 }}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Student</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700, width: 160 }}>Status</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Note</TableCell>
                     </TableRow>
                   </TableHead>
@@ -682,13 +686,13 @@ const TeacherAttendance = () => {
                               component="img"
                               alt={r.name}
                               src={resolveAvatarSrc(r.avatar)}
-                              sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'grey.100' }}
+                              sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'grey.100', flexShrink: 0 }}
                               onError={(e) => {
                                 e.currentTarget.onerror = null;
                                 e.currentTarget.src = '';
                               }}
                             />
-                            <Box>
+                            <Box sx={{ minWidth: 0 }}>
                               <Typography variant="body2" fontWeight={700} noWrap>
                                 {r.name}
                               </Typography>
@@ -740,15 +744,6 @@ const TeacherAttendance = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredRows.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3}>
-                          <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
-                            No students found.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -888,29 +883,40 @@ const TeacherAttendance = () => {
             )}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 2, pb: 2, flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
           <Button
             onClick={downloadPDF}
             variant="outlined"
+            size="small"
             disabled={reportLoading || report.students.length === 0 || report.dates.length === 0}
+            sx={{ flex: { xs: '1 1 calc(50% - 4px)', sm: '0 0 auto' } }}
           >
             Download PDF
           </Button>
           <Button
             onClick={downloadWord}
             variant="outlined"
+            size="small"
             disabled={reportLoading || report.students.length === 0 || report.dates.length === 0}
+            sx={{ flex: { xs: '1 1 calc(50% - 4px)', sm: '0 0 auto' } }}
           >
             Download Word
           </Button>
           <Button
             onClick={downloadExcel}
             variant="outlined"
+            size="small"
             disabled={reportLoading || report.students.length === 0 || report.dates.length === 0}
+            sx={{ flex: { xs: '1 1 calc(50% - 4px)', sm: '0 0 auto' } }}
           >
             Download Excel
           </Button>
-          <Button onClick={() => setReportOpen(false)} variant="outlined">
+          <Button
+            onClick={() => setReportOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ flex: { xs: '1 1 calc(50% - 4px)', sm: '0 0 auto' } }}
+          >
             Close
           </Button>
         </DialogActions>

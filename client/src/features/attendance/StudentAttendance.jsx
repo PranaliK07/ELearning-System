@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Container,
   Divider,
+  Paper,
   Stack,
   Table,
   TableBody,
@@ -63,9 +64,13 @@ const StudentAttendance = () => {
   }, [rows]);
 
   const statusChip = (status) => {
-    if (status === 'present') return <Chip label="Present" color="success" size="small" />;
-    if (status === 'absent') return <Chip label="Absent" color="error" size="small" />;
-    return <Chip label="Not marked" variant="outlined" size="small" />;
+    if (status === 'present') {
+      return <Chip label="Present" sx={{ bgcolor: '#FFD93D', color: '#0B1F3B', fontWeight: 900 }} size="small" />;
+    }
+    if (status === 'absent') {
+      return <Chip label="Absent" sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FF6B6B', fontWeight: 900 }} size="small" />;
+    }
+    return <Chip label="Not marked" variant="outlined" size="small" sx={{ opacity: 0.5 }} />;
   };
 
   return (
@@ -124,7 +129,7 @@ const StudentAttendance = () => {
             >
               <Chip label={`Present: ${summary.present}`} color="success" variant="outlined" />
               <Chip label={`Absent: ${summary.absent}`} color="error" variant="outlined" />
-              <Chip label={`Today: ${summary.todayStatus}`} variant="outlined" />
+              <Chip label={`Today: ${summary.todayStatus.replace('_', ' ')}`} variant="outlined" />
             </Stack>
           </Box>
 
@@ -134,6 +139,10 @@ const StudentAttendance = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
               <CircularProgress />
             </Box>
+          ) : rows.length === 0 ? (
+            <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 6 }}>
+              No attendance records in this date range.
+            </Typography>
           ) : isMobile ? (
             <Stack spacing={1.5}>
               {rows.map((r) => (
@@ -161,14 +170,9 @@ const StudentAttendance = () => {
                   </CardContent>
                 </Card>
               ))}
-              {rows.length === 0 && (
-                <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
-                  No attendance records in this date range.
-                </Typography>
-              )}
             </Stack>
           ) : (
-            <TableContainer component={Box} sx={{ maxHeight: 520, overflowX: 'auto' }}>
+            <TableContainer component={Box} sx={{ maxHeight: 520, overflowX: 'auto', mt: 2 }}>
               <Table stickyHeader size="small" sx={{ minWidth: 560 }}>
                 <TableHead>
                   <TableRow>
@@ -189,15 +193,6 @@ const StudentAttendance = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {rows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3}>
-                        <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
-                          No attendance records in this date range.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -32,6 +32,7 @@ const ReelPlayer = ({
   onClose,
   video,
   onWatchTime,
+  onComplete,
   onNext,
   onPrev,
   hasMore = false,
@@ -300,6 +301,9 @@ const ReelPlayer = ({
             setIsCompleted(true);
             setShowControls(true);
             flushWatchTime();
+            if (typeof onComplete === 'function') {
+              onComplete();
+            }
           }}
           onClick={togglePlay}
         />

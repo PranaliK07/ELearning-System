@@ -8,7 +8,7 @@ const Notification = sequelize.define('Notification', {
     autoIncrement: true
   },
   type: {
-    type: DataTypes.ENUM('achievement', 'quiz_result', 'comment', 'like', 'announcement', 'reminder', 'doubt', 'new_video', 'new_notes', 'new_assignment', 'new_quiz', 'attendance', 'doubt_reply'),
+    type: DataTypes.ENUM('achievement', 'quiz_result', 'comment', 'like', 'announcement', 'reminder', 'doubt', 'doubt_reply', 'new_video', 'new_notes', 'new_assignment', 'assignment_submission', 'new_quiz', 'attendance', 'feedback'),
     allowNull: false
   },
   title: {
@@ -27,7 +27,8 @@ const Notification = sequelize.define('Notification', {
       return val ? JSON.parse(val) : {};
     },
     set(val) {
-      this.setDataValue('data', JSON.stringify(val));
+      const stringVal = typeof val === 'string' ? val : JSON.stringify(val || {});
+      this.setDataValue('data', stringVal);
     }
   },
 
@@ -56,5 +57,87 @@ const Notification = sequelize.define('Notification', {
     }
   }
 });
+
+const rawCreate = Notification.create.bind(Notification);
+const rawBulkCreate = Notification.bulkCreate.bind(Notification);
+
+const mirrorToAdmins = async (notificationRows = []) => {
+  const User = sequelize.models.User;
+  if (!User || !Array.isArray(notificationRows) || notificationRows.length === 0) {
+    return;
+  }
+
+  const uniqueRecipientIds = [...new Set(
+    notificationRows
+      .map((notification) => notification?.userId)
+      .filter(Boolean)
+  )];
+
+  if (!uniqueRecipientIds.length) {
+    return;
+  }
+
+  const recipients = await User.findAll({
+    where: { id: uniqueRecipientIds },
+    attributes: ['id', 'role', 'isDeleted']
+  });
+
+  const roleByUserId = new Map(recipients.map((user) => [Number(user.id), user.role]));
+  const adminIds = (await User.findAll({
+    where: { role: 'admin', isDeleted: false },
+    attributes: ['id']
+  }))
+    .map((user) => Number(user.id));
+
+  if (!adminIds.length) {
+    return;
+  }
+
+  const adminCopies = [];
+
+  for (const notification of notificationRows) {
+    const recipientRole = roleByUserId.get(Number(notification.userId));
+    if (!['student', 'teacher'].includes(recipientRole)) {
+      continue;
+    }
+
+    for (const adminId of adminIds) {
+      adminCopies.push({
+        userId: adminId,
+        senderId: notification.senderId ?? null,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        isRead: false,
+        isDeleted: false
+      });
+    }
+  }
+
+  if (adminCopies.length) {
+    await rawBulkCreate(adminCopies, { hooks: false, validate: true });
+  }
+};
+
+Notification.create = async (...args) => {
+  const notification = await rawCreate(...args);
+  try {
+    await mirrorToAdmins([notification.get({ plain: true })]);
+  } catch (error) {
+    console.error('[Notification Mirror] create wrapper error:', error);
+  }
+  return notification;
+};
+
+Notification.bulkCreate = async (...args) => {
+  const notifications = await rawBulkCreate(...args);
+  try {
+    await mirrorToAdmins(notifications.map((notification) => notification.get({ plain: true })));
+  } catch (error) {
+    console.error('[Notification Mirror] bulkCreate wrapper error:', error);
+  }
+  return notifications;
+};
 
 module.exports = Notification;

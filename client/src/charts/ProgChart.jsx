@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,13 +24,24 @@ ChartJS.register(
 );
 
 const ProgressChart = ({ type = 'bar', data, options, height = 300 }) => {
+  const theme = useTheme();
   const defaultOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          color: theme.palette.text.secondary,
+        },
       },
+      tooltip: {
+        backgroundColor: theme.palette.background.paper,
+        titleColor: theme.palette.text.primary,
+        bodyColor: theme.palette.text.primary,
+        borderColor: theme.palette.divider,
+        borderWidth: 1,
+      }
     },
   };
 
@@ -46,8 +58,8 @@ const ProgressChart = ({ type = 'bar', data, options, height = 300 }) => {
 
   if (!data) {
     return (
-      <Paper sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="textSecondary">No data available</Typography>
+      <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}` }}>
+        <Typography color="text.secondary">No data available</Typography>
       </Paper>
     );
   }

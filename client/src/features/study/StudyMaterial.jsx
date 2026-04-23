@@ -18,9 +18,11 @@ import {
     Stack,
     Card,
     CardContent,
-    CardActions
+    CardActions,
+    MenuItem
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
     Description as FileIcon,
     Download as DownloadIcon,
@@ -35,13 +37,18 @@ import api from '../../utils/axios';
 import { resolveUploadSrc } from '../../utils/media';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useProgress } from '../../context/ProgressContext';
 
 const StudyMaterial = () => {
+    const theme = useTheme();
+    const isDarkMode = theme.palette.mode === 'dark';
     const { user } = useAuth();
+    const { updateProgress } = useProgress();
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [expandedClass, setExpandedClass] = useState(null);
+    const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
+    const [expandedSubject, setExpandedSubject] = useState(null);
 
     const fetchStudyMaterials = useCallback(async () => {
         try {
@@ -62,8 +69,20 @@ const StudyMaterial = () => {
         fetchStudyMaterials();
     }, [fetchStudyMaterials]);
 
-    const handleOpen = (url) => {
+    const trackNoteAccess = async (contentId) => {
+        try {
+            await updateProgress(contentId, {
+                notesDownloaded: true,
+                completed: true
+            });
+        } catch (error) {
+            console.error('Track note access error:', error);
+        }
+    };
+
+    const handleOpen = (url, contentId) => {
         if (!url) return toast.error('File not found');
+        trackNoteAccess(contentId);
         window.open(resolveUploadSrc(url), '_blank');
     };
 
@@ -99,85 +118,148 @@ const StudyMaterial = () => {
         }
     };
 
-    // Group materials
+    // Group materials by Subject and then by Topic
     const groupedMaterials = useMemo(() => {
-        const filtered = materials.filter(item =>
-            item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.Subject?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        const groups = {};
-        filtered.forEach(item => {
-            const groupKey = user?.role === 'student' 
-                ? (item.Subject?.name || 'General Resources')
-                : (item.Grade?.name || `Class ${item.Grade?.level}` || 'General Resources');
-                
-            if (!groups[groupKey]) groups[groupKey] = [];
-            groups[groupKey].push(item);
+        const filtered = materials.filter(item => {
+            const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 item.Subject?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSubject = selectedSubjectFilter === 'all' || item.Subject?.id?.toString() === selectedSubjectFilter;
+            return matchesSearch && matchesSubject;
         });
-        return groups;
-    }, [materials, searchQuery, user?.role]);
+
+        const subjectGroups = {};
+        filtered.forEach(item => {
+            const subjectName = item.Subject?.name || 'General Resources';
+            const subjectId = item.Subject?.id || 'general';
+            
+            if (!subjectGroups[subjectId]) {
+                subjectGroups[subjectId] = {
+                    name: subjectName,
+                    notes: []
+                };
+            }
+            subjectGroups[subjectId].notes.push(item);
+        });
+
+        return subjectGroups;
+    }, [materials, searchQuery, selectedSubjectFilter]);
+
+    const subjectsList = useMemo(() => {
+        const uniqueSubjects = {};
+        materials.forEach(m => {
+            if (m.Subject) uniqueSubjects[m.Subject.id] = m.Subject.name;
+        });
+        return Object.entries(uniqueSubjects).map(([id, name]) => ({ id, name }));
+    }, [materials]);
+    const surfaceBorder = theme.palette.divider;
+    const softSurface = theme.palette.background.default;
+    const subtleText = theme.palette.text.secondary;
+    const iconSurface = alpha(theme.palette.primary.main, isDarkMode ? 0.18 : 0.1);
 
     return (
-        <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box sx={{ py: 4, px: 1 }}>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" sx={{ color: '#0B1F3B', display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <FileIcon fontSize="large" /> Notes
+                    <Typography variant="h4" fontWeight="bold" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <FileIcon fontSize="large" sx={{ color: theme.palette.primary.main }} /> Notes
                     </Typography>
-                    <Typography variant="body1" color="textSecondary">
+                    <Typography variant="body1" color="text.secondary">
                         Browse and download study materials {user?.role === 'student' ? 'subject-wise' : 'class-wise'}
                     </Typography>
                 </Box>
                 <Button startIcon={<Refresh />} onClick={fetchStudyMaterials}>Refresh</Button>
             </Box>
 
-            <Paper sx={{ p: 2, mb: 4, borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <TextField
-                    fullWidth
-                    placeholder="Search by note title or subject..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon color="action" />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-            </Paper>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={8}>
+                    <Paper sx={{ p: 1, borderRadius: 3, boxShadow: isDarkMode ? 2 : '0 4px 12px rgba(0,0,0,0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+                        <TextField
+                            fullWidth
+                            placeholder="Find specific notes..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            variant="standard"
+                            InputProps={{
+                                disableUnderline: true,
+                                startAdornment: (
+                                    <InputAdornment position="start" sx={{ ml: 1 }}>
+                                        <SearchIcon color="primary" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <TextField
+                        select
+                        fullWidth
+                        label="Filter by Subject"
+                        value={selectedSubjectFilter}
+                        onChange={(e) => setSelectedSubjectFilter(e.target.value)}
+                        variant="outlined"
+                        sx={{ bgcolor: 'background.paper', borderRadius: 3 }}
+                    >
+                        <MenuItem value="all">All Subjects</MenuItem>
+                        {subjectsList.map(s => (
+                            <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                        ))}
+                    </TextField>
+                </Grid>
+            </Grid>
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
             ) : Object.keys(groupedMaterials).length === 0 ? (
-                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4 }}>
+                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, bgcolor: 'background.paper' }}>
                     <FileIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-                    <Typography variant="h6" color="textSecondary">No notes found</Typography>
+                    <Typography variant="h6" color="text.secondary">No notes available for the selected filters</Typography>
                 </Paper>
             ) : (
-                <Stack spacing={3}>
-                    {Object.entries(groupedMaterials).sort().map(([groupName, content]) => (
+                <Stack spacing={2}>
+                    {Object.entries(groupedMaterials).map(([subjectId, group]) => (
                         <Accordion 
-                            key={groupName} 
-                            defaultExpanded={Object.keys(groupedMaterials).length === 1}
-                            sx={{ borderRadius: '16px !important', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}
+                            key={subjectId} 
+                            expanded={expandedSubject === subjectId}
+                            onChange={() => setExpandedSubject(expandedSubject === subjectId ? null : subjectId)}
+                            sx={{ 
+                                borderRadius: '16px !important', 
+                                overflow: 'hidden', 
+                                boxShadow: expandedSubject === subjectId ? 4 : 1,
+                                border: `1px solid ${surfaceBorder}`,
+                                bgcolor: 'background.paper',
+                                transition: '0.3s'
+                            }}
                         >
-                            <AccordionSummary expandIcon={<ExpandMore />} sx={{ bgcolor: 'rgba(11,31,59,0.02)', px: 3, py: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Avatar sx={{ bgcolor: '#B0125B' }}>
+                            <AccordionSummary 
+                                expandIcon={<ExpandMore color="primary" />} 
+                                sx={{ 
+                                    background: expandedSubject === subjectId
+                                        ? alpha(theme.palette.primary.main, isDarkMode ? 0.14 : 0.06)
+                                        : softSurface,
+                                    px: 3, 
+                                    py: 1,
+                                    '&:hover': { bgcolor: theme.palette.action.hover }
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                                    <Avatar sx={{ bgcolor: iconSurface, color: theme.palette.primary.main, boxShadow: isDarkMode ? 2 : '0 4px 10px rgba(26, 35, 126, 0.2)' }}>
                                         {user?.role === 'student' ? <MenuBook /> : <School />}
                                     </Avatar>
-                                    <Box>
-                                        <Typography variant="h6" fontWeight="bold">{groupName}</Typography>
-                                        <Typography variant="caption" color="textSecondary">{content.length} PDF Materials Available</Typography>
+                                    <Box flexGrow={1}>
+                                        <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.primary' }}>
+                                            {group.name}
+                                        </Typography>
+                                        <Typography variant="caption" color={subtleText}>
+                                            Click to view {group.notes.length} Study Materials
+                                        </Typography>
                                     </Box>
                                 </Box>
                             </AccordionSummary>
-                            <AccordionDetails sx={{ bgcolor: '#fafafa', p: 3 }}>
+                            <AccordionDetails sx={{ bgcolor: 'background.paper', p: { xs: 2, sm: 4 } }}>
                                 <Grid container spacing={3}>
-                                    {content.map((item) => (
-                                        <Grid size={{ xs: 12, md: 6, lg: 4 }} key={item.id}>
+                                    {group.notes.map((item) => (
+                                        <Grid item xs={12} md={6} lg={4} key={item.id}>
                                             <Card sx={{ 
                                                 height: '100%', 
                                                 borderRadius: 3,
@@ -187,10 +269,10 @@ const StudyMaterial = () => {
                                                 <CardContent>
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                                         <Chip label={item.Subject?.name || 'General'} size="small" color="primary" variant="outlined" />
-                                                        <FileIcon color="action" />
+                                                        <FileIcon sx={{ color: theme.palette.text.secondary }} />
                                                     </Box>
                                                     <Typography variant="h6" fontWeight="bold" gutterBottom>{item.title}</Typography>
-                                                    <Typography variant="body2" color="textSecondary" sx={{ 
+                                                    <Typography variant="body2" color="text.secondary" sx={{ 
                                                         display: '-webkit-box', 
                                                         WebkitLineClamp: 2, 
                                                         WebkitBoxOrient: 'vertical', 
@@ -205,7 +287,7 @@ const StudyMaterial = () => {
                                                         fullWidth 
                                                         variant="contained" 
                                                         startIcon={<ViewIcon />}
-                                                        onClick={() => handleOpen(item.readingMaterial)}
+                                                        onClick={() => handleOpen(item.readingMaterial, item.id)}
                                                         sx={{ borderRadius: 2 }}
                                                     >
                                                         View PDF
@@ -213,8 +295,8 @@ const StudyMaterial = () => {
                                                     <Tooltip title="Download">
                                                         <IconButton 
                                                             variant="outlined" 
-                                                            onClick={() => handleDownload(item.readingMaterial, `${item.title}.pdf`)}
-                                                            sx={{ borderRadius: 2, border: '1px solid #ddd' }}
+                                                            onClick={() => handleDownload(item.readingMaterial, `${item.title}.pdf`, item.id)}
+                                                            sx={{ borderRadius: 2, border: `1px solid ${surfaceBorder}` }}
                                                         >
                                                             <DownloadIcon />
                                                         </IconButton>
@@ -229,7 +311,7 @@ const StudyMaterial = () => {
                     ))}
                 </Stack>
             )}
-        </Container>
+        </Box>
     );
 };
 

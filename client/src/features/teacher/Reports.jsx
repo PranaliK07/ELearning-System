@@ -348,7 +348,7 @@ const Reports = () => {
         mb: 4
       }}>
         <Box>
-          <Typography variant="h4" fontWeight="900" sx={{ color: '#0B1F3B', mb: 1, fontFamily: '"Outfit", sans-serif' }}>
+          <Typography variant="h4" fontWeight="900" sx={{ color: 'text.primary', mb: 1, fontFamily: '"Outfit", sans-serif' }}>
             Academic Reports 📈
           </Typography>
           <Typography color="textSecondary">Analyze student performance and learning engagement metrics.</Typography>
@@ -372,17 +372,18 @@ const Reports = () => {
             onClick={handleExportClick}
             fullWidth={isMobile}
           >
-            Export Report
+            Export
           </Button>
           <Menu
             anchorEl={anchorEl}
             open={open}
             onClose={handleExportClose}
+            PaperProps={{ sx: { borderRadius: 2, mt: 1, minWidth: 180, boxShadow: 4 } }}
           >
-            <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
-            <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
-            <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
-            <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+            <MenuItem onClick={exportCSV}>Export CSV</MenuItem>
+            <MenuItem onClick={exportExcel}>Export Excel</MenuItem>
+            <MenuItem onClick={exportPDF}>Export PDF</MenuItem>
+            <MenuItem onClick={exportWord}>Export Word</MenuItem>
           </Menu>
         </Box>
       </Box>
@@ -408,17 +409,17 @@ const Reports = () => {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
             <Typography variant="h6" gutterBottom>Student Performance</Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: { xs: 220, sm: 300 } }}>
               <Bar data={barData} options={{ maintainAspectRatio: false }} />
             </Box>
           </Paper>
         </Grid>
         <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
             <Typography variant="h6" gutterBottom>{period === 'monthly' ? 'Monthly Student Activity' : period === 'daily' ? 'Daily Student Activity' : 'Weekly Student Activity'}</Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: { xs: 220, sm: 300 } }}>
               <Line data={lineData} options={{ maintainAspectRatio: false }} />
             </Box>
           </Paper>

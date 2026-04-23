@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Grid,
   Card,
   CardContent,
@@ -9,25 +8,379 @@ import {
   Button,
   Paper,
   LinearProgress,
+  Avatar,
+  Chip,
+  TextField,
+  InputAdornment,
+  Stack,
+  Collapse,
+  CircularProgress,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Star,
   StarBorder,
   WorkspacePremium,
   Download,
   CardMembership,
-  Lock
+  Lock,
+  School,
+  Groups,
+  EmojiEvents,
+  Search,
+  ExpandMore,
+  ExpandLess,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { resolveAvatarSrc } from '../../utils/media';
 import Confetti from 'react-confetti';
 import jsPDF from 'jspdf';
+import { isAdminLikeRole } from '../../utils/roles';
+
+const TeacherAchievementsView = ({ dashboardData }) => {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedClassId, setExpandedClassId] = useState(null);
+  const [studentDailyGoals, setStudentDailyGoals] = useState({});
+  const [loadingClassId, setLoadingClassId] = useState(null);
+
+  const classes = Array.isArray(dashboardData?.classes) ? dashboardData.classes : [];
+  const students = Array.isArray(dashboardData?.students) ? dashboardData.students : [];
+
+  const normalizeGradeId = (student) => student?.Grade?.id ?? student?.GradeId ?? student?.grade ?? null;
+  const normalizeText = (value) => String(value || '').toLowerCase();
+  const fallbackClasses = React.useMemo(() => {
+    if (classes.length > 0) {
+      return classes;
+    }
+
+    const grouped = new Map();
+
+    students.forEach((student) => {
+      const gradeId = normalizeGradeId(student);
+      if (gradeId === null || gradeId === undefined || gradeId === '') {
+        return;
+      }
+
+      const key = String(gradeId);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          id: gradeId,
+          name: student?.Grade?.name || (student?.grade ? `Class ${student.grade}` : `Class ${gradeId}`),
+          level: student?.Grade?.level ?? student?.grade ?? null
+        });
+      }
+    });
+
+    return Array.from(grouped.values());
+  }, [classes, students]);
+
+  const classCards = fallbackClasses.map((grade) => {
+    const gradeStudents = students.filter((student) => String(normalizeGradeId(student)) === String(grade.id));
+    const classAchievements = gradeStudents.reduce((count, student) => count + (student.Achievements?.length || 0), 0);
+
+    return {
+      id: grade.id,
+      name: grade.name || `Class ${grade.level || grade.id}`,
+      level: grade.level,
+      students: gradeStudents,
+      achievementCount: classAchievements
+    };
+  });
+
+  const unassignedStudents = students.filter((student) => {
+    const gradeId = normalizeGradeId(student);
+    return gradeId === null || gradeId === undefined || gradeId === '';
+  });
+
+  if (unassignedStudents.length > 0) {
+    classCards.push({
+      id: 'unassigned',
+      name: 'Unassigned Students',
+      level: null,
+      students: unassignedStudents,
+      achievementCount: unassignedStudents.reduce((count, student) => count + (student.Achievements?.length || 0), 0)
+    });
+  }
+
+  const filteredClassCards = classCards.filter((classCard) => {
+    const query = normalizeText(searchTerm).trim();
+    if (!query) return true;
+
+    if (normalizeText(classCard.name).includes(query)) return true;
+
+    return classCard.students.some((student) => {
+      const achievements = Array.isArray(student.Achievements) ? student.Achievements : [];
+      return (
+        normalizeText(student.name).includes(query) ||
+        normalizeText(student.email).includes(query) ||
+        achievements.some((achievement) => normalizeText(achievement.name).includes(query))
+      );
+    });
+  });
+
+  const totalClassCount = classCards.filter((item) => item.id !== 'unassigned' || item.students.length > 0).length;
+  const totalStudentCount = students.length;
+  const totalAchievementCount = students.reduce((count, student) => count + (student.Achievements?.length || 0), 0);
+  const studentsWithAchievements = students.filter((student) => (student.Achievements?.length || 0) > 0).length;
+  const totalLoadedStars = Object.values(studentDailyGoals).reduce((count, item) => count + (item?.starsEarned || 0), 0);
+
+  const loadStudentGoalsForClass = async (classCard) => {
+    const missingStudents = classCard.students.filter((student) => !studentDailyGoals[student.id]);
+
+    if (missingStudents.length === 0) {
+      return;
+    }
+
+    setLoadingClassId(classCard.id);
+    try {
+      const responses = await Promise.all(
+        missingStudents.map(async (student) => {
+          try {
+            const response = await axios.get(`/api/achievements/student-daily-goal/${student.id}`);
+            return [student.id, response.data];
+          } catch (error) {
+            return [
+              student.id,
+              {
+                success: false,
+                goals: [],
+                starsEarned: 0,
+                message: error?.response?.data?.message || 'Unable to load daily stars'
+              }
+            ];
+          }
+        })
+      );
+
+      setStudentDailyGoals((prev) => ({
+        ...prev,
+        ...Object.fromEntries(responses)
+      }));
+    } finally {
+      setLoadingClassId(null);
+    }
+  };
+
+  const handleToggleClass = async (classCard) => {
+    const nextExpanded = expandedClassId === classCard.id ? null : classCard.id;
+    setExpandedClassId(nextExpanded);
+
+    if (nextExpanded) {
+      await loadStudentGoalsForClass(classCard);
+    }
+  };
+
+  const renderStars = (count, total = 5, size = 18) => (
+    <Box sx={{ display: 'flex', gap: 0.25, alignItems: 'center' }}>
+      {[...Array(total)].map((_, index) => (
+        index < count ? (
+          <Star key={index} sx={{ color: '#FFD93D', fontSize: size, filter: 'drop-shadow(0 0 4px #FFD93D)' }} />
+        ) : (
+          <StarBorder key={index} sx={{ color: 'rgba(255,255,255,0.25)', fontSize: size }} />
+        )
+      ))}
+    </Box>
+  );
+
+  return (
+    <Box sx={{ py: 4, px: 1 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55 }}
+      >
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h3"
+            fontWeight="900"
+            sx={{
+              color: isDarkMode ? 'text.primary' : 'transparent',
+              background: isDarkMode ? 'none' : 'linear-gradient(45deg, #0B1F3B 0%, #B0125B 100%)',
+              WebkitBackgroundClip: isDarkMode ? 'initial' : 'text',
+              WebkitTextFillColor: isDarkMode ? 'inherit' : 'transparent',
+              mb: 1,
+              fontSize: { xs: '1.8rem', sm: '3rem' }
+            }}
+          >
+            Achievements Overview
+          </Typography>
+          <Typography variant="h6" color="textSecondary" fontWeight="600">
+            Review student achievements class by class and spot high performers quickly.
+          </Typography>
+        </Box>
+
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+              <CardContent>
+                <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  Classes
+                </Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ mt: 0.5 }}>
+                  {totalClassCount}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+              <CardContent>
+                <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  Students
+                </Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ mt: 0.5 }}>
+                  {totalStudentCount}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+              <CardContent>
+                <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  Achievements
+                </Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ mt: 0.5 }}>
+                  {totalAchievementCount}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+              <CardContent>
+                <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  Active Earners
+                </Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ mt: 0.5 }}>
+                  {studentsWithAchievements}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 4, boxShadow: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search by class, student, or achievement..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Paper>
+
+        <Grid container spacing={3}>
+          {filteredClassCards.length > 0 ? filteredClassCards.map((classCard) => (
+            <Grid item xs={12} sm={6} md={4} key={classCard.id}>
+              <Card
+                onClick={() => navigate(`/achievements/class/${classCard.id}`)}
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 2,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: 4,
+                  }
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 2.5,
+                    background: 'linear-gradient(135deg, rgba(11,31,59,0.98) 0%, rgba(176,18,91,0.92) 100%)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    justifyContent: 'space-between',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 1.5,
+                    minHeight: 110
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ bgcolor: 'rgba(255,255,255,0.18)', p: 1.25, borderRadius: '50%', display: 'flex' }}>
+                      <School />
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" fontWeight="900">
+                        {classCard.name}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                        {classCard.students.length} student{classCard.students.length === 1 ? '' : 's'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Chip
+                    icon={<EmojiEvents sx={{ color: '#fff !important' }} />}
+                    label={`${classCard.achievementCount} achievements`}
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.16)',
+                      color: 'white',
+                      fontWeight: 800,
+                      '& .MuiChip-icon': { color: 'white' }
+                    }}
+                  />
+                </Box>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Typography variant="body2" color="textSecondary" fontWeight={600}>
+                    Open the class to view its student list in a new page.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          )) : (
+            <Grid item xs={12}>
+              <Paper sx={{ p: 4, borderRadius: 4, textAlign: 'center' }}>
+                <Typography variant="h6" fontWeight="800" gutterBottom>
+                  No class achievements found
+                </Typography>
+                <Typography color="textSecondary">
+                  Try a different search term or check whether student achievement data is available yet.
+                </Typography>
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+      </motion.div>
+    </Box>
+  );
+};
 
 const AchievementsPage = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [dailyGoal, setDailyGoal] = useState({ goals: [], starsEarned: 0 });
+  const [teacherDashboard, setTeacherDashboard] = useState({
+    students: [],
+    classes: [],
+    stats: {
+      totalStudents: 0,
+      activeClasses: 0,
+      assignments: 0,
+      avgProgress: 0,
+    },
+    recentSubmissions: [],
+  });
   const [loading, setLoading] = useState(true);
+  const viewMode = new URLSearchParams(location.search).get('view');
+  const isOverviewView = viewMode === 'overview' || (!viewMode && (user?.role === 'teacher' || isAdminLikeRole(user?.role)));
 
   // Mock Certificates - Represents monthly progress rewards
   const currentYear = new Date().getFullYear();
@@ -40,17 +393,41 @@ const AchievementsPage = () => {
   ];
 
   useEffect(() => {
+    if (!user?.role) {
+      return;
+    }
+
     fetchData();
-  }, []);
+  }, [user?.role]);
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('/api/achievements/daily-goal');
-      if (res.data.success) {
-        setDailyGoal(res.data);
+      if (!isOverviewView) {
+        const res = await axios.get('/api/achievements/daily-goal');
+        if (res.data.success) {
+          setDailyGoal(res.data);
+        }
+        return;
       }
+
+      const res = await axios.get('/api/dashboard/teacher');
+      setTeacherDashboard({
+        students: res.data.students || [],
+        classes: res.data.classes || [],
+        stats: res.data.stats || {
+          totalStudents: 0,
+          activeClasses: 0,
+          assignments: 0,
+          avgProgress: 0,
+        },
+        recentSubmissions: res.data.recentSubmissions || [],
+      });
     } catch (error) {
-      console.error('Error fetching achievements:', error);
+      if (isOverviewView) {
+        console.error('Error fetching achievements:', error);
+      } else {
+        console.error('Error fetching teacher achievements:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -150,7 +527,10 @@ const AchievementsPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Box sx={{ py: 4, px: 1 }}>
+      {isOverviewView ? (
+        <TeacherAchievementsView dashboardData={teacherDashboard} />
+      ) : (
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -228,42 +608,52 @@ const AchievementsPage = () => {
               </Box>
             </Box>
 
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 2, 
-              flexWrap: 'nowrap', 
-              overflowX: 'auto', 
-              pb: 1,
-              '&::-webkit-scrollbar': { height: 6 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 3 }
-            }}>
+            <Grid container spacing={2}>
               {(dailyGoal.goals || []).map((goal) => (
-                <Box key={goal.id} sx={{ flex: '1 1 0', minWidth: { xs: 120, md: 'auto' } }}>
+                <Grid item xs={6} sm={4} md={2.4} key={goal.id}>
                   <Box sx={{ 
                     p: 2, 
                     borderRadius: 4, 
-                    bgcolor: goal.completed ? 'rgba(255, 217, 61, 0.15)' : 'rgba(255,255,255,0.06)',
-                    border: `2px solid ${goal.completed ? '#FFD93D' : 'rgba(255,255,255,0.15)'}`,
+                    bgcolor: goal.completed ? '#B0125B' : 'rgba(26, 35, 126, 0.3)', 
+                    border: `2px solid ${goal.completed ? '#FFD93D' : 'rgba(255,255,255,0.1)'}`, // Golden border when done
                     textAlign: 'center',
-                    height: '100%'
+                    height: '100%',
+                    transition: 'all 0.3s ease',
+                    boxShadow: goal.completed ? '0 8px 20px rgba(176, 18, 91, 0.4)' : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 120
                   }}>
                     <motion.div animate={goal.completed ? { scale: [1, 1.2, 1] } : {}} transition={{ repeat: Infinity, duration: 2.5 }}>
                       {goal.completed ? (
-                        <Star sx={{ fontSize: 40, color: '#FFD93D', mb: 1, filter: 'drop-shadow(0 0 10px #FFD93D)' }} />
+                        <Star sx={{ fontSize: 40, color: '#FFD93D', mb: 1, filter: 'drop-shadow(0 0 10px rgba(255, 217, 61, 0.6))' }} />
                       ) : (
                         <StarBorder sx={{ fontSize: 40, color: 'rgba(255,255,255,0.3)', mb: 1 }} />
                       )}
                     </motion.div>
-                    <Typography variant="subtitle2" fontWeight="800">
+                    <Typography variant="caption" fontWeight="900" sx={{ mb: 0.5, lineHeight: 1 }}>
                       {goal.label === 'Lesson Practice' ? 'Notes' : (goal.label || goal.id)}
                     </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.7, fontWeight: 700, fontSize: '0.6rem', display: 'block' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        opacity: goal.completed ? 1 : 0.7, 
+                        fontWeight: 900, 
+                        fontSize: '0.65rem',
+                        bgcolor: goal.completed ? '#FFD93D' : 'transparent',
+                        color: goal.completed ? '#0B1F3B' : 'inherit',
+                        px: 1,
+                        borderRadius: 1
+                      }}
+                    >
                         {goal.completed ? 'DONE ✨' : 'PENDING'}
                     </Typography>
                   </Box>
-                </Box>
+                </Grid>
               ))}
-            </Box>
+            </Grid>
         </Paper>
 
         {/* 2. CERTIFICATE SECTION - Monthly Progress */}
@@ -354,13 +744,23 @@ const AchievementsPage = () => {
           ))}
         </Grid>
 
-        <Box sx={{ mt: 8, p: 4, textAlign: 'center', bgcolor: '#f0f7ff', borderRadius: 6, border: '2px dashed #4ECDC4' }}>
-            <Typography variant="body1" fontWeight="700" color="primary">
+        <Box sx={{ 
+          mt: 8, 
+          p: 4, 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', 
+          borderRadius: 6, 
+          border: '2px dashed rgba(255,255,255,0.4)',
+          color: 'white',
+          boxShadow: '0 10px 30px rgba(11, 31, 59, 0.2)'
+        }}>
+            <Typography variant="body1" fontWeight="700">
                 🎓 Keep studying every day! Top students get a physical certificate mailed home!
             </Typography>
         </Box>
       </motion.div>
-    </Container>
+      )}
+    </Box>
   );
 };
 

@@ -1,5 +1,6 @@
 const { User, Progress, Content, Assignment, Submission, Grade, Announcement, Notification, ClassCommunication, Attendance } = require('../models');
 const { Op } = require('sequelize');
+const { createNotification, notifyMultipleUsers } = require('../utils/notifications');
 const { sendSmsAndWhatsappToRecipients, normalizePhone } = require('../utils/parentMessaging');
 
 const getMyClasses = async (req, res) => {
@@ -176,6 +177,20 @@ const gradeAssignment = async (req, res) => {
     submission.feedback = feedback;
     submission.status = 'graded';
     await submission.save();
+
+    // Notify student that their work has been graded
+    try {
+      const assignment = await Assignment.findByPk(submission.assignmentId);
+      await createNotification(
+        submission.studentId,
+        'quiz_result',
+        'Assignment Graded! 📝',
+        `Your work for "${assignment?.title || 'Assignment'}" has been graded. Grade: ${grade}`,
+        { submissionId: submission.id, assignmentId: submission.assignmentId }
+      );
+    } catch (notifErr) {
+      console.error('Grade assignment notification error:', notifErr);
+    }
 
     res.json({
       success: true,

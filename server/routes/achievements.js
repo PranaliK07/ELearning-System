@@ -10,7 +10,8 @@ const {
   createAchievement,
   updateAchievement,
   deleteAchievement,
-  getDailyGoalProgress
+  getDailyGoalProgress,
+  getStudentDailyGoalProgress
 } = require('../controllers/achievementController');
 
 
@@ -22,6 +23,7 @@ router.get('/', getAchievements);
 router.get('/user', getUserAchievements);
 router.get('/leaderboard', getAchievementLeaderboard);
 router.get('/daily-goal', getDailyGoalProgress);
+router.get('/student-daily-goal/:studentId', authorize('teacher', 'admin'), getStudentDailyGoalProgress);
 router.get('/:id', getAchievement);
 
 // System route for checking achievements

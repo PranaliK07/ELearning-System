@@ -11,10 +11,11 @@ import {
   InputAdornment,
   Stepper,
   Step,
-  StepLabel
+  StepLabel,
+  Chip
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -26,7 +27,9 @@ import {
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register } = useAuth();
+  const isDemoFlow = new URLSearchParams(location.search).get('role') === 'demo';
   const [activeStep, setActiveStep] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -37,7 +40,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student',
+    role: isDemoFlow ? 'demo' : 'student',
     grade: '',
     parentPhone: '',
     parentEmail: ''
@@ -129,6 +132,11 @@ const Register = () => {
 
     setLoading(true);
     const { confirmPassword, ...registerData } = formData;
+    if (registerData.role === 'demo') {
+      registerData.grade = null;
+      registerData.parentPhone = null;
+      registerData.parentEmail = null;
+    }
     const result = await register(registerData);
     setLoading(false);
     
@@ -256,19 +264,27 @@ const Register = () => {
       case 2:
         return (
           <Box>
-            <TextField
-              select
-              fullWidth
-              label="Role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-            >
-              <MenuItem value="student">Student</MenuItem>
-              <MenuItem value="teacher">Teacher</MenuItem>
-            </TextField>
+            {isDemoFlow ? (
+              <Chip
+                label="Demo User"
+                color="primary"
+                sx={{ mt: 1, mb: 2, fontWeight: 700 }}
+              />
+            ) : (
+              <TextField
+                select
+                fullWidth
+                label="Role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                margin="normal"
+                variant="outlined"
+              >
+                <MenuItem value="student">Student</MenuItem>
+                <MenuItem value="teacher">Teacher</MenuItem>
+              </TextField>
+            )}
 
             {formData.role === 'student' && (
               <TextField
@@ -323,6 +339,17 @@ const Register = () => {
                 required
               />
             )}
+
+            {formData.role === 'demo' && (
+              <Paper variant="outlined" sx={{ p: 2, mt: 2, borderRadius: 3, bgcolor: 'action.hover' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Demo access
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  This account will have admin access for 5 days, then it will expire automatically.
+                </Typography>
+              </Paper>
+            )}
           </Box>
         );
       
@@ -332,7 +359,7 @@ const Register = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Container component="main" maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -340,8 +367,8 @@ const Register = () => {
       >
         <Box
           sx={{
-            marginTop: 4,
-            marginBottom: 4,
+            marginTop: { xs: 2, sm: 4 },
+            marginBottom: { xs: 2, sm: 4 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -350,7 +377,7 @@ const Register = () => {
           <Paper
             elevation={3}
             sx={{
-              padding: 4,
+              padding: { xs: 2.5, sm: 4 },
               width: '100%',
               borderRadius: 4
             }}
@@ -378,7 +405,7 @@ const Register = () => {
               Create your account and start learning
             </Typography>
 
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
               {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>

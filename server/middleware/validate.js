@@ -3,9 +3,15 @@ const { body, validationResult } = require('express-validator');
 const validate = {
   // Registration validation
   register: [
-    body('name')
-      .notEmpty().withMessage('Name is required')
-      .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
+    body('firstName')
+      .notEmpty().withMessage('First name is required')
+      .isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters'),
+    body('middleName')
+      .notEmpty().withMessage('Middle name is required')
+      .isLength({ min: 2, max: 50 }).withMessage('Middle name must be between 2 and 50 characters'),
+    body('lastName')
+      .notEmpty().withMessage('Last name is required')
+      .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters'),
     body('email')
       .notEmpty().withMessage('Email is required')
       .isEmail().withMessage('Please provide a valid email')
@@ -15,7 +21,7 @@ const validate = {
       .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role')
       .optional()
-      .isIn(['student', 'teacher', 'admin']).withMessage('Role must be either student, teacher, or admin'),
+      .isIn(['student', 'teacher', 'admin', 'demo']).withMessage('Role must be student, teacher, admin, or demo'),
     body('grade')
       .optional()
     ,

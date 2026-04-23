@@ -11,7 +11,18 @@ import {
   LinearProgress,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -28,6 +39,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
+import { isAdminLikeRole } from '../../utils/roles';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -199,36 +211,64 @@ const AdminDashboard = () => {
 
         {loading && <LinearProgress sx={{ mb: 3 }} />}
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {statCards.map((card) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={card.label}>
-              <Card sx={{ borderRadius: 3, color: 'white', bgcolor: card.color, height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                        {card.label}
-                      </Typography>
-                      <Typography variant="h4">{card.value}</Typography>
-                    </Box>
-                    <Box sx={{ fontSize: 40, opacity: 0.85 }}>
-                      {card.icon}
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+          <Grid container spacing={3} sx={{ maxWidth: { xs: '100%', sm: 600, md: 700 } }}>
+            {statCards.map((card, index) => (
+              <Grid item xs={12} key={card.label}>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card sx={{ 
+                    bgcolor: card.color, 
+                    color: 'white', 
+                    borderRadius: 8, // More rounded as seen in screenshot
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    minHeight: 110,
+                    display: 'flex',
+                    alignItems: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <CardContent sx={{ width: '100%', p: '24px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ opacity: 0.9, fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                            {card.label}
+                          </Typography>
+                          <Typography variant="h3" fontWeight="900" sx={{ mt: 0.5 }}>
+                            {card.value}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(255,255,255,0.25)',
+                          p: 2,
+                          borderRadius: '24px',
+                          display: 'flex',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                          backdropFilter: 'blur(4px)'
+                        }}>
+                          {React.cloneElement(card.icon, { sx: { fontSize: 40 } })}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid item xs={12} md={8}>
             <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Platform Overview
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" gutterBottom>
@@ -259,26 +299,26 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" gutterBottom>
                         Content Summary
                       </Typography>
                       <Grid container spacing={2}>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="textSecondary">Videos</Typography>
                           <Typography variant="h5">{contentBreakdown.videos}</Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="textSecondary">Quizzes</Typography>
                           <Typography variant="h5">{contentBreakdown.quizzes}</Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="textSecondary">Assignments</Typography>
                           <Typography variant="h5">{contentBreakdown.assignments}</Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="textSecondary">Published</Typography>
                           <Typography variant="h5">{contentBreakdown.published}</Typography>
                         </Grid>
@@ -286,7 +326,7 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={12}>
+                <Grid item xs={12}>
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="subtitle1" gutterBottom>
@@ -329,7 +369,7 @@ const AdminDashboard = () => {
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <Stack spacing={3}>
               <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Typography variant="h6" gutterBottom>
@@ -386,7 +426,7 @@ const AdminDashboard = () => {
                           size="small"
                           sx={{ mt: 1 }}
                           label={user.role || 'student'}
-                          color={user.role === 'admin' ? 'error' : user.role === 'teacher' ? 'warning' : 'primary'}
+                          color={isAdminLikeRole(user.role) ? 'error' : user.role === 'teacher' ? 'warning' : 'primary'}
                         />
                       </Box>
                     ))}
@@ -395,9 +435,155 @@ const AdminDashboard = () => {
               </Paper>
             </Stack>
           </Grid>
+          <Grid item xs={12}>
+            <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 4, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <Box>
+                  <Typography variant="h5" fontWeight="bold" gutterBottom>
+                    Platform Doubts ❓
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Monitor and manage student-teacher communications.
+                  </Typography>
+                </Box>
+                <Button variant="contained" onClick={() => navigate('/admin/doubts')} sx={{ borderRadius: 2, flexShrink: 0 }}>
+                  View All History
+                </Button>
+              </Box>
+              
+              <Divider sx={{ mb: 3 }} />
+              
+              <DoubtTable />
+            </Paper>
+          </Grid>
         </Grid>
       </motion.div>
     </Container>
+  );
+};
+
+const DoubtTable = () => {
+  const [doubts, setDoubts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedDoubtId, setSelectedDoubtId] = useState(null);
+
+  const fetchDoubts = async () => {
+    try {
+      const res = await api.get('/api/doubts/all');
+      setDoubts(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoubts();
+  }, []);
+
+  const handleDeleteClick = (id) => {
+    setSelectedDoubtId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/api/doubts/${selectedDoubtId}`);
+      setDoubts(prev => prev.filter(d => d.id !== selectedDoubtId));
+      toast.success('Doubt deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete doubt');
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedDoubtId(null);
+    }
+  };
+
+  if (loading) return <CircularProgress />;
+
+  return (
+    <>
+      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto', border: 'none', boxShadow: 'none' }}>
+        <Table sx={{ minWidth: 650 }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'action.hover' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>Student</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Teacher</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Question</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }} align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {doubts.slice(0, 5).map(doubt => (
+              <TableRow key={doubt.id} hover>
+                <TableCell>{doubt.student?.name || 'N/A'}</TableCell>
+                <TableCell>{doubt.teacher?.name || 'N/A'}</TableCell>
+                <TableCell sx={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {doubt.question}
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    size="small" 
+                    label={doubt.status} 
+                    color={doubt.status === 'resolved' ? 'success' : 'warning'} 
+                    sx={{ textTransform: 'capitalize' }}
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <Button 
+                    size="small" 
+                    color="error" 
+                    variant="outlined" 
+                    onClick={() => handleDeleteClick(doubt.id)}
+                    sx={{ borderRadius: '8px' }}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {doubts.length === 0 && (
+          <Typography sx={{ py: 4, textAlign: 'center' }} color="textSecondary">
+            No doubts found on the platform.
+          </Typography>
+        )}
+      </TableContainer>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: { borderRadius: '16px', p: 1 }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Delete Doubt History?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to permanently delete this doubt entry? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ borderRadius: '8px' }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDelete} 
+            color="error" 
+            variant="contained" 
+            sx={{ borderRadius: '8px' }}
+            autoFocus
+          >
+            Delete Permanently
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

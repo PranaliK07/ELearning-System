@@ -1,9 +1,86 @@
-const { Notification } = require('../models');
+const { Notification, User } = require('../models');
 const { Op } = require('sequelize');
+const { isAdminLikeRole } = require('../utils/roles');
+
+const normalizeData = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value ?? {};
+  }
+
+  return Object.keys(value)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = normalizeData(value[key]);
+      return acc;
+    }, {});
+};
+
+const notificationSignature = (notification) => [
+  notification.senderId ?? 'null',
+  notification.type,
+  notification.title,
+  notification.message,
+  JSON.stringify(normalizeData(notification.data || {}))
+].join('|');
+
+const ensureAdminNotificationMirrors = async (adminId) => {
+  if (!adminId) return;
+
+  const sourceNotifications = await Notification.findAll({
+    where: {
+      userId: { [Op.ne]: adminId },
+      isDeleted: false
+    },
+    include: [{
+      model: User,
+      as: 'recipient',
+      attributes: ['id', 'role'],
+      where: {
+        role: { [Op.in]: ['student', 'teacher'] }
+      },
+      required: true
+    }]
+  });
+
+  if (!sourceNotifications.length) {
+    return;
+  }
+
+  const existingAdminNotifications = await Notification.findAll({
+    where: {
+      userId: adminId,
+      isDeleted: false
+    },
+    attributes: ['senderId', 'type', 'title', 'message', 'data']
+  });
+
+  const existingSignatures = new Set(existingAdminNotifications.map(notificationSignature));
+  const missingCopies = sourceNotifications
+    .map((notification) => notification.get({ plain: true }))
+    .filter((notification) => !existingSignatures.has(notificationSignature(notification)))
+    .map((notification) => ({
+      userId: adminId,
+      senderId: notification.senderId ?? null,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data,
+      isRead: false,
+      isDeleted: false
+    }));
+
+  if (missingCopies.length) {
+    await Notification.bulkCreate(missingCopies);
+  }
+};
 
 const getNotifications = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
+
+    if (isAdminLikeRole(req.user?.role)) {
+      await ensureAdminNotificationMirrors(req.user.id);
+    }
 
     const notifications = await Notification.findAndCountAll({
       where: {
@@ -102,8 +179,17 @@ const deleteNotification = async (req, res) => {
 const getUnreadCount = async (req, res) => {
   try {
     const userId = req.user?.id;
+    console.log('[Notification DB Debug] Requesting unread count for User:', {
+      id: userId,
+      type: typeof userId
+    });
+    
     if (!userId) {
       return res.status(401).json({ message: 'User not identified' });
+    }
+
+    if (isAdminLikeRole(req.user?.role)) {
+      await ensureAdminNotificationMirrors(userId);
     }
 
     const count = await Notification.count({
@@ -114,6 +200,7 @@ const getUnreadCount = async (req, res) => {
       }
     });
 
+    console.log(`[Notification DB Debug] Result for User ${userId}: ${count}`);
     res.json({ count });
   } catch (error) {
     console.error('Get unread count error details:', {
@@ -140,7 +227,10 @@ const getNotificationSettings = async (req, res) => {
         quiz: true,
         comment: true,
         like: true,
-        announcement: true
+        announcement: true,
+        doubt: true,
+        assignment: true,
+        assignment_submission: true
       }
     };
 

@@ -43,9 +43,12 @@ import api from '../../utils/axios';
 import { useState, useEffect } from 'react';
 import { resolveAvatarSrc } from '../../utils/media';
 import ConfirmDialog from '../common/ConfirmDialog';
+import { isAdminLikeRole } from '../../utils/roles';
 
 const drawerWidth = 240;
 const appBarHeights = { xs: 56, sm: 64 };
+const demoRoleStorageKey = 'demoDashboardRole';
+const demoRoleEvent = 'demoDashboardRoleUpdated';
 
 const configuredModules = new Set([
   'dashboard',
@@ -53,6 +56,7 @@ const configuredModules = new Set([
   'play',
   'progress',
   'achievements',
+  'achievements-overview',
   'profile',
   'new-lesson',
   'subject-topic',
@@ -72,9 +76,24 @@ const configuredModules = new Set([
 ]);
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback']),
-  teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'content', 'doubts']),
+  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'achievements-overview', 'profile', 'users', 'content', 'reports', 'reports-issues', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback']),
+  teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements-overview', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'content', 'doubts']),
   student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'doubts', 'feedback', 'attendance', 'quizzes'])
+};
+
+const normalizeRoleAccess = (raw) => {
+  const normalized = {};
+  ['admin', 'teacher', 'student'].forEach((role) => {
+    const value = raw?.[role];
+    if (value instanceof Set) {
+      normalized[role] = new Set([...(defaultRoleAccess[role] || []), ...Array.from(value)]);
+    } else if (Array.isArray(value)) {
+      normalized[role] = new Set([...(defaultRoleAccess[role] || []), ...value]);
+    } else {
+      normalized[role] = new Set(defaultRoleAccess[role] || []);
+    }
+  });
+  return normalized;
 };
 
 const loadRoleAccess = () => {
@@ -82,9 +101,7 @@ const loadRoleAccess = () => {
     const saved = localStorage.getItem('roleAccess');
     if (!saved) return defaultRoleAccess;
     const parsed = JSON.parse(saved);
-    return Object.fromEntries(
-      Object.entries(parsed).map(([role, modules]) => [role, new Set(modules)])
-    );
+    return normalizeRoleAccess(parsed);
   } catch (e) {
     console.warn('Failed to load role access from storage', e);
     return defaultRoleAccess;
@@ -96,6 +113,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [accessVersion, setAccessVersion] = useState(0);
+  const [, setDemoRoleVersion] = useState(0);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -105,11 +123,17 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   }, []);
 
   useEffect(() => {
+    const handler = () => setDemoRoleVersion(v => v + 1);
+    window.addEventListener(demoRoleEvent, handler);
+    return () => window.removeEventListener(demoRoleEvent, handler);
+  }, []);
+
+  useEffect(() => {
     const syncAccess = async () => {
       try {
         const res = await api.get('/api/admin/role-access');
         if (res.data) {
-          localStorage.setItem('roleAccess', JSON.stringify(res.data));
+          localStorage.setItem('roleAccess', JSON.stringify(normalizeRoleAccess(res.data)));
           window.dispatchEvent(new Event('roleAccessUpdated'));
         }
       } catch (err) {
@@ -122,42 +146,61 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   }, [user?.id]);
 
   const role = user?.role || 'student';
+  const demoRole = role === 'demo' ? (sessionStorage.getItem(demoRoleStorageKey) || 'admin') : null;
+  const activeRole = role === 'demo' ? demoRole : role;
+  const accessRole = isAdminLikeRole(activeRole) ? 'admin' : activeRole;
   const roleAccess = loadRoleAccess(accessVersion);
-  const baseAllowed = roleAccess[role] || defaultRoleAccess[role] || defaultRoleAccess.student;
+  const baseAllowed = roleAccess[accessRole] || defaultRoleAccess[accessRole] || defaultRoleAccess.student;
   const studentBaseline = new Set(['dashboard', 'subjects', 'progress', 'achievements', 'profile', 'doubts', 'assignments', 'attendance', 'quizzes', 'communications']);
   const adminBaseline = new Set(['communications']);
   const teacherBaseline = new Set(['communications']);
 
-  const baseline = role === 'admin' ? adminBaseline : (role === 'teacher' ? teacherBaseline : studentBaseline);
+  const baseline = accessRole === 'admin' ? adminBaseline : (accessRole === 'teacher' ? teacherBaseline : studentBaseline);
   const allowed = new Set([...baseAllowed, ...baseline]);
+  const achievementItems = [
+    ...(allowed.has('achievements')
+      ? [{
+          key: 'achievements',
+          text: 'Achievements',
+          path: '/achievements?view=student'
+        }]
+      : []),
+    ...(allowed.has('achievements-overview')
+      ? [{
+          key: 'achievements-overview',
+          text: 'Achievements Overview',
+          path: '/achievements?view=overview'
+        }]
+      : [])
+  ];
 
   const currentPath = `${location.pathname}${location.search || ''}`;
   const currentTab = new URLSearchParams(location.search).get('tab');
 
-  const assignmentPath = role === 'student' ? '/homework' : '/assignments/create';
-  const attendancePath = role === 'student' ? '/attendance' : '/attendance/manage';
+  const assignmentPath = activeRole === 'student' ? '/homework' : '/assignments/create';
+  const attendancePath = activeRole === 'student' ? '/attendance' : '/attendance/manage';
   const items = [
     { key: 'dashboard', text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { key: 'users', text: 'User Management', icon: <ProfileIcon />, path: '/admin/users' },
     { key: 'content', text: 'Uploaded Content', icon: <ContentOverviewIcon />, path: '/admin/content' },
-    { key: 'subjects', text: role === 'student' ? 'Subjects' : 'Classes', icon: <StudyIcon />, path: '/study' },
+    { key: 'subjects', text: activeRole === 'student' ? 'Subjects' : 'Classes', icon: <StudyIcon />, path: '/study' },
     { key: 'new-lesson', text: 'New Lesson', icon: <AddIcon />, path: '/content/create' },
     { key: 'study-material', text: 'Notes', icon: <Description />, path: '/study-material' },
     { key: 'subject-topic', text: 'Add Subject & Topic', icon: <TopicManagerIcon />, path: '/topics/manage' },
     { key: 'quizzes', text: 'Quizzes', icon: <QuizIcon />, path: '/play#quizzes' },
     { key: 'progress', text: 'Progress', icon: <ProgressIcon />, path: '/progress' },
-    { key: 'achievements', text: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
+    ...achievementItems.map((item) => ({ ...item, icon: <AchievementsIcon /> })),
     { key: 'assignments', text: 'Home Work', icon: <AssignmentIcon />, path: assignmentPath },
     { key: 'attendance', text: 'Attendance', icon: <AttendanceIcon />, path: attendancePath },
     { key: 'class-management', text: 'Class Management', icon: <ClassManagementIcon />, path: '/classes/manage' },
     { 
       key: 'doubts', 
-      text: role === 'teacher' ? 'Student Doubts' : 'Doubts', 
+      text: activeRole === 'teacher' ? 'Student Doubts' : 'Doubts', 
       icon: <DoubtIcon />, 
-      path: '/doubts' 
+      path: accessRole === 'admin' ? '/admin/doubts' : '/doubts' 
     },
     { key: 'reports', text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-    { key: 'communications', text: role === 'student' ? 'Teacher Notice' : 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
+    { key: 'communications', text: activeRole === 'student' ? 'Teacher Notice' : 'Class Communication', icon: <CampaignIcon />, path: '/class-communication' },
     { key: 'settings', text: 'System Settings', icon: <SettingsIcon />, path: '/admin/system-settings' },
     { key: 'business-settings', text: 'Business Settings', icon: <BusinessSettingsIcon />, path: '/admin/business-settings' },
     { key: 'feedback', text: 'Feedback & Ratings', icon: <FeedbackIcon />, path: '/feedback' },
@@ -175,21 +218,22 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     if (item.key === 'quizzes') {
       return location.pathname === '/play' && location.hash === '#quizzes';
     }
+    if (item.path?.startsWith('/achievements')) {
+      return currentPath === item.path;
+    }
     return location.pathname === item.path;
   };
 
   const displayItems = items.filter(({ key }) => {
-    if ((role === 'student' || role === 'teacher') && key === 'doubts') return true;
+    if ((activeRole === 'student' || activeRole === 'teacher' || role === 'demo') && key === 'doubts') return true;
+    if (key === 'feedback') return false;
     if (configuredModules.has(key)) {
       return allowed.has(key);
     }
     return true;
   }).filter(({ key }) => {
     if (key === 'assignments' || key === 'reports' || key === 'reports-issues' || key === 'new-lesson' || key === 'subject-topic' || key === 'business-settings' || key === 'communications' || key === 'class-management' || key === 'study-material' || key === 'quizzes' || key === 'doubts') {
-      return role === 'teacher' || role === 'admin' || role === 'student' || allowed.has(key);
-    }
-    if (key === 'feedback') {
-      return allowed.has(key);
+      return activeRole === 'teacher' || activeRole === 'admin' || role === 'demo' || activeRole === 'student' || allowed.has(key);
     }
     return true;
   });
@@ -238,13 +282,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
           <Typography variant="h6" noWrap>
             {user?.name}
           </Typography>
-          <Chip
-            icon={<StarIcon />}
-            label={user?.role === 'student' ? `${user?.points || 0} Daily Stars` : `${user?.points || 0} Points`}
-            size="small"
-            color="primary"
-            sx={{ mt: 1 }}
-          />
         </Box>
       </Toolbar>
       <Divider />
@@ -291,23 +328,33 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
           </ListItem>
         ))}
         <Divider sx={{ my: 1 }} />
-        <ListItem disablePadding>
+        <ListItem disablePadding sx={{ mt: 'auto', mb: 2 }}>
           <ListItemButton
             onClick={handleLogoutClick}
             sx={{
-              color: 'error.main',
-              '& .MuiListItemIcon-root': {
-                color: 'error.main'
+              width: '100% !important',
+              backgroundColor: '#8b0000 !important',
+              color: '#FFFFFF !important',
+              borderRadius: '0px !important',
+              py: 1.5,
+              '& *': {
+                color: '#FFFFFF !important',
               },
               '&:hover': {
-                backgroundColor: 'rgba(211, 47, 47, 0.08)'
-              }
+                backgroundColor: '#5d0000 !important'
+              },
+              transition: 'all 0.2s'
             }}
           >
-            <ListItemIcon>
-              <LogoutIcon />
+            <ListItemIcon sx={{ color: '#FFFFFF !important', minWidth: 40, ml: 1 }}>
+              <LogoutIcon sx={{ color: '#FFFFFF !important' }} />
             </ListItemIcon>
-            <ListItemText primary="Logout" />
+            <ListItemText 
+              primary="Logout" 
+              primaryTypographyProps={{ 
+                sx: { color: '#FFFFFF !important', fontWeight: 'bold !important' } 
+              }} 
+            />
           </ListItemButton>
         </ListItem>
       </List>
@@ -346,7 +393,9 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             boxSizing: 'border-box',
             width: drawerWidth,
             mt: `${appBarHeights.sm}px`,
-            height: `calc(100% - ${appBarHeights.sm}px)`
+            height: `calc(100% - ${appBarHeights.sm}px)`,
+            borderRight: 'none',
+            boxShadow: '4px 0 10px rgba(0,0,0,0.03)'
           },
         }}
         open

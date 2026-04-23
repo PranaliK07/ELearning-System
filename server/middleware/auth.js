@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { hasRoleAccess, normalizeRole } = require('../utils/roles');
 
 const protect = async (req, res, next) => {
   let token;
@@ -19,6 +20,15 @@ const protect = async (req, res, next) => {
 
       if (req.user.isDeleted) {
         return res.status(401).json({ message: 'User not found' });
+      }
+
+      if (normalizeRole(req.user.role) === 'demo' && req.user.trialEndsAt) {
+        const trialEndsAt = new Date(req.user.trialEndsAt).getTime();
+        if (Number.isFinite(trialEndsAt) && trialEndsAt <= Date.now()) {
+          req.user.isActive = false;
+          await req.user.save({ fields: ['isActive'] });
+          return res.status(403).json({ message: 'Demo access expired. Please contact admin.' });
+        }
       }
 
       if (!req.user.isActive) {
@@ -49,11 +59,13 @@ const authorize = (...roles) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Not authorized' });
     }
-    
-    const userRole = String(req.user.role || '').toLowerCase();
-    const authorizedRoles = roles.map(r => String(r).toLowerCase());
-    
-    if (!authorizedRoles.includes(userRole)) {
+
+    const userRole = normalizeRole(req.user.role);
+    const authorizedRoles = roles.map(r => normalizeRole(r));
+
+    const allowed = authorizedRoles.some((role) => hasRoleAccess(userRole, role));
+
+    if (!allowed) {
       return res.status(403).json({ 
         message: `Access denied. Required roles: ${roles.join(', ')}` 
       });

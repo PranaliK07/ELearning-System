@@ -1,4 +1,5 @@
 const { RoleAccess } = require('../models');
+const { normalizeRole } = require('../utils/roles');
 
 const parseModules = (value) => {
   if (Array.isArray(value)) return value;
@@ -18,10 +19,10 @@ const parseModules = (value) => {
 const requireModuleAccess = (moduleKey) => {
   return async (req, res, next) => {
     try {
-      const role = req.user?.role;
+      const role = normalizeRole(req.user?.role);
       if (!role) return res.status(401).json({ message: 'Not authorized' });
 
-      const record = await RoleAccess.findOne({ where: { role } });
+      const record = await RoleAccess.findOne({ where: { role: role === 'demo' ? 'admin' : role } });
       if (!record) return next();
 
       const modules = parseModules(record.modules);
@@ -38,4 +39,3 @@ const requireModuleAccess = (moduleKey) => {
 };
 
 module.exports = requireModuleAccess;
-

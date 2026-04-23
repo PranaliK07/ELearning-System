@@ -54,7 +54,7 @@ import {
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, TextRun, WidthType } from 'docx';
 import { saveAs } from 'file-saver';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -63,6 +63,7 @@ import { useAuth } from '../../context/AuthContext';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
 import { resolveAvatarSrc } from '../../utils/media';
+import DoubtSection from '../doubts/DoubtSection';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -95,8 +96,8 @@ const TeacherDashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-    setSearchParams({ tab: newValue });
   };
+
 
   const handleExportClick = (event) => {
     setExportAnchorEl(event.currentTarget);
@@ -126,6 +127,14 @@ const TeacherDashboard = () => {
         },
         recentSubmissions: response.data.recentSubmissions || [],
       });
+
+      // Fetch doubts to populate the badge count
+      try {
+        const doubtsRes = await axios.get('/api/doubts/teacher');
+        setPendingDoubts(doubtsRes.data.filter(d => d.status === 'pending'));
+      } catch (doubtErr) {
+        console.error('Failed to fetch doubts for badge count', doubtErr);
+      }
     } catch (error) {
       toast.error('Failed to fetch dashboard data');
     } finally {
@@ -135,19 +144,17 @@ const TeacherDashboard = () => {
 
   const exportCSV = () => {
     handleExportClose();
-    const headers = ['Name', 'Email', 'Grade', 'Last Active'];
-    const rows = data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]);
+    const headers = ["Name", "Email", "Grade", "Last Active"];
+    const rows = data.students.map(s => [
+      `"${s.name}"`,
+      `"${s.email}"`,
+      `"${s.Grade?.name || 'N/A'}"`,
+      `"${new Date(s.updatedAt).toLocaleDateString()}"`
+    ]);
     
-    let csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "teacher_data.csv");
-    document.body.appendChild(link);
-    link.click();
+    const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, "teacher_data.csv");
     toast.success('Data exported as CSV');
   };
 
@@ -170,7 +177,7 @@ const TeacherDashboard = () => {
     handleExportClose();
     const doc = new jsPDF();
     doc.text("Students Overview Report", 14, 15);
-    doc.autoTable({
+    autoTable(doc, {
       startY: 20,
       head: [['Name', 'Email', 'Grade', 'Last Active']],
       body: data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]),
@@ -241,15 +248,15 @@ const TeacherDashboard = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ mt: 4, px: 1 }}>
         <LinearProgress />
         <Typography sx={{ mt: 2 }} align="center">Loading teacher dashboard...</Typography>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg">
+    <Box sx={{ px: 1 }}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -275,44 +282,42 @@ const TeacherDashboard = () => {
           </Button>
         </Box>
 
-        {/* Tabs Selection */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
-            textColor="secondary"
-            indicatorColor="secondary"
-            aria-label="teacher dashboard tabs"
-          >
-            <Tab 
-              icon={<DashboardIcon sx={{ fontSize: '1.2rem' }} />} 
-              iconPosition="start" 
-              label="Overview" 
-              sx={{ fontWeight: 'bold' }} 
-            />
-          </Tabs>
-        </Box>
-
-        {activeTab === 0 && (
-          <>
-            {/* Stats Grid */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Stats Grid */}
+        <Grid container spacing={3} sx={{ mb: 4 }} justifyContent="center">
               {statsConfig.map((stat, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
                   <motion.div
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.02 }}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <Card sx={{ bgcolor: stat.color, color: 'white', borderRadius: 3, boxShadow: 3 }}>
-                      <CardContent>
+                    <Card sx={{ 
+                      bgcolor: stat.color, 
+                      color: 'white', 
+                      borderRadius: 3, 
+                      boxShadow: 3, 
+                      height: { xs: 'auto', md: '100%' },
+                      minHeight: { xs: 100, md: 'auto' }
+                    }}>
+                      <CardContent sx={{ p: 2.5 }}>
                         <Box display="flex" alignItems="center" justifyContent="space-between">
                           <Box>
-                            <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>{stat.label}</Typography>
-                            <Typography variant="h4" fontWeight="bold">{stat.value}</Typography>
+                            <Typography variant="subtitle2" sx={{ opacity: 0.9, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>
+                              {stat.label}
+                            </Typography>
+                            <Typography variant="h3" fontWeight="800" sx={{ mt: 0.5 }}>
+                              {stat.value}
+                            </Typography>
                           </Box>
-                          <Box sx={{ fontSize: 40, opacity: 0.7 }}>
+                          <Box sx={{ 
+                            fontSize: { xs: 35, md: 45 }, 
+                            opacity: 0.8,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            p: 1.5,
+                            borderRadius: '50%',
+                            display: 'flex'
+                          }}>
                             {stat.icon}
                           </Box>
                         </Box>
@@ -321,42 +326,67 @@ const TeacherDashboard = () => {
                   </motion.div>
                 </Grid>
               ))}
-            </Grid>
-          </>
-        )}
-
-        {activeTab === 0 && (
-          <Paper sx={{ p: 3, borderRadius: 3, mb: 4, boxShadow: 2 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Export Data
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm="auto">
-                <Button
-                  variant="outlined"
-                  color="success"
-                  startIcon={<Download />}
-                  endIcon={<ExpandMore />}
-                  onClick={handleExportClick}
+              {/* Export Data Card */}
+              <Grid item xs={12} sm={6} md={3}>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
                 >
-                  Export Data
-                </Button>
-                <Menu
-                  anchorEl={exportAnchorEl}
-                  open={exportOpen}
-                  onClose={handleExportClose}
-                >
-                  <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
-                  <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
-                  <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
-                  <MenuItem onClick={exportWord}>Export as Word</MenuItem>
-                </Menu>
+                  <Card sx={{ 
+                    bgcolor: 'white', 
+                    border: '2px dashed #e0e0e0', 
+                    borderRadius: 3, 
+                    boxShadow: 1, 
+                    height: { xs: 'auto', md: '100%' },
+                    minHeight: { xs: 100, md: 'auto' },
+                    display: 'flex', 
+                    alignItems: 'center' 
+                  }}>
+                    <CardContent sx={{ textAlign: 'center', width: '100%', p: 2.5 }}>
+                      <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        Quick Reports
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<Download />}
+                        endIcon={<ExpandMore />}
+                        onClick={handleExportClick}
+                        fullWidth
+                        sx={{ 
+                          borderRadius: '12px',
+                          py: 1.2,
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 14px 0 rgba(76, 175, 80, 0.39)'
+                        }}
+                      >
+                        Export Data
+                      </Button>
+                      <Menu
+                        anchorEl={exportAnchorEl}
+                        open={exportOpen}
+                        onClose={handleExportClose}
+                        PaperProps={{
+                          sx: { borderRadius: '12px', mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }
+                        }}
+                      >
+                        <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
+                        <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
+                        <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
+                        <MenuItem onClick={exportWord}>Export as Word</MenuItem>
+                      </Menu>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </Grid>
             </Grid>
-          </Paper>
-        )}
 
-        {activeTab === 0 && (
+
+
+
+
           <Grid container spacing={3}>
             {/* Recent Submissions */}
             <Grid item xs={12} md={4}>
@@ -446,7 +476,7 @@ const TeacherDashboard = () => {
                               </Box>
                             </Box>
                           </TableCell>
-                          <TableCell>{student.Grade?.name || 'Unassigned'}</TableCell>
+                          <TableCell>{student.Grade?.name || (student.grade ? `Class ${student.grade}` : 'Unassigned')}</TableCell>
                           <TableCell>{new Date(student.updatedAt).toLocaleDateString()}</TableCell>
                           <TableCell align="right">
                             <Tooltip title="Send Email">
@@ -470,10 +500,10 @@ const TeacherDashboard = () => {
               </Paper>
             </Grid>
           </Grid>
-        )}
+
 
       </motion.div>
-    </Container>
+    </Box>
   );
 };
 

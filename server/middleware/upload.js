@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
+const ONE_GB = 1024 * 1024 * 1024;
+
 // Create upload directories if they don't exist
 const createDirectories = () => {
   const dirs = [
@@ -59,16 +61,11 @@ const imageStorage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  const allowedVideoTypes = (process.env.ALLOWED_VIDEO_TYPES || 'video/mp4,video/mpeg,video/quicktime').split(',');
   const allowedImageTypes = (process.env.ALLOWED_IMAGE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(',');
   const allowedDocumentTypes = (process.env.ALLOWED_DOCUMENT_TYPES || 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/png,image/jpeg,image/jpg').split(',');
 
   if (file.fieldname === 'video') {
-    if (allowedVideoTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid video format. Only MP4, MPEG, and QuickTime are allowed.'), false);
-    }
+    cb(null, true);
   } else if (['thumbnail', 'avatar', 'badge'].includes(file.fieldname)) {
     if (allowedImageTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -89,7 +86,7 @@ const fileFilter = (req, file, cb) => {
 // Multer instances
 const uploadVideo = multer({
   storage: videoStorage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 104857600 },
+  limits: { fileSize: parseInt(process.env.MAX_VIDEO_FILE_SIZE) || ONE_GB },
   fileFilter: fileFilter
 });
 
@@ -158,7 +155,7 @@ const combinedStorage = multer.diskStorage({
 
 const uploadMultiple = multer({
   storage: combinedStorage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 104857600 },
+  limits: { fileSize: parseInt(process.env.MAX_VIDEO_FILE_SIZE) || ONE_GB },
   fileFilter: fileFilter
 }).fields([
   { name: 'video', maxCount: 1 },
@@ -201,7 +198,7 @@ const optimizeImage = async (req, res, next) => {
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File too large' });
+      return res.status(400).json({ message: 'File too large. Maximum video size is 1GB.' });
     }
     return res.status(400).json({ message: err.message });
   }

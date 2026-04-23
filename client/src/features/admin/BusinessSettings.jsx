@@ -17,8 +17,8 @@ import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 
 const defaultRoleAccess = {
-  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'users', 'content', 'reports', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback', 'study-material']),
-  teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'study-material']),
+  admin: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'achievements-overview', 'profile', 'users', 'content', 'reports', 'settings', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'communications', 'business-settings', 'doubts', 'feedback', 'study-material']),
+  teacher: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements-overview', 'profile', 'new-lesson', 'subject-topic', 'assignments', 'attendance', 'class-management', 'reports', 'communications', 'feedback', 'study-material']),
   student: new Set(['dashboard', 'subjects', 'play', 'progress', 'achievements', 'profile', 'attendance', 'doubts', 'feedback', 'study-material', 'communications']),
 };
 
@@ -28,6 +28,7 @@ const modules = [
   { key: 'play', label: 'Play' },
   { key: 'progress', label: 'Progress' },
   { key: 'achievements', label: 'Achievements' },
+  { key: 'achievements-overview', label: 'Achievements Overview' },
   { key: 'profile', label: 'Profile' },
   { key: 'new-lesson', label: 'New Lesson' },
   { key: 'subject-topic', label: 'Subject & Topic' },
@@ -46,7 +47,6 @@ const modules = [
 ];
 
 const roles = ['admin', 'teacher', 'student'];
-
 const normalizeRoleAccess = (raw) => {
   const normalized = {};
   roles.forEach((role) => {

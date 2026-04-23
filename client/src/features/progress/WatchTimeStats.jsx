@@ -51,8 +51,6 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/axios';
 import { formatTime } from '../../utils/helpers';
 
-const DEFAULT_NAVY = '#0B1F3B';
-
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -86,16 +84,17 @@ const formatActivityDate = (date) => {
   const { progress = [], watchTimeStats, loading, refreshStats, getQuizStats } = useProgress();
   const { user } = useAuth();
   const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [assignmentStats, setAssignmentStats] = useState({ completed: 0, total: 0 });
   
-  const navy = '#0B1F3B';
-  const pink = '#f50057';
-  const pageBg = '#F4F7FB';
-  const surface = '#FFFFFF';
-  const cardBorder = alpha(navy, 0.08);
-  const cardShadow = '0 16px 40px rgba(11, 31, 59, 0.06)';
+  const navy = theme.palette.primary.main;
+  const pink = theme.palette.secondary.main;
+  const pageBg = theme.palette.background.default;
+  const surface = theme.palette.background.paper;
+  const cardBorder = theme.palette.divider;
+  const cardShadow = isDarkMode ? '0 16px 40px rgba(0, 0, 0, 0.28)' : '0 16px 40px rgba(11, 31, 59, 0.06)';
   const masteryRingSize = isMobile ? 148 : 176;
   const quizStats = getQuizStats();
   const totalLessons = progress.length;
@@ -164,7 +163,7 @@ const formatActivityDate = (date) => {
           tension: 0.4,
           fill: true,
           pointBackgroundColor: pink,
-          pointBorderColor: '#fff',
+          pointBorderColor: theme.palette.background.paper,
           pointBorderWidth: 2,
           pointRadius: 4,
           pointHoverRadius: 6,
@@ -179,9 +178,11 @@ const formatActivityDate = (date) => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: navy,
-        titleColor: '#fff',
-        bodyColor: '#fff',
+        backgroundColor: theme.palette.background.paper,
+        titleColor: theme.palette.text.primary,
+        bodyColor: theme.palette.text.primary,
+        borderColor: theme.palette.divider,
+        borderWidth: 1,
         padding: 12,
         cornerRadius: 12,
       },
@@ -189,7 +190,7 @@ const formatActivityDate = (date) => {
     scales: {
       y: {
         beginAtZero: true,
-        grid: { color: alpha(theme.palette.divider, 0.55) },
+        grid: { color: alpha(theme.palette.divider, isDarkMode ? 0.9 : 0.55) },
         ticks: {
           color: theme.palette.text.secondary,
           font: { size: 11 },
@@ -330,11 +331,11 @@ const formatActivityDate = (date) => {
                     mb: 1.5,
                     fontWeight: 700,
                     letterSpacing: 0.4,
-                    bgcolor: alpha(navy, 0.04),
+                    bgcolor: alpha(navy, isDarkMode ? 0.18 : 0.08),
                     color: navy,
                   }}
                 />
-                <Typography variant="h3" fontWeight="900" sx={{ color: navy, mb: 1, fontFamily: '"Outfit", sans-serif' }}>
+                <Typography variant="h3" fontWeight="900" sx={{ color: 'text.primary', mb: 1, fontFamily: '"Outfit", sans-serif' }}>
                   Progress Report
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760, lineHeight: 1.7 }}>
@@ -376,7 +377,7 @@ const formatActivityDate = (date) => {
                     sx={{
                       position: 'absolute',
                       inset: 0,
-                      background: `linear-gradient(180deg, ${alpha(navy, 0.02)} 0%, transparent 45%)`,
+                      background: `linear-gradient(180deg, ${alpha(navy, isDarkMode ? 0.1 : 0.02)} 0%, transparent 45%)`,
                       pointerEvents: 'none',
                     }}
                   />
@@ -414,7 +415,7 @@ const formatActivityDate = (date) => {
                             value={100}
                             size={masteryRingSize}
                             thickness={4}
-                            sx={{ color: alpha(navy, 0.08), position: 'absolute', left: 0, top: 0 }}
+                            sx={{ color: alpha(navy, isDarkMode ? 0.25 : 0.08), position: 'absolute', left: 0, top: 0 }}
                           />
                           <CircularProgress
                             variant="determinate"
@@ -442,13 +443,13 @@ const formatActivityDate = (date) => {
                               textAlign: 'center',
                             }}
                           >
-                            <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="900" sx={{ color: navy, lineHeight: 1 }}>
+                          <Typography variant={isMobile ? 'h3' : 'h2'} fontWeight="900" sx={{ color: 'text.primary', lineHeight: 1 }}>
                               {overallProgressData}%
-                            </Typography>
+                          </Typography>
                           </Box>
                         </Box>
                         <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: navy }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
                             Overall mastery
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -463,7 +464,7 @@ const formatActivityDate = (date) => {
                         <Typography variant="body2" color="text.secondary" fontWeight={600}>
                           Mastery progress
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 800, color: navy }}>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
                           {overallProgressData}/100
                         </Typography>
                       </Box>
@@ -473,7 +474,7 @@ const formatActivityDate = (date) => {
                         sx={{
                           height: 10,
                           borderRadius: 999,
-                          bgcolor: alpha(navy, 0.06),
+                          bgcolor: alpha(navy, isDarkMode ? 0.18 : 0.06),
                           '& .MuiLinearProgress-bar': {
                             background: `linear-gradient(90deg, ${pink} 0%, #FF6FA3 100%)`,
                           },
@@ -502,7 +503,7 @@ const formatActivityDate = (date) => {
             {/* Recent Activity */}
             <Grid item xs={12}>
               <Paper sx={{ p: 4, borderRadius: 6, border: '1px solid', borderColor: cardBorder, boxShadow: cardShadow, bgcolor: surface }}>
-                <Typography variant="h6" fontWeight="800" color={navy} sx={{ mb: 3 }}>Recent Activity Feed</Typography>
+                <Typography variant="h6" fontWeight="800" sx={{ color: 'text.primary', mb: 3 }}>Recent Activity Feed</Typography>
                 <List disablePadding>
                   {recentActivities.length > 0 ? recentActivities.map((activity, idx) => (
                     <motion.div key={activity.id} whileHover={{ x: 10 }} transition={{ type: 'spring', stiffness: 300 }}>
@@ -514,7 +515,7 @@ const formatActivityDate = (date) => {
                         </ListItemAvatar>
                         <ListItemText
                           primary={<Typography variant="subtitle1" fontWeight="700">{activity.title}</Typography>}
-                          secondary={<Typography variant="caption" color="textSecondary" fontWeight="600">{activity.time} | {activity.subject} | {activity.percentCompleted}% complete</Typography>}
+                          secondary={<Typography variant="caption" color="text.secondary" fontWeight="600">{activity.time} | {activity.subject} | {activity.percentCompleted}% complete</Typography>}
                         />
                         <Stack direction="row" spacing={2} alignItems="center">
                           <Chip 
@@ -535,7 +536,7 @@ const formatActivityDate = (date) => {
                       {idx < recentActivities.length - 1 && <Divider sx={{ opacity: 0.6 }} />}
                     </motion.div>
                   )) : (
-                    <Typography variant="body2" color="textSecondary">
+                    <Typography variant="body2" color="text.secondary">
                       No recent activity yet.
                     </Typography>
                   )}
@@ -545,8 +546,8 @@ const formatActivityDate = (date) => {
 
             <Grid item xs={12} md={4}>
               <Paper sx={{ p: 4, borderRadius: 6, border: '1px solid', borderColor: cardBorder, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: cardShadow, bgcolor: surface }}>
-                <Typography variant="h6" fontWeight="900" color={navy} sx={{ mb: 1 }}>Subject Mastery</Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                <Typography variant="h6" fontWeight="900" sx={{ color: 'text.primary', mb: 1 }}>Subject Mastery</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   A quick breakdown of completion by subject.
                 </Typography>
                 <Box sx={{ height: 220, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
@@ -554,14 +555,14 @@ const formatActivityDate = (date) => {
                     <>
                       <Doughnut data={subjectProgress} options={{ cutout: '78%', plugins: { legend: { display: false } } }} />
                       <Box sx={{ position: 'absolute', textAlign: 'center' }}>
-                        <Typography variant="h4" fontWeight="900" color={navy}>{averageSubjectProgress}%</Typography>
-                        <Typography variant="caption" color="textSecondary" fontWeight="600">Average mastery</Typography>
+                        <Typography variant="h4" fontWeight="900" sx={{ color: 'text.primary' }}>{averageSubjectProgress}%</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight="600">Average mastery</Typography>
                       </Box>
                     </>
                   ) : (
                     <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                      <Typography variant="subtitle2" fontWeight="700" color={navy}>No subject data yet</Typography>
-                      <Typography variant="caption" color="textSecondary">Start a lesson to see subject progress here.</Typography>
+                      <Typography variant="subtitle2" fontWeight="700" sx={{ color: 'text.primary' }}>No subject data yet</Typography>
+                      <Typography variant="caption" color="text.secondary">Start a lesson to see subject progress here.</Typography>
                     </Box>
                   )}
                 </Box>
@@ -572,11 +573,11 @@ const formatActivityDate = (date) => {
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75, gap: 1 }}>
                           <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
                             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: entry.color, flexShrink: 0 }} />
-                            <Typography variant="body2" fontWeight="700" color="textSecondary" noWrap>
+                            <Typography variant="body2" fontWeight="700" color="text.secondary" noWrap>
                               {entry.name}
                             </Typography>
                           </Stack>
-                          <Typography variant="body2" fontWeight="900" color={navy}>
+                          <Typography variant="body2" fontWeight="900" sx={{ color: 'text.primary' }}>
                             {entry.percent}%
                           </Typography>
                         </Box>
@@ -592,12 +593,12 @@ const formatActivityDate = (date) => {
                             },
                           }}
                         />
-                        <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                           {entry.completed}/{entry.total} lessons completed
                         </Typography>
                       </Box>
                     )) : (
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="text.secondary">
                         No subject breakdown available yet.
                       </Typography>
                     )}
@@ -646,117 +647,126 @@ const formatActivityDate = (date) => {
   );
 };
 
-const MasteryDetail = ({ label, value }) => (
-  <Box
-    sx={{
-      p: 1.5,
-      borderRadius: 3,
-      bgcolor: alpha(DEFAULT_NAVY, 0.03),
-      border: '1px solid',
-      borderColor: alpha(DEFAULT_NAVY, 0.06),
-    }}
-  >
-    <Typography variant="caption" sx={{ opacity: 0.75, display: 'block', mb: 0.5, fontWeight: 600 }}>
-      {label}
-    </Typography>
-    <Typography variant="body1" sx={{ fontWeight: 800, color: DEFAULT_NAVY, lineHeight: 1.25 }}>
-      {value}
-    </Typography>
-  </Box>
-);
+const MasteryDetail = ({ label, value }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
 
-const StatCard = ({ icon: Icon, value, label, color, delay, progress, compactOnMobile = false }) => (
-  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay, duration: 0.4 }}>
-    <Paper
+  return (
+    <Box
       sx={{
-        height: '100%',
-        minHeight: 180,
-        borderRadius: 4,
-        overflow: 'hidden',
+        p: 1.5,
+        borderRadius: 3,
+        bgcolor: alpha(theme.palette.primary.main, isDarkMode ? 0.18 : 0.06),
         border: '1px solid',
-        borderColor: alpha(color, 0.12),
-        background: `linear-gradient(180deg, ${alpha(color, 0.03)} 0%, #fff 28%)`,
-        boxShadow: '0 14px 32px rgba(11, 31, 59, 0.06)',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: `0 18px 36px ${alpha(color, 0.12)}`,
-          borderColor: alpha(color, 0.2),
-        },
+        borderColor: alpha(theme.palette.primary.main, isDarkMode ? 0.24 : 0.12),
       }}
     >
-      <Box sx={{ height: 4, bgcolor: color }} />
-      <Box sx={{ p: 2.5 }}>
-        <Stack spacing={1.75}>
-          <Stack
-            direction={compactOnMobile ? { xs: 'column', sm: 'row' } : 'row'}
-            alignItems={compactOnMobile ? { xs: 'flex-start', sm: 'center' } : 'center'}
-            justifyContent="space-between"
-            spacing={compactOnMobile ? { xs: 1, sm: 0 } : 0}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, width: compactOnMobile ? { xs: '100%', sm: 'auto' } : 'auto' }}>
-              <Box
-                sx={{
-                  width: { xs: 42, sm: 46 },
-                  height: { xs: 42, sm: 46 },
-                  borderRadius: 3,
-                  bgcolor: alpha(color, 0.1),
-                  color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid',
-                  borderColor: alpha(color, 0.14),
-                  flexShrink: 0,
-                }}
-              >
-                <Icon sx={{ fontSize: 24 }} />
+      <Typography variant="caption" sx={{ opacity: 0.75, display: 'block', mb: 0.5, fontWeight: 600 }}>
+        {label}
+      </Typography>
+      <Typography variant="body1" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.25 }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+};
+
+const StatCard = ({ icon: Icon, value, label, color, delay, progress, compactOnMobile = false }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay, duration: 0.4 }}>
+      <Paper
+        sx={{
+          height: '100%',
+          minHeight: 180,
+          borderRadius: 4,
+          overflow: 'hidden',
+          border: '1px solid',
+          borderColor: alpha(color, 0.12),
+          background: `linear-gradient(180deg, ${alpha(color, isDarkMode ? 0.08 : 0.03)} 0%, ${theme.palette.background.paper} 28%)`,
+          boxShadow: isDarkMode ? '0 14px 32px rgba(0, 0, 0, 0.28)' : '0 14px 32px rgba(11, 31, 59, 0.06)',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: `0 18px 36px ${alpha(color, 0.12)}`,
+            borderColor: alpha(color, 0.2),
+          },
+        }}
+      >
+        <Box sx={{ height: 4, bgcolor: color }} />
+        <Box sx={{ p: 2.5 }}>
+          <Stack spacing={1.75}>
+            <Stack
+              direction={compactOnMobile ? { xs: 'column', sm: 'row' } : 'row'}
+              alignItems={compactOnMobile ? { xs: 'flex-start', sm: 'center' } : 'center'}
+              justifyContent="space-between"
+              spacing={compactOnMobile ? { xs: 1, sm: 0 } : 0}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, width: compactOnMobile ? { xs: '100%', sm: 'auto' } : 'auto' }}>
+                <Box
+                  sx={{
+                    width: { xs: 42, sm: 46 },
+                    height: { xs: 42, sm: 46 },
+                    borderRadius: 3,
+                    bgcolor: alpha(color, 0.1),
+                    color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid',
+                    borderColor: alpha(color, 0.14),
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon sx={{ fontSize: 24 }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', display: 'block', fontSize: { xs: '0.66rem', sm: '0.72rem' } }}>
+                    {label}
+                  </Typography>
+                  <Typography variant="h5" fontWeight="900" sx={{ color, lineHeight: 1.1, fontSize: { xs: '1.45rem', sm: '1.8rem' } }}>
+                    {value}
+                  </Typography>
+                </Box>
               </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', display: 'block', fontSize: { xs: '0.66rem', sm: '0.72rem' } }}>
-                  {label}
+              {typeof progress === 'number' && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 800,
+                    color,
+                    bgcolor: alpha(color, 0.08),
+                    px: 1.1,
+                    py: 0.5,
+                    borderRadius: 999,
+                    flexShrink: 0,
+                    alignSelf: compactOnMobile ? { xs: 'flex-start', sm: 'center' } : 'center',
+                  }}
+                >
+                  {progress}%
                 </Typography>
-                <Typography variant="h5" fontWeight="900" sx={{ color, lineHeight: 1.1, fontSize: { xs: '1.45rem', sm: '1.8rem' } }}>
-                  {value}
-                </Typography>
-              </Box>
-            </Box>
+              )}
+            </Stack>
             {typeof progress === 'number' && (
-              <Typography
-                variant="caption"
+              <LinearProgress
+                variant="determinate"
+                value={progress}
                 sx={{
-                  fontWeight: 800,
-                  color,
-                  bgcolor: alpha(color, 0.08),
-                  px: 1.1,
-                  py: 0.5,
+                  height: 7,
                   borderRadius: 999,
-                  flexShrink: 0,
-                  alignSelf: compactOnMobile ? { xs: 'flex-start', sm: 'center' } : 'center',
+                  bgcolor: alpha(color, 0.08),
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: color,
+                  },
                 }}
-              >
-                {progress}%
-              </Typography>
+              />
             )}
           </Stack>
-          {typeof progress === 'number' && (
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{
-                height: 7,
-                borderRadius: 999,
-                bgcolor: alpha(color, 0.08),
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: color,
-                },
-              }}
-            />
-          )}
-        </Stack>
-      </Box>
-    </Paper>
-  </motion.div>
-);
+        </Box>
+      </Paper>
+    </motion.div>
+  );
+};
 
 export default WatchTimeStats;

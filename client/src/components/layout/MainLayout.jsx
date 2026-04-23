@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, AppBar, Toolbar, IconButton, Typography, Avatar, Menu, MenuItem, Badge, Divider } from '@mui/material';
+import { Box, AppBar, Toolbar, IconButton, Typography, Avatar, Menu, MenuItem, Badge, Divider, useTheme, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   Menu as MenuIcon,
@@ -25,6 +25,7 @@ import Sidebar from './Sidebar';
 import { resolveAvatarSrc } from '../../utils/media';
 import { useNotification } from '../../context/notificationContext';
 import ConfirmDialog from '../common/ConfirmDialog';
+import { isAdminLikeRole, getDemoRemainingTime } from '../../utils/roles';
 
 const getNotificationStyle = (type) => {
   switch (type) {
@@ -34,6 +35,8 @@ const getNotificationStyle = (type) => {
       return { icon: <Description fontSize="small" />, color: '#2196f3' };
     case 'new_assignment':
       return { icon: <Assignment fontSize="small" />, color: '#4caf50' };
+    case 'assignment_submission':
+      return { icon: <Assignment fontSize="small" />, color: '#ff9800' };
     case 'new_quiz':
       return { icon: <Quiz fontSize="small" />, color: '#9c27b0' };
     case 'attendance':
@@ -53,7 +56,9 @@ const getNotificationStyle = (type) => {
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const { mode, setMode } = React.useContext(ThemeContext);
+  const theme = useTheme();
   const { 
+    currentTime,
     notifications, 
     unreadCount, 
     loadingNotifications, 
@@ -62,11 +67,28 @@ const MainLayout = () => {
     markAllAsRead,
     deleteNotification
   } = useNotification();
+  
+  React.useEffect(() => {
+    console.log('[MainLayout Diagnostic] Current User:', user?.id, 'Role:', user?.role, 'Unread Count:', unreadCount);
+  }, [user, unreadCount]);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const demoTimeLeft = user?.role === 'demo' ? getDemoRemainingTime(user?.trialEndsAt, currentTime) : null;
+  const demoLabel = demoTimeLeft
+    ? (
+      demoTimeLeft.days > 0
+        ? `${demoTimeLeft.days}d ${demoTimeLeft.hours}h ${demoTimeLeft.minutes}m left`
+        : demoTimeLeft.hours > 0
+          ? `${demoTimeLeft.hours}h ${demoTimeLeft.minutes}m left`
+          : demoTimeLeft.minutes > 0
+            ? `${demoTimeLeft.minutes}m left`
+            : `less than 1m left`
+    )
+    : '';
+  const isAdminLike = isAdminLikeRole(user?.role);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -86,52 +108,106 @@ const MainLayout = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    // Automatically delete notification once it is opened/clicked
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+    // Remove the notification after it is opened/clicked
     deleteNotification(notification.id);
 
-    const source = notification?.data?.source;
-    const communicationId = notification?.data?.communicationId;
+    handleNotificationsClose();
+
+    const { type, data } = notification;
+    const role = user?.role;
+
+    // Handle legacy/specific source data
+    const source = data?.source;
+    const communicationId = data?.communicationId || data?.id;
     
     if (source === 'class_communication' && communicationId) {
-      handleNotificationsClose();
-      navigate(`/communications/${communicationId}`);
-      return;
+      return navigate(`/communications/${communicationId}`);
     }
 
-    switch (notification.type) {
+    // Modern type-based routing
+    switch (type) {
       case 'doubt':
       case 'doubt_reply':
-        handleNotificationsClose();
-        navigate('/doubts');
+        navigate(isAdminLike ? '/admin/doubts' : '/doubts');
         break;
-      case 'new_video':
-      case 'new_notes':
-        handleNotificationsClose();
-        if (notification.data?.contentId) {
-          navigate(`/study/content/${notification.data.contentId}`);
-        } else {
-          navigate('/study');
-        }
-        break;
-      case 'new_assignment':
-        handleNotificationsClose();
-        if (notification.data?.assignmentId) {
-          navigate(`/assignments/view/${notification.data.assignmentId}`);
-        }
-        break;
+
       case 'new_quiz':
-        handleNotificationsClose();
-        if (notification.data?.quizId) {
-          navigate(`/quiz/${notification.data.quizId}/start`);
+      case 'quiz':
+        if (data?.quizId) {
+          navigate(`/quiz/${data.quizId}/start`);
+        } else {
+          navigate('/play#quizzes');
         }
         break;
+
+      case 'quiz_result':
+      case 'achievement':
+        navigate('/achievements');
+        break;
+
+      case 'new_assignment':
+      case 'assignment':
+        if (data?.assignmentId) {
+          navigate(`/assignments/view/${data.assignmentId}`);
+        } else {
+          navigate(role === 'student' ? '/homework' : '/assignments/create');
+        }
+        break;
+
+      case 'assignment_submission':
+        if (data?.assignmentId) {
+          navigate(role === 'student' ? `/assignments/view/${data.assignmentId}` : `/assignments/${data.assignmentId}/submissions`);
+        } else {
+          navigate('/assignments/create');
+        }
+        break;
+
+      case 'new_video':
+        if (data?.contentId) {
+          navigate(`/play/video/${data.contentId}`);
+        } else {
+          navigate('/play');
+        }
+        break;
+
+      case 'new_notes':
+        if (data?.contentId) {
+          navigate(`/study/content/${data.contentId}`);
+        } else {
+          navigate('/study-material');
+        }
+        break;
+
+      case 'announcement':
+        navigate('/dashboard');
+        break;
+
+      case 'class_communication':
+        if (communicationId) {
+          navigate(`/communications/${communicationId}`);
+        } else {
+          navigate('/class-communication');
+        }
+        break;
+
       case 'attendance':
-        handleNotificationsClose();
-        navigate('/attendance');
+        navigate(role === 'student' ? '/attendance' : '/attendance/manage');
         break;
+
+      case 'content':
+        if (data?.contentId) {
+          navigate(`/study/content/${data.contentId}`);
+        } else {
+          navigate((isAdminLike || role === 'teacher') ? '/admin/content' : '/study');
+        }
+        break;
+
       default:
-        handleNotificationsClose();
-        break;
+        console.warn('[Notifications] No specific route for type:', type);
+        navigate('/dashboard');
     }
   };
 
@@ -204,6 +280,20 @@ const MainLayout = () => {
             🎓 Kids Learn
           </Typography>
 
+          {user?.role === 'demo' && demoTimeLeft && (
+            <Chip
+              label={`Demo ${demoLabel}`}
+              size="small"
+              variant="outlined"
+              sx={{
+                mr: 1,
+                color: '#fff',
+                borderColor: 'rgba(255,255,255,0.45)',
+                display: { xs: 'none', sm: 'inline-flex' }
+              }}
+            />
+          )}
+
           <IconButton color="inherit" onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
             <HomeIcon />
           </IconButton>
@@ -240,7 +330,21 @@ const MainLayout = () => {
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            <MenuItem 
+              onClick={handleLogout} 
+              sx={{ 
+                bgcolor: '#8b0000 !important', 
+                color: '#FFFFFF !important',
+                fontWeight: 'bold',
+                m: '4px',
+                borderRadius: '8px',
+                '&:hover': {
+                  bgcolor: '#5d0000 !important'
+                }
+              }}
+            >
+              Logout
+            </MenuItem>
           </Menu>
 
           <Menu
@@ -278,41 +382,36 @@ const MainLayout = () => {
                 </Typography>
               </Box>
             )}
-            {!loadingNotifications && notifications.map((item) => {
-              const { icon, color } = getNotificationStyle(item.type);
-              return (
-                <MenuItem
-                  key={item.id}
-                  onClick={() => handleNotificationClick(item)}
-                  sx={{
-                    alignItems: 'flex-start',
-                    whiteSpace: 'normal',
-                    gap: 2,
-                    py: 1.5,
-                    bgcolor: item.isRead ? 'transparent' : 'rgba(176,18,91,0.08)',
-                    borderLeft: item.isRead ? 'none' : `4px solid ${color}`,
-                    '&:hover': {
-                      bgcolor: item.isRead ? 'rgba(0,0,0,0.04)' : 'rgba(176,18,91,0.12)'
-                    }
-                  }}
-                >
-                  <Avatar sx={{ bgcolor: `${color}15`, color: color, width: 36, height: 36 }}>
-                    {icon}
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: item.isRead ? 600 : 800, color: item.isRead ? 'text.primary' : 'primary.main' }}>
-                      {item.title}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                      {item.message}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
-                      {new Date(item.createdAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              );
-            })}
+            {!loadingNotifications && notifications.map((item) => (
+              <MenuItem
+                key={item.id}
+                onClick={() => handleNotificationClick(item)}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  whiteSpace: 'normal',
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                  gap: 0.5,
+                  bgcolor: item.isRead ? 'transparent' : theme.palette.action.hover,
+                  '&:hover': {
+                    bgcolor: theme.palette.action.selected,
+                  }
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: item.isRead ? 600 : 800, color: 'text.primary' }}>
+                  {item.title}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.4 }}>
+                  {item.message}
+                </Typography>
+                <Typography variant="caption" sx={{ mt: 0.5, color: 'text.disabled', fontSize: '0.7rem' }}>
+                  {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Typography>
+              </MenuItem>
+            ))}
           </Menu>
         </Toolbar>
       </AppBar>
@@ -323,11 +422,14 @@ const MainLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          width: { sm: `calc(100% - 240px)` },
-          ml: { sm: '240px' },
-          mt: { xs: '56px', sm: '64px' },
-          mb: { xs: '56px', sm: 0 },
-          p: { xs: 2, sm: 3 }
+          width: { xs: '100%', sm: 'auto' },
+          minWidth: 0,
+          mt: { xs: '84px', sm: '100px' }, // Further increased space below navbar
+          mb: { xs: '84px', sm: 0 },
+          pl: { xs: 2, sm: 8 }, // Further increased space from sidebar
+          pr: { xs: 2, sm: 6 },
+          py: { xs: 2, sm: 4 },
+          overflowX: 'hidden'
         }}
       >
         <ErrorBoundary>

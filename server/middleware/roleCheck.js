@@ -1,3 +1,5 @@
+const { isAdminLikeRole } = require('../utils/roles');
+
 const roleCheck = {
   isStudent: (req, res, next) => {
     if (req.user.role !== 'student') {
@@ -14,28 +16,28 @@ const roleCheck = {
   },
 
   isAdmin: (req, res, next) => {
-    if (req.user.role !== 'admin') {
+    if (!isAdminLikeRole(req.user.role)) {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
     next();
   },
 
   isTeacherOrAdmin: (req, res, next) => {
-    if (!['teacher', 'admin'].includes(req.user.role)) {
+    if (!['teacher', 'admin', 'demo'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied. Teacher or Admin only.' });
     }
     next();
   },
 
   canManageContent: (req, res, next) => {
-    if (!['teacher', 'admin'].includes(req.user.role)) {
+    if (!['teacher', 'admin', 'demo'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied. Cannot manage content.' });
     }
     next();
   },
 
   canManageUsers: (req, res, next) => {
-    if (req.user.role !== 'admin') {
+    if (!isAdminLikeRole(req.user.role)) {
       return res.status(403).json({ message: 'Access denied. Cannot manage users.' });
     }
     next();

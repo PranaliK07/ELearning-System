@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
+import { isAdminLikeRole } from '../utils/roles';
 
 const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   useEffect(() => {
     if (token) {
@@ -24,6 +26,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const tickMs = user?.role === 'demo' ? 1000 : 60000;
+    const tick = () => setCurrentTime(Date.now());
+
+    tick();
+    const timer = setInterval(tick, tickMs);
+    return () => clearInterval(timer);
+  }, [user?.role, user?.trialEndsAt]);
 
   const fetchUser = async () => {
     try {
@@ -105,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     token,
+    currentTime,
     login,
     register,
     logout,
@@ -112,7 +128,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isStudent: user?.role === 'student',
     isTeacher: user?.role === 'teacher',
-    isAdmin: user?.role === 'admin'
+    isAdmin: isAdminLikeRole(user?.role),
+    isDemo: user?.role === 'demo'
   };
 
   return (

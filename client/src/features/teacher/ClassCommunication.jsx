@@ -30,13 +30,14 @@ import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { validateRequiredText } from '../../utils/validation';
+import { isAdminLikeRole } from '../../utils/roles';
 
 const ClassCommunication = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminLikeRole(user?.role);
   const isTeacher = user?.role === 'teacher';
   const isStudent = user?.role === 'student';
   const canViewHistory = isAdmin || isTeacher || isStudent;
@@ -272,7 +273,7 @@ const ClassCommunication = () => {
                       >
                         <MenuItem value="students">Students</MenuItem>
                         <MenuItem value="parents">Parents</MenuItem>
-                        <MenuItem value="both">Students + Parents</MenuItem>
+                        <MenuItem value="both">Both</MenuItem>
                       </Select>
                     </FormControl>
                   </Box>

@@ -345,12 +345,12 @@ const AssignmentManagement = () => {
             <TextField label="Assignment Title" fullWidth value={formData.title} onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors((prev) => ({ ...prev, title: '' })); }} error={!!errors.title} helperText={errors.title} />
             <TextField label="Description" fullWidth multiline rows={4} value={formData.description} onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setErrors((prev) => ({ ...prev, description: '' })); }} error={!!errors.description} helperText={errors.description} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField select label="Subject" fullWidth value={formData.subjectId} onChange={(e) => { setFormData({ ...formData, subjectId: e.target.value }); setErrors((prev) => ({ ...prev, subjectId: '' })); }} error={!!errors.subjectId} helperText={errors.subjectId}>
                   {subjects.map((sub) => <MenuItem key={sub.id} value={sub.id}>{sub.name}</MenuItem>)}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField select label="Grade" fullWidth value={formData.gradeId} onChange={(e) => { setFormData({ ...formData, gradeId: e.target.value }); setErrors((prev) => ({ ...prev, gradeId: '' })); }} error={!!errors.gradeId} helperText={errors.gradeId}>
                   {grades.map((grade) => <MenuItem key={grade.id} value={grade.id}>{grade.name}</MenuItem>)}
                 </TextField>

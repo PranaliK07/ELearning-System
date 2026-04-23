@@ -1,4 +1,5 @@
 const { Feedback, User } = require('../models');
+const { createNotification } = require('../utils/notifications');
 
 const parseRating = (value) => {
   const rating = Number(value);
@@ -33,6 +34,20 @@ const createFeedback = async (req, res) => {
       rating: parsedRating,
       comment: typeof comment === 'string' && comment.trim() ? comment.trim() : null
     });
+
+    // Notify the student
+    try {
+      await createNotification(
+        student.id,
+        'feedback',
+        'New Platform Feedback! ⭐',
+        `A teacher has submitted feedback for you. Rating: ${parsedRating}/5. Read it now!`,
+        { feedbackId: feedback.id },
+        req.user.id
+      );
+    } catch (notifErr) {
+      console.error('Feedback notification error:', notifErr);
+    }
 
     return res.status(201).json({ success: true, feedback });
   } catch (error) {

@@ -5,6 +5,48 @@ const { generateToken, generateRefreshToken } = require('../middleware/auth');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
+const { normalizeRole } = require('../utils/roles');
+
+const DEMO_TRIAL_DAYS = 5;
+const DEMO_TRIAL_MS = DEMO_TRIAL_DAYS * 24 * 60 * 60 * 1000;
+
+const buildDemoTrialWindow = (enabled) => {
+  if (!enabled) {
+    return {};
+  }
+
+  const trialStartsAt = new Date();
+  const trialEndsAt = new Date(trialStartsAt.getTime() + DEMO_TRIAL_MS);
+
+  return { trialStartsAt, trialEndsAt };
+};
+
+const normalizeOptionalText = (value) => {
+  const trimmed = String(value ?? '').trim();
+  return trimmed || null;
+};
+
+const normalizeOptionalGrade = (value, role) => {
+  if (normalizeRole(role) === 'demo') {
+    return null;
+  }
+
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
+
+  const gradeNumber = Number(value);
+  return Number.isFinite(gradeNumber) ? gradeNumber : value;
+};
+
+const isDemoExpired = (user) => {
+  if (normalizeRole(user?.role) !== 'demo' || !user?.trialEndsAt) {
+    return false;
+  }
+
+  const trialEndsAt = new Date(user.trialEndsAt).getTime();
+  return Number.isFinite(trialEndsAt) && trialEndsAt <= Date.now();
+};
 
 const register = async (req, res) => {
   try {
@@ -14,12 +56,15 @@ const register = async (req, res) => {
     }
 
     const { firstName, middleName, lastName, email, password, role, grade, parentPhone, parentEmail } = req.body;
-    const name = `${firstName} ${middleName ? middleName + ' ' : ''}${lastName}`.trim();
+    const firstNameText = String(firstName || '').trim();
+    const middleNameText = String(middleName || '').trim();
+    const lastNameText = String(lastName || '').trim();
+    const name = `${firstNameText} ${middleNameText ? `${middleNameText} ` : ''}${lastNameText}`.trim();
 
 
-    const normalizedRole = (role || 'student').toString().trim().toLowerCase();
+    const normalizedRole = normalizeRole(role || 'student');
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    const normalizedParentEmail = String(parentEmail || '').trim().toLowerCase();
+    const normalizedParentEmail = normalizeOptionalText(parentEmail)?.toLowerCase() || null;
 
     // Create verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -67,21 +112,22 @@ const register = async (req, res) => {
 
       const nextValues = {
         name,
-        firstName,
-        middleName,
-        lastName,
+        firstName: firstNameText,
+        middleName: middleNameText,
+        lastName: lastNameText,
         email: normalizedEmail,
         password,
         role: normalizedRole,
-        grade,
+        grade: normalizeOptionalGrade(grade, normalizedRole),
         verificationToken,
-        parentPhone: parentPhone || null,
-        parentEmail: normalizedParentEmail || null,
+        parentPhone: normalizeOptionalText(parentPhone),
+        parentEmail: normalizedParentEmail,
         ParentId: linkedParent ? linkedParent.id : null,
 
         isActive: true,
         isDeleted: false,
-        emailVerified: false
+        emailVerified: false,
+        ...buildDemoTrialWindow(normalizedRole === 'demo')
       };
 
       if (userExists && userExists.isDeleted) {
@@ -150,6 +196,12 @@ const login = async (req, res) => {
 
     if (user.isDeleted) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (isDemoExpired(user)) {
+      user.isActive = false;
+      await user.save({ fields: ['isActive'] });
+      return res.status(403).json({ message: 'Demo access expired. Please contact admin.' });
     }
 
     // Check if account is active

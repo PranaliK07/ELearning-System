@@ -29,6 +29,7 @@ import {
     FormControlLabel,
     Stack
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
 import {
     CloudUpload,
@@ -44,13 +45,21 @@ import {
 } from '@mui/icons-material';
 import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
 const ContentManagement = () => {
+    const { contentId } = useParams();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const contentType = searchParams.get('type');
+    const theme = useTheme();
+    const isDarkMode = theme.palette.mode === 'dark';
+    
     const [loading, setLoading] = useState(false);
     const [grades, setGrades] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [topics, setTopics] = useState([]);
-    const [selectedType, setSelectedType] = useState(null);
+    const [selectedType, setSelectedType] = useState(contentType || null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -100,6 +109,54 @@ const ContentManagement = () => {
     useEffect(() => {
         fetchGrades();
     }, [fetchGrades]);
+
+    const fetchContentForEdit = useCallback(async () => {
+        if (!contentId || !contentType) return;
+        try {
+            setLoading(true);
+            const endpoint = contentType === 'quiz' ? `/api/quiz/${contentId}` : `/api/content/${contentId}`;
+            const res = await axios.get(endpoint);
+            const data = res.data;
+
+            setFormData({
+                title: data.title || '',
+                description: data.description || '',
+                gradeId: data.GradeId || data.gradeId || '',
+                subjectId: data.SubjectId || data.subjectId || '',
+                topicId: data.TopicId || data.topicId || '',
+                isPremium: data.isPremium || false,
+                isPublished: data.isPublished !== undefined ? data.isPublished : true,
+                timeLimit: data.timeLimit || 10,
+                passingScore: data.passingScore || 70,
+                maxAttempts: data.maxAttempts || 2
+            });
+
+            if (contentType === 'quiz' && data.questions) {
+                let parsedQuestions = data.questions;
+                if (typeof parsedQuestions === 'string') {
+                    try { parsedQuestions = JSON.parse(parsedQuestions); } catch (e) { parsedQuestions = []; }
+                }
+                if (Array.isArray(parsedQuestions)) {
+                    setQuestions(parsedQuestions.map((q, idx) => ({
+                        id: q.id || idx,
+                        question: q.question || '',
+                        options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+                        correctAnswer: q.correctAnswer || ''
+                    })));
+                }
+            }
+            setSelectedType(contentType);
+        } catch (err) {
+            console.error('Fetch edit error:', err);
+            toast.error('Failed to load content for editing');
+        } finally {
+            setLoading(false);
+        }
+    }, [contentId, contentType]);
+
+    useEffect(() => {
+        if (contentId) fetchContentForEdit();
+    }, [contentId, fetchContentForEdit]);
 
     useEffect(() => {
         if (formData.gradeId) fetchSubjects(formData.gradeId);
@@ -179,50 +236,58 @@ const ContentManagement = () => {
             const payload = {
                 ...formData,
                 type: selectedType,
-                videoUrl,
-                thumbnail: thumbnailUrl,
-                readingMaterial: readingUrl,
+                videoUrl: videoUrl || undefined,
+                thumbnail: thumbnailUrl || undefined,
+                readingMaterial: readingUrl || undefined,
                 questions: selectedType === 'quiz' ? questions : [],
                 TopicId: formData.topicId,
+                topicId: formData.topicId, // Send both for compatibility
+                gradeId: formData.gradeId,
+                subjectId: formData.subjectId,
                 passingScore: parseInt(formData.passingScore, 10) || 70,
                 timeLimit: parseInt(formData.timeLimit, 10) || 10,
                 maxAttempts: parseInt(formData.maxAttempts, 10) || 2
             };
 
-            // If it's a quiz, we send it to the specialized quiz endpoint to ensure it shows in the Quiz Arena
-            if (selectedType === 'quiz') {
-                await axios.post('/api/quiz', {
-                    ...payload,
-                    topicId: formData.topicId,
-                    questions: questions.map(q => ({
-                        question: q.question,
-                        options: q.options,
-                        correctAnswer: q.correctAnswer
-                    }))
-                });
+            if (contentId) {
+                const endpoint = selectedType === 'quiz' ? `/api/quiz/${contentId}` : `/api/content/${contentId}`;
+                await axios.put(endpoint, payload);
+                toast.success(`${selectedType.toUpperCase()} Updated!`);
+                navigate('/admin/content');
             } else {
-                await axios.post('/api/content', payload);
+                if (selectedType === 'quiz') {
+                    await axios.post('/api/quiz', {
+                        ...payload,
+                        topicId: formData.topicId,
+                        questions: questions.map(q => ({
+                            question: q.question,
+                            options: q.options,
+                            correctAnswer: q.correctAnswer
+                        }))
+                    });
+                } else {
+                    await axios.post('/api/content', payload);
+                }
+                toast.success(`${selectedType.toUpperCase()} Published!`);
+                setFormData({ 
+                    title: '', 
+                    description: '', 
+                    gradeId: '', 
+                    subjectId: '', 
+                    topicId: '', 
+                    isPremium: false, 
+                    isPublished: true,
+                    timeLimit: 10,
+                    passingScore: 70,
+                    maxAttempts: 2
+                });
+                setQuestions([{ id: Date.now(), question: '', options: ['', '', '', ''], correctAnswer: '' }]);
+                setVideoFile(null); setThumbnailFile(null); setReadingFile(null);
+                setSelectedType(null);
             }
-
-            toast.success(`${selectedType.toUpperCase()} Published!`);
-            setFormData({ 
-                title: '', 
-                description: '', 
-                gradeId: '', 
-                subjectId: '', 
-                topicId: '', 
-                isPremium: false, 
-                isPublished: true,
-                timeLimit: 10,
-                passingScore: 70,
-                maxAttempts: 2
-            });
-            setQuestions([{ id: Date.now(), question: '', options: ['', '', '', ''], correctAnswer: '' }]);
-            setVideoFile(null); setThumbnailFile(null); setReadingFile(null);
-            setSelectedType(null);
         } catch (error) {
             console.error('Content post error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to post content';
+            const errorMessage = error.response?.data?.message || 'Failed to save content';
             toast.error(errorMessage);
         } finally {
             setLoading(false);
@@ -251,7 +316,7 @@ const ContentManagement = () => {
                                 }}
                             >
                                 <CardActionArea onClick={() => setSelectedType(card.id)} sx={{ p: 3, textAlign: 'center' }}>
-                                    <Box sx={{ color: card.color, mb: 1 }}>{card.icon}</Box>
+                                    <Box sx={{ color: isDarkMode ? theme.palette.text.primary : card.color, mb: 1 }}>{card.icon}</Box>
                                     <Typography variant="h6" fontWeight="bold">{card.title}</Typography>
                                 </CardActionArea>
                             </Card>
@@ -366,7 +431,7 @@ const ContentManagement = () => {
                                 <Grid size={12}><TextField fullWidth multiline rows={3} label="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} /></Grid>
                             </>
                         )}
-                        <Grid size={12}><Button variant="contained" type="submit" fullWidth size="large" disabled={loading} sx={{ py: 2 }}>{loading ? <CircularProgress size={24} color="inherit" /> : `Publish ${selectedType}`}</Button></Grid>
+                        <Grid size={12}><Button variant="contained" type="submit" fullWidth size="large" disabled={loading} sx={{ py: 2 }}>{loading ? <CircularProgress size={24} color="inherit" /> : (contentId ? `Update ${selectedType}` : `Publish ${selectedType}`)}</Button></Grid>
                     </Grid>
                 </form>
             </Paper>

@@ -1,5 +1,7 @@
 const { Content, Topic, User, Progress, Comment, Like, Bookmark, Grade, Subject, Lesson, Notification } = require('../models');
 const { Op } = require('sequelize');
+const { createNotification } = require('../utils/notifications');
+const { isAdminLikeRole } = require('../utils/roles');
 
 const resolveStudentGradeId = async (user) => {
   if (!user) return null;
@@ -216,10 +218,11 @@ const createContent = async (req, res) => {
       if (students.length > 0) {
         const notifications = students.map(student => ({
           userId: student.id,
+          senderId: req.user.id,
           type: type === 'video' ? 'new_video' : 'new_notes',
           title: `New ${type === 'video' ? 'Video' : 'Notes'} Uploaded 📚`,
           message: `${req.user.name} uploaded: ${title}`,
-          data: typeof data === 'string' ? data : JSON.stringify({ contentId: content.id, type })
+          data: { contentId: content.id, type }
         }));
         await Notification.bulkCreate(notifications);
       }
@@ -404,6 +407,23 @@ const toggleLike = async (req, res) => {
         UserId: userId
       });
       await Content.increment('likes', { by: 1, where: { id: contentId } });
+      
+      // Notify creator about the like
+      try {
+        const content = await Content.findByPk(contentId);
+        if (content && content.createdBy !== userId) {
+          await createNotification(
+            content.createdBy,
+            'like',
+            'Someone liked your content! ❤️',
+            `${req.user.name} liked your lesson "${content.title}"`,
+            { contentId, likedBy: userId }
+          );
+        }
+      } catch (notifErr) {
+        console.error('Like notification error:', notifErr);
+      }
+      
       res.json({ liked: true });
     }
   } catch (error) {
@@ -426,8 +446,26 @@ const addComment = async (req, res) => {
       include: [{
         model: User,
         attributes: ['id', 'name', 'avatar']
+      }, {
+        model: Content,
+        attributes: ['id', 'title', 'createdBy']
       }]
     });
+
+    // Notify content creator
+    try {
+      if (commentWithUser.Content && commentWithUser.Content.createdBy !== req.user.id) {
+        await createNotification(
+          commentWithUser.Content.createdBy,
+          'comment',
+          'New Comment on your Lesson! 💬',
+          `${req.user.name} commented on "${commentWithUser.Content.title}": "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`,
+          { contentId: commentWithUser.Content.id, commentId: comment.id }
+        );
+      }
+    } catch (notifErr) {
+      console.error('Comment notification error:', notifErr);
+    }
 
     res.status(201).json(commentWithUser);
   } catch (error) {
@@ -468,7 +506,7 @@ const deleteComment = async (req, res) => {
     }
 
     // Check if user owns the comment or is admin
-    if (comment.UserId !== req.user.id && req.user.role !== 'admin') {
+    if (comment.UserId !== req.user.id && !isAdminLikeRole(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 

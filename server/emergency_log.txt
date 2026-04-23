@@ -160,3 +160,153 @@ Time: 2026-04-18T05:12:55.672Z
 Path: /api/subjects?gradeId=1
 Method: GET
 IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:19:23.566Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:19:23.596Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:19:29.599Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:19:29.734Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:03.783Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:04.038Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:24.405Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:24.482Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:30.064Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:30.185Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:32.145Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:20:32.196Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:17.176Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:17.285Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:40.838Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:41.151Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:57.052Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:21:57.113Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:22:36.116Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:22:36.197Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:23:00.564Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:23:00.604Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:23:29.240Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-21T08:23:29.456Z
+Path: /api/dashboard/teacher
+Method: GET
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-22T07:16:56.057Z
+Path: /api/auth/login
+Method: POST
+IP: ::1

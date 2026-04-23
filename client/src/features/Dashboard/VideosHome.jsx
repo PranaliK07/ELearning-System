@@ -32,7 +32,7 @@ const normalizeMediaUrl = (src) => {
 const VideosHome = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { updateWatchTime } = useProgress();
+  const { updateWatchTime, updateProgress } = useProgress();
   const videoRefs = useRef([]);
   const containerRef = useRef(null);
   const scrollFrame = useRef(null);
@@ -551,7 +551,7 @@ const VideosHome = () => {
   };
 
   return (
-    <Container maxWidth="lg" disableGutters sx={{ height: { xs: 'calc(100vh - 120px)', sm: 'calc(100vh - 96px)' } }}>
+    <Box sx={{ height: { xs: 'calc(100vh - 120px)', sm: 'calc(100vh - 96px)' }, px: 1 }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -642,6 +642,7 @@ const VideosHome = () => {
         onClose={() => setOpenPlayer(false)}
         video={selectedVideo}
         onWatchTime={(seconds) => updateWatchTime(selectedVideo?.id, seconds)}
+        onComplete={() => updateProgress(selectedVideo?.id, { completed: true })}
         onNext={handleNext}
         onPrev={handlePrev}
         hasMore={activeIndex < reelItems.length - 1}
@@ -655,7 +656,7 @@ const VideosHome = () => {
           50% { transform: translateY(-8px); }
         }
       `}</style>
-    </Container>
+    </Box>
   );
 };
 

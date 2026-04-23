@@ -199,10 +199,11 @@ const markGradeAttendance = async (req, res) => {
       if (saved.length > 0) {
         const notifications = saved.map(record => ({
           userId: record.studentId,
+          senderId: record.markedById,
           type: 'attendance',
           title: `Attendance Marked: ${record.status.toUpperCase()} 📅`,
           message: `Your attendance for ${date} has been marked as ${record.status}.`,
-          data: JSON.stringify({ date, status: record.status })
+          data: { date, status: record.status }
         }));
         await Notification.bulkCreate(notifications);
       }

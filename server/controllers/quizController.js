@@ -1,4 +1,4 @@
-const { Quiz, Progress, User, Topic, Lesson, Subject, Grade, Notification } = require('../models');
+const { Quiz, Progress, Notification, User, Topic, Lesson, Subject, Grade } = require('../models');
 const { Op } = require('sequelize');
 
 const normalizeQuestions = (questions) => {
@@ -114,10 +114,13 @@ const getQuiz = async (req, res) => {
       }
 
       if (Array.isArray(quizData.questions)) {
-        quizData.questions = quizData.questions.map(q => ({
-          ...q,
-          correctAnswer: undefined // Securely remove correct answer
-        }));
+        // Only hide correct answers for students
+        if (req.user?.role === 'student') {
+          quizData.questions = quizData.questions.map(q => ({
+            ...q,
+            correctAnswer: undefined
+          }));
+        }
       } else {
         quizData.questions = [];
       }
@@ -176,43 +179,61 @@ const createQuiz = async (req, res) => {
       createdBy: req.user.id
     });
 
-    // Notify students
+    // Notify students and teachers about the new quiz
     try {
-      // Find the grade associated with the topic
-      const topicData = await Topic.findByPk(topicId, {
-        include: [{
-          model: Subject,
-          include: [Grade]
-        }]
+      const topic = await Topic.findByPk(topicId, {
+        include: [{ model: Subject, include: [Grade] }]
+      });
+      const gradeId = topic?.Subject?.GradeId;
+      const gradeLevel = topic?.Subject?.Grade?.level;
+      
+      const students = await User.findAll({
+        where: {
+          role: 'student',
+          ...(gradeId
+            ? {
+                [Op.or]: [
+                  { GradeId: gradeId },
+                  ...(gradeLevel ? [{ grade: gradeLevel }] : [])
+                ]
+              }
+            : {})
+        },
+        attributes: ['id']
+      });
+      
+      const teachers = await User.findAll({
+        where: {
+          role: 'teacher',
+          isActive: true,
+          isDeleted: false,
+          id: { [Op.ne]: req.user.id }
+        },
+        attributes: ['id']
       });
 
-      const gradeId = topicData?.Subject?.GradeId;
-      const targetGrade = topicData?.Subject?.Grade;
-      const studentQuery = { role: 'student', isDeleted: false };
-      
-      if (gradeId) {
-        studentQuery[Op.or] = [
-          { GradeId: gradeId }
-        ];
-        if (targetGrade?.level) {
-          studentQuery[Op.or].push({ grade: targetGrade.level });
-        }
-      }
-
-      const students = await User.findAll({ where: studentQuery, attributes: ['id'] });
-
-      if (students.length > 0) {
-        const notifications = students.map(student => ({
-          userId: student.id,
-          type: 'new_quiz',
-          title: 'New Quiz Added 🧠',
-          message: `${req.user.name} created a new quiz: ${title}`,
-          data: JSON.stringify({ quizId: quiz.id })
-        }));
-        await Notification.bulkCreate(notifications);
+      if (students.length > 0 || teachers.length > 0) {
+        await Notification.bulkCreate([
+          ...students.map((student) => ({
+            userId: student.id,
+            senderId: req.user.id,
+            type: 'new_quiz',
+            title: 'New Quiz Uploaded 📝',
+            message: `${req.user.name} posted a new quiz: ${title}`,
+            data: { quizId: quiz.id, topicId, gradeId }
+          })),
+          ...teachers.map((teacher) => ({
+            userId: teacher.id,
+            senderId: req.user.id,
+            type: 'announcement',
+            title: 'Quiz Uploaded',
+            message: `A new quiz "${title}" has been uploaded in ${topic?.name || 'your class'}.`,
+            data: { quizId: quiz.id, topicId, gradeId }
+          }))
+        ]);
       }
     } catch (notifErr) {
-      console.error('Quiz notification error:', notifErr);
+      console.error('Create quiz notification error:', notifErr);
     }
 
     res.status(201).json({

@@ -2,6 +2,16 @@ const { User, Progress, Achievement, Grade } = require('../models');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const { hardDeleteUserById } = require('../utils/hardDeleteUser');
+const DEMO_TRIAL_MS = 5 * 24 * 60 * 60 * 1000;
+
+const buildDemoTrialWindow = (enabled) => {
+  if (!enabled) return {};
+  const trialStartsAt = new Date();
+  return {
+    trialStartsAt,
+    trialEndsAt: new Date(trialStartsAt.getTime() + DEMO_TRIAL_MS)
+  };
+};
 
 const getUsers = async (req, res) => {
   try {
@@ -76,7 +86,7 @@ const createUser = async (req, res) => {
     }
 
     const normalizedRole = String(role).trim().toLowerCase();
-    const allowedRoles = new Set(['student', 'teacher', 'admin', 'parent']);
+    const allowedRoles = new Set(['student', 'teacher', 'admin', 'parent', 'demo']);
     if (!allowedRoles.has(normalizedRole)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
@@ -176,7 +186,8 @@ const createUser = async (req, res) => {
       role: normalizedRole,
       grade: grade || null,
       parentPhone: parentPhone ? String(parentPhone).trim() : null,
-      isActive: isActive === undefined ? true : Boolean(isActive)
+      isActive: isActive === undefined ? true : Boolean(isActive),
+      ...buildDemoTrialWindow(normalizedRole === 'demo')
     });
 
     if (normalizedRole === 'parent' && (studentEmail || studentId)) {
@@ -263,7 +274,12 @@ const updateUser = async (req, res) => {
       }
       user.email = String(email).trim().toLowerCase();
     }
-    if (role) user.role = role;
+    if (role) {
+      user.role = role;
+      if (String(role).trim().toLowerCase() === 'demo') {
+        Object.assign(user, buildDemoTrialWindow(true));
+      }
+    }
     if (grade !== undefined) user.grade = grade;
     if (isActive !== undefined) user.isActive = isActive;
     if (parentPhone !== undefined) user.parentPhone = parentPhone;
