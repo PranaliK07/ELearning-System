@@ -310,3 +310,57 @@ Time: 2026-04-22T07:16:56.057Z
 Path: /api/auth/login
 Method: POST
 IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T05:17:44.398Z
+Path: /api/auth/login
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T05:23:07.907Z
+Path: /api/auth/login
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T05:25:00.095Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:05:02.624Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:05:22.446Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:05:47.254Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:05:59.986Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:08:57.135Z
+Path: /api/auth/register
+Method: POST
+IP: ::1
+
+--- 500 ERROR ---
+Time: 2026-04-27T06:09:20.812Z
+Path: /api/auth/register
+Method: POST
+IP: ::1

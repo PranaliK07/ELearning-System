@@ -100,6 +100,7 @@ const register = async (req, res) => {
           linkedParent = await User.create({
             name: `Parent of ${String(firstName || 'Student').trim()}`,
             firstName: 'Parent',
+            middleName: '',
             lastName: lastName || 'Student',
             email: normalizedParentEmail,
             password: temporaryPassword,
