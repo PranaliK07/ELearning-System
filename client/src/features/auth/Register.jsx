@@ -111,7 +111,7 @@ const Register = () => {
     }
     
     if (activeStep === 2) {
-      if (formData.role === 'student') {
+      if (formData.role === 'student' || formData.role === 'teacher') {
         const gradeError = validateSelectRequired(formData.grade, 'Class');
         if (gradeError) newErrors.grade = gradeError;
       }
@@ -329,13 +329,13 @@ const Register = () => {
               )
             )}
 
-            {formData.role === 'student' && (
+            {(formData.role === 'student' || formData.role === 'teacher') && (
               fieldRow(
                 <Class fontSize="small" />,
                 <TextField
                   select
                   fullWidth
-                  label="Class"
+                  label={formData.role === 'teacher' ? "Assign Class" : "Class"}
                   name="grade"
                   value={formData.grade}
                   onChange={handleChange}
