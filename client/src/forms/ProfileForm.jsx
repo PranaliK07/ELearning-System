@@ -164,7 +164,11 @@ const ProfileForm = ({
             label="Full Name"
             name="name"
             value={formData.name}
-            onChange={handleChange}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, name: val });
+              setErrors((prev) => ({ ...prev, name: val ? '' : 'Name is required' }));
+            }}
             error={!!errors.name}
             helperText={errors.name}
             margin="normal"
@@ -196,7 +200,7 @@ const ProfileForm = ({
             margin="normal"
             variant="outlined"
           >
-            <MenuItem value="">Select Grade</MenuItem>
+            <MenuItem value="">Select Class</MenuItem>
             <MenuItem value={1}>Class 1</MenuItem>
             <MenuItem value={2}>Class 2</MenuItem>
             <MenuItem value={3}>Class 3</MenuItem>

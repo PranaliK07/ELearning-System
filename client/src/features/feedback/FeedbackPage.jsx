@@ -16,6 +16,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Chip,
   useTheme,
   useMediaQuery
@@ -25,14 +26,38 @@ import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 import { resolveAvatarSrc } from '../../utils/media';
 import { isAdminLikeRole } from '../../utils/roles';
+import { PersonSearch, RateReview } from '@mui/icons-material';
 
 const formatWhen = (value) => {
   try {
     return new Date(value).toLocaleString();
-  } catch (e) {
+  } catch {
     return '';
   }
 };
+
+const fieldRow = (icon, field) => (
+  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, width: '100%', flex: 1 }}>
+    <Box
+      sx={{
+        width: 44,
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        bgcolor: 'background.paper',
+        color: 'primary.main',
+        flexShrink: 0
+      }}
+    >
+      {icon}
+    </Box>
+    <Box sx={{ flex: 1, minWidth: 0 }}>{field}</Box>
+  </Box>
+);
 
 const FeedbackPage = () => {
   const { user } = useAuth();
@@ -90,7 +115,6 @@ const FeedbackPage = () => {
     if (!user?.id) return;
     if (isStaff) return;
     loadMyFeedback();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isStaff]);
 
   useEffect(() => {
@@ -101,7 +125,7 @@ const FeedbackPage = () => {
       try {
         const { data } = await api.get('/api/users/students');
         setStudents(Array.isArray(data) ? data : []);
-      } catch (err) {
+      } catch {
         toast.error('Failed to load students');
       } finally {
         setLoading(false);
@@ -117,7 +141,6 @@ const FeedbackPage = () => {
       return;
     }
     loadStudentFeedback(selectedStudent.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStudent?.id, isStaff]);
 
   const submitFeedback = async () => {
@@ -187,25 +210,32 @@ const FeedbackPage = () => {
         {isStaff && (
           <Box sx={{ mb: 3 }}>
             <Stack spacing={2}>
-              <Autocomplete
-                options={students}
-                value={selectedStudent}
-                onChange={(_, value) => setSelectedStudent(value)}
-                loading={loading}
-                getOptionLabel={(option) => `${option?.name || ''}${option?.email ? ` (${option.email})` : ''}`}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props} key={option.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={resolveAvatarSrc(option.avatar)} sx={{ width: 28, height: 28 }}>
-                      {option?.name?.charAt(0)?.toUpperCase() || 'S'}
-                    </Avatar>
-                    <Typography variant="body2">{option?.name}</Typography>
-                    <Typography variant="caption" color="textSecondary">{option?.email}</Typography>
-                  </Box>
-                )}
-                renderInput={(params) => (
-                  <TextField {...params} label="Select student" placeholder="Search by name/email" />
-                )}
-              />
+              {fieldRow(
+                <PersonSearch fontSize="small" />,
+                <Autocomplete
+                  options={students}
+                  value={selectedStudent}
+                  onChange={(_, value) => setSelectedStudent(value)}
+                  loading={loading}
+                  getOptionLabel={(option) => `${option?.name || ''}${option?.email ? ` (${option.email})` : ''}`}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props} key={option.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar src={resolveAvatarSrc(option.avatar)} sx={{ width: 28, height: 28 }}>
+                        {option?.name?.charAt(0)?.toUpperCase() || 'S'}
+                      </Avatar>
+                      <Typography variant="body2">{option?.name}</Typography>
+                      <Typography variant="caption" color="textSecondary">{option?.email}</Typography>
+                    </Box>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select student"
+                      placeholder="Search by name/email"
+                    />
+                  )}
+                />
+              )}
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
                 <Box>
@@ -215,14 +245,17 @@ const FeedbackPage = () => {
                     onChange={(_, value) => setRating(value || 0)}
                   />
                 </Box>
-                <TextField
-                  fullWidth
-                  label="Comment (optional)"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  multiline
-                  minRows={2}
-                />
+                {fieldRow(
+                  <RateReview fontSize="small" />,
+                  <TextField
+                    fullWidth
+                    label="Comment (optional)"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    multiline
+                    minRows={2}
+                  />
+                )}
                 <Button variant="contained" onClick={submitFeedback} disabled={loading}>
                   Save
                 </Button>

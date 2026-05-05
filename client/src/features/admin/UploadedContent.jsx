@@ -127,8 +127,14 @@ const UploadedContent = () => {
   const filteredContent = content.filter(item => {
     const itemGradeId = item.GradeId || item.gradeId;
     const matchesGrade = selectedGrade === 'all' || Number(itemGradeId) === Number(selectedGrade);
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = 
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.type && item.type.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.Grade?.level && `Class ${item.Grade.level}`.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.grade && `Class ${item.grade}`.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.Subject?.name && item.Subject.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.isPublished ? 'live' : 'draft').includes(searchQuery.toLowerCase());
     return matchesGrade && matchesSearch;
   });
 
@@ -228,6 +234,7 @@ const UploadedContent = () => {
                   <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
                   {!isMobile && <TableCell sx={{ fontWeight: 'bold' }}>Target</TableCell>}
                   {!isMobile && <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>}
+                  <TableCell sx={{ fontWeight: 'bold' }}>Upload Date</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -290,6 +297,14 @@ const UploadedContent = () => {
                           />
                         </TableCell>
                       )}
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                           <Tooltip title="View">
