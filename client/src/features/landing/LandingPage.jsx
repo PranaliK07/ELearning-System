@@ -79,19 +79,19 @@ const LandingPage = () => {
     }
   };
 
-  const brandNavy = '#0B1F3B';
-  const brandNavyDark = '#08162B';
-  const brandNavyMid = '#17325C';
-  const brandPink = '#B0125B';
-  const brandPinkDark = '#C2185B';
-  const brandPinkMid = '#A41457';
-  const brandNavySoft = '#F4F5F9';
+  const brandNavy = '#006D5B';
+  const brandNavyDark = '#004D40';
+  const brandNavyMid = '#005D4D';
+  const themeColor = '#008C75'; 
+  const themeColorDark = '#006D5B';
+  const themeColorMid = '#00A389';
+  const brandNavySoft = '#F0FDF9';
   const cardBaseBg = 'linear-gradient(180deg, #FFFFFF 0%, #F6F7FB 100%)';
   const cardHoverBg = 'linear-gradient(180deg, #E9ECF5 0%, #DDE2F0 100%)';
-  const cardHoverShadow = '0 22px 44px -18px rgba(11,31,59,0.45)';
-  const sectionBg = isDark ? '#0F172A' : brandNavySoft;
-  const sectionCardBg = isDark ? 'linear-gradient(180deg, #0F172A 0%, #111827 100%)' : cardBaseBg;
-  const sectionCardHoverBg = isDark ? 'linear-gradient(180deg, #111827 0%, #1F2937 100%)' : cardHoverBg;
+  const cardHoverShadow = '0 22px 44px -18px rgba(0,109,91,0.45)';
+  const sectionBg = isDark ? '#06100E' : brandNavySoft;
+  const sectionCardBg = isDark ? 'linear-gradient(180deg, #0B1A17 0%, #06100E 100%)' : cardBaseBg;
+  const sectionCardHoverBg = isDark ? 'linear-gradient(180deg, #0B1A17 0%, #1A4D45 100%)' : cardHoverBg;
   const sectionTextPrimary = isDark ? '#F8FAFC' : '#111827';
   const sectionTextSecondary = isDark ? '#CBD5E1' : '#6B7280';
   const heroTextColor = isDark ? '#F8FAFC' : brandNavy;
@@ -103,17 +103,17 @@ const LandingPage = () => {
   const featuresData = {
     forStudents: [
       { icon: <Psychology />, title: 'Guided Learning Paths', description: 'Follow a clear path from grade to subject to topic with focused lessons.', color: brandNavy },
-      { icon: <Speed />, title: 'Quizzes and Practice', description: 'Check understanding with quick quizzes and practice activities.', color: brandPink },
+      { icon: <Speed />, title: 'Quizzes and Practice', description: 'Check understanding with quick quizzes and practice activities.', color: themeColor },
       { icon: <EmojiEvents />, title: 'Achievements and Goals', description: 'Track progress and celebrate milestones as you learn.', color: brandNavyMid }
     ],
     forTeachers: [
-      { icon: <Dashboard />, title: 'Progress Dashboard', description: 'See class progress, strengths, and gaps at a glance.', color: brandPink },
+      { icon: <Dashboard />, title: 'Progress Dashboard', description: 'See class progress, strengths, and gaps at a glance.', color: themeColor },
       { icon: <AutoGraph />, title: 'Home Work and Feedback', description: 'Create home work, review submissions, and share feedback.', color: brandNavy },
-      { icon: <MenuBook />, title: 'Content Management', description: 'Organize content by grade, subject, and topic for easy access.', color: brandPinkMid }
+      { icon: <MenuBook />, title: 'Content Management', description: 'Organize content by grade, subject, and topic for easy access.', color: themeColorMid }
     ],
     forParents: [
       { icon: <Timeline />, title: 'Progress Updates', description: 'Follow learning activity and growth over time.', color: brandNavy },
-      { icon: <Security />, title: 'Privacy and Safety', description: 'Clear, secure access with family-friendly controls.', color: brandPink },
+      { icon: <Security />, title: 'Privacy and Safety', description: 'Clear, secure access with family-friendly controls.', color: themeColor },
       { icon: <SupportAgent />, title: 'Reports and Communication', description: 'View reports and stay connected with teachers.', color: brandNavyMid }
     ]
   };
@@ -170,7 +170,7 @@ const LandingPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(11,31,59,0.32)',
+            background: alpha(brandNavy, 0.32),
             zIndex: 0
           }}
         />
@@ -199,7 +199,7 @@ const LandingPage = () => {
               height: { xs: 300, md: 600 },
               bottom: '-15%',
               right: '-10%',
-              background: `radial-gradient(circle, ${alpha(brandPink, 0.4)}, transparent 70%)`,
+              background: `radial-gradient(circle, ${alpha(themeColor, 0.4)}, transparent 70%)`,
             },
             '& .orb-3': {
               width: { xs: 200, md: 400 },
@@ -264,7 +264,7 @@ const LandingPage = () => {
                       Transform Learning Into
                       <Box component="span" sx={{ 
                         display: 'block', 
-                        backgroundImage: `linear-gradient(45deg, ${brandPink}, #FF6B6B)`,
+                        backgroundImage: `linear-gradient(45deg, ${themeColor}, #34D399)`,
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         color: 'transparent',
@@ -302,7 +302,7 @@ const LandingPage = () => {
                           component={Link}
                           to="/register?role=demo"
                           sx={{
-                            bgcolor: brandPink,
+                            bgcolor: themeColor,
                             color: '#ffffff',
                             px: 5,
                             py: 2,
@@ -310,10 +310,10 @@ const LandingPage = () => {
                             textTransform: 'none',
                             fontSize: '1.1rem',
                             fontWeight: 700,
-                            boxShadow: `0 8px 24px ${alpha(brandPink, 0.4)}`,
+                            boxShadow: `0 8px 24px ${alpha(themeColor, 0.4)}`,
                             '&:hover': {
-                              bgcolor: brandPinkDark,
-                              boxShadow: `0 12px 32px ${alpha(brandPink, 0.6)}`,
+                              bgcolor: themeColorDark,
+                              boxShadow: `0 12px 32px ${alpha(themeColor, 0.6)}`,
                             },
                             transition: 'all 0.3s'
                           }}
@@ -376,7 +376,7 @@ const LandingPage = () => {
             width: 320,
             height: 320,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(11,31,59,0.18), transparent 70%)',
+            background: `radial-gradient(circle, ${alpha(brandNavy, 0.18)}, transparent 70%)`,
             pointerEvents: 'none'
           }}
         />
@@ -388,7 +388,7 @@ const LandingPage = () => {
             width: 360,
             height: 360,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(176,18,91,0.16), transparent 70%)',
+            background: `radial-gradient(circle, ${alpha(themeColor, 0.16)}, transparent 70%)`,
             pointerEvents: 'none'
           }}
         />
@@ -405,7 +405,7 @@ const LandingPage = () => {
             />
             <Typography variant="h3" sx={{ fontSize: { xs: '1.9rem', md: '2.6rem' }, fontWeight: 800, mb: 2, color: sectionTextPrimary }}>
               Everything You Need to
-              <Box component="span" sx={{ background: `linear-gradient(135deg, ${brandNavy} 0%, ${brandPink} 100%)`, backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>
+              <Box component="span" sx={{ background: `linear-gradient(135deg, ${brandNavy} 0%, ${themeColor} 100%)`, backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>
                 {' '}Succeed
               </Box>
             </Typography>
@@ -420,8 +420,8 @@ const LandingPage = () => {
               mb: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.14) 0%, rgba(11,31,59,0.04) 100%)',
-              border: '1px solid rgba(11,31,59,0.22)'
+              background: `linear-gradient(180deg, ${alpha(brandNavy, 0.14)} 0%, ${alpha(brandNavy, 0.04)} 100%)`,
+              border: `1px solid ${alpha(brandNavy, 0.22)}`
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -504,8 +504,8 @@ const LandingPage = () => {
               mb: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(176,18,91,0.16) 0%, rgba(176,18,91,0.05) 100%)',
-              border: '1px solid rgba(176,18,91,0.22)'
+              background: `linear-gradient(180deg, ${alpha(themeColor, 0.16)} 0%, ${alpha(themeColor, 0.05)} 100%)`,
+              border: `1px solid ${alpha(themeColor, 0.22)}`
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -534,8 +534,8 @@ const LandingPage = () => {
                       height: '100%',
                       '&:hover .feature-card': {
                         transform: 'translateY(-12px)',
-                        boxShadow: `0 30px 60px -15px ${alpha(brandPink, 0.3)}`,
-                        borderColor: alpha(brandPink, 0.4)
+                        boxShadow: `0 30px 60px -15px ${alpha(themeColor, 0.3)}`,
+                        borderColor: alpha(themeColor, 0.4)
                       }
                     }}
                   >
@@ -587,8 +587,8 @@ const LandingPage = () => {
             sx={{
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.12) 0%, rgba(11,31,59,0.04) 100%)',
-              border: '1px solid rgba(11,31,59,0.22)'
+              background: `linear-gradient(180deg, ${alpha(brandNavy, 0.12)} 0%, ${alpha(brandNavy, 0.04)} 100%)`,
+              border: `1px solid ${alpha(brandNavy, 0.22)}`
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -668,8 +668,8 @@ const LandingPage = () => {
               mt: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.14) 0%, rgba(176,18,91,0.06) 100%)',
-              border: '1px solid rgba(11,31,59,0.2)'
+              background: `linear-gradient(180deg, ${alpha(brandNavy, 0.14)} 0%, ${alpha(themeColor, 0.06)} 100%)`,
+              border: `1px solid ${alpha(brandNavy, 0.2)}`
             }}
           >
           <Box sx={{ textAlign: 'center', mb: 3 }}>
@@ -770,8 +770,8 @@ const LandingPage = () => {
               mt: 8,
               p: { xs: 1.25, md: 1.75 },
               borderRadius: 4,
-              background: 'linear-gradient(135deg, rgba(11,31,59,0.12) 0%, rgba(176,18,91,0.08) 100%)',
-              border: '1px solid rgba(11,31,59,0.2)',
+              background: 'linear-gradient(135deg, rgba(129,48,140,0.12) 0%, rgba(157,68,181,0.08) 100%)',
+              border: '1px solid rgba(129,48,140,0.2)',
               position: 'relative',
               overflow: 'hidden'
             }}
@@ -785,7 +785,7 @@ const LandingPage = () => {
                 width: 150,
                 height: 150,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(11,31,59,0.14), transparent)',
+                background: `radial-gradient(circle, ${alpha(brandNavy, 0.14)}, transparent)`,
                 pointerEvents: 'none'
               }}
             />
@@ -797,7 +797,7 @@ const LandingPage = () => {
                 width: 120,
                 height: 120,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(176,18,91,0.12), transparent)',
+                background: `radial-gradient(circle, ${alpha(themeColor, 0.12)}, transparent)`,
                 pointerEvents: 'none'
               }}
             />
@@ -806,8 +806,8 @@ const LandingPage = () => {
             <Chip
               label="?? Platform Workflow"
               sx={{
-                bgcolor: alpha(brandPink, 0.12),
-                color: brandPink,
+                bgcolor: alpha(themeColor, 0.12),
+                color: themeColor,
                 mb: 1.5,
                 fontWeight: 700
               }}
@@ -829,9 +829,9 @@ const LandingPage = () => {
             <Grid container spacing={4} justifyContent="center">
               {[
                 { step: 1, title: 'Registration', desc: 'Sign up as Student, Teacher, or Parent', color: brandNavy },
-                { step: 2, title: 'System Setup', desc: 'Configure classes, subjects & topics', color: brandPink },
+                { step: 2, title: 'System Setup', desc: 'Configure classes, subjects & topics', color: themeColor },
                 { step: 3, title: 'Learning Journey', desc: 'Access lessons, quizzes & home work', color: brandNavyMid },
-                { step: 4, title: 'Track Progress', desc: 'Analytics, reports & achievements', color: brandPinkDark }
+                { step: 4, title: 'Track Progress', desc: 'Analytics, reports & achievements', color: themeColorDark }
               ].map((item, idx, arr) => (
                 <Grid item xs={12} sm={6} md={3} key={item.step}>
                   <motion.div
@@ -956,7 +956,7 @@ const LandingPage = () => {
       {/* CTA Section */}
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${brandNavy} 0%, ${brandPink} 100%)`,
+          background: `linear-gradient(135deg, ${brandNavy} 0%, ${themeColor} 100%)`,
           backgroundSize: '200% 200%',
           animation: 'ctaShift 14s ease infinite',
           py: { xs: 6, md: 8 },
@@ -985,7 +985,7 @@ const LandingPage = () => {
                 size="large"
                 component={Link}
                 to="/register?role=demo"
-                sx={{ bgcolor: brandPink, color: brandNavy, px: 4, py: 1.5, textTransform: 'none', fontWeight: 700, borderRadius: '50px', '&:hover': { bgcolor: brandPinkDark } }}
+                sx={{ bgcolor: themeColor, color: '#ffffff', px: 4, py: 1.5, textTransform: 'none', fontWeight: 700, borderRadius: '50px', '&:hover': { bgcolor: themeColorDark } }}
               >
                 Free Demo
               </Button>

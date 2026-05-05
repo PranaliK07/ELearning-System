@@ -104,6 +104,10 @@ const normalizeAssignmentPayload = (body = {}, { isUpdate = false } = {}) => {
     payload.attachmentUrl = body.attachmentUrl ? String(body.attachmentUrl).trim() : null;
   }
 
+  if (!isUpdate && !payload.attachmentUrl) {
+    return { error: 'Attachment (PDF/Doc) is required' };
+  }
+
   return { payload };
 };
 
@@ -268,12 +272,18 @@ router.delete('/:id', protect, authorize('teacher', 'admin'), async (req, res) =
       return res.status(404).json({ message: 'Assignment not found' });
     }
 
-    if (req.user.role === 'teacher' && assignment.teacherId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     await assignment.destroy();
     res.json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete all assignments (Bulk)
+router.delete('/bulk/all', protect, authorize('admin'), async (req, res) => {
+  try {
+    const count = await Assignment.destroy({ where: {}, truncate: false });
+    res.json({ message: `Successfully deleted ${count} assignments` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -318,6 +328,10 @@ router.post('/:id/submissions', protect, authorize('student'), async (req, res) 
     });
     if (existing) {
       return res.status(400).json({ message: 'Submission already exists' });
+    }
+
+    if (!req.body.fileUrl) {
+      return res.status(400).json({ message: 'Please upload a file to submit your assignment' });
     }
 
     const submission = await Submission.create({

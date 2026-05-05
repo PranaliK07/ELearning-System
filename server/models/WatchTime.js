@@ -11,15 +11,10 @@ const WatchTime = sequelize.define('WatchTime', {
     type: DataTypes.DATEONLY,
     defaultValue: DataTypes.NOW
   },
-  minutes: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  minutes: {
+  seconds: {
     type: DataTypes.INTEGER,
     defaultValue: 0
   }
-
 });
 
-module.exports = WatchTime;
+module.exports = WatchTime;

@@ -23,6 +23,11 @@ import {
   alpha,
   useTheme,
   useMediaQuery,
+  Chip,
+  IconButton,
+  Tooltip,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   GetApp,
@@ -34,6 +39,10 @@ import {
   CheckCircle,
   AccessTime,
   TrendingUp,
+  Download,
+  PictureAsPdf,
+  TableChart,
+  Search
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -46,53 +55,47 @@ import {
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
+  ArcElement,
   PointElement,
   LineElement,
 } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
-import axios from '../../utils/axios.js';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 import { toast } from 'react-hot-toast';
+import api from '../../utils/axios';
+import { useAuth } from '../../context/AuthContext';
+import { formatTime } from '../../utils/helpers';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend,
+  ArcElement,
   PointElement,
   LineElement
 );
 
 const Reports = () => {
+  const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [period, setPeriod] = useState('daily');
-  const [reportData, setReportData] = useState({
-    summary: {},
-    studentProgress: [],
-    classPerformance: [],
-    weeklyActivity: [],
-    performanceMetrics: {
-      avgScore: 0,
-      completionRate: '0%',
-      assignmentCompletionRate: '0%',
-      totalHours: 0,
-    },
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('weekly');
+  const [stats, setStats] = useState({
+    engagement: { activeUsers: 0, totalHours: 0, completionRate: 0 },
+    achievements: { totalAwarded: 0, topEarners: [] },
+    assignments: { total: 0, submitted: 0, graded: 0 },
   });
-  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
 
-  const handleExportClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleExportClose = () => {
-    setAnchorEl(null);
-  };
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
 
   useEffect(() => {
     fetchReportData();
@@ -101,473 +104,320 @@ const Reports = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      let response;
-      const endpoints = [
-        `/api/reports?period=${period}`,
-        '/api/reports',
-        `/api/reports/${period}`
-      ];
-
-      let lastError;
-      for (const endpoint of endpoints) {
-        try {
-          response = await axios.get(endpoint);
-          break;
-        } catch (err) {
-          lastError = err;
-          if (err?.response?.status !== 404) {
-            throw err;
-          }
-        }
-      }
-
-      if (!response) {
-        throw lastError || new Error('No report endpoint is available');
-      }
-
-      setReportData({
-        summary: response.data?.summary || {},
-        studentProgress: response.data?.studentProgress || [],
-        classPerformance: response.data?.classPerformance || [],
-        weeklyActivity: response.data?.weeklyActivity || [],
-        performanceMetrics: response.data?.performanceMetrics || {
-          avgScore: 0,
-          completionRate: '0%',
-          assignmentCompletionRate: '0%',
-          totalHours: 0,
-        },
-      });
-    } catch (error) {
-      const apiMessage = error?.response?.data?.message;
-      toast.error(apiMessage || 'Failed to load report data');
-      setReportData({
-        summary: {},
-        studentProgress: [],
-        classPerformance: [],
-        weeklyActivity: [],
-        performanceMetrics: {
-          avgScore: 0,
-          completionRate: '0%',
-          assignmentCompletionRate: '0%',
-          totalHours: 0,
-        },
-      });
+      const res = await api.get('/api/reports', { params: { period } });
+      setStats(res.data);
+      setStudents(res.data.students || res.data.studentProgress || []);
+    } catch (err) {
+      console.error('Error fetching report data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const summaryMap = {
-    daily: [
-      { label: 'Active Students Today', value: reportData.summary.activeStudentsToday ?? 0 },
-      { label: 'Videos Watched Today', value: reportData.summary.videosWatchedToday ?? 0 },
-      { label: 'Topics Completed Today', value: reportData.summary.topicsCompletedToday ?? 0 },
-      { label: 'New Enrollments Today', value: reportData.summary.newEnrollmentsToday ?? 0 },
-      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
-    ],
-    weekly: [
-      { label: 'Total Active Users (Week)', value: reportData.summary.totalActiveUsersThisWeek ?? 0 },
-      { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
-      { label: 'Average Progress / Student', value: `${reportData.summary.averageProgressPerStudent ?? 0}%` },
-      { label: 'Most Active Subject', value: reportData.summary.mostActiveSubject || 'N/A' },
-      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
-    ],
-    monthly: [
-      { label: 'Total Users', value: reportData.summary.totalUsers ?? 0 },
-      { label: 'Total Completed Topics', value: reportData.summary.totalCompletedTopics ?? 0 },
-      { label: 'Total Videos Watched', value: reportData.summary.totalVideosWatched ?? 0 },
-      { label: 'Top Performing Students', value: reportData.summary.topPerformingStudents?.length ?? 0 },
-      { label: 'Overall Progress', value: `${reportData.summary.overallProgressPercentage ?? 0}%` },
-      { label: 'Assignment Completion', value: `${reportData.summary.assignmentCompletionPercentage ?? 0}%` },
-    ],
-  };
-
-  const selectedSummary = summaryMap[period] || [];
-
-  const barData = {
-    labels: reportData.studentProgress.map(s => s.name),
-    datasets: [
-      {
-        label: 'Quiz Scores',
-        data: reportData.studentProgress.map(s => s.score),
-        backgroundColor: 'rgba(63, 81, 181, 0.6)',
-        borderColor: 'rgba(63, 81, 181, 1)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Overall Progress',
-        data: reportData.studentProgress.map(s => s.progress),
-        backgroundColor: 'rgba(245, 0, 87, 0.6)',
-        borderColor: 'rgba(245, 0, 87, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const lineData = {
-    labels: reportData.weeklyActivity.map(d => d.day),
-    datasets: [
-      {
-        label: 'Active Students',
-        data: reportData.weeklyActivity.map(d => d.active),
-        fill: true,
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
-        borderColor: 'rgba(76, 175, 80, 1)',
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const exportCSV = () => {
-    handleExportClose();
-    const headers = ['Student Name', 'Class', 'Quiz Performance', 'Lesson Progress', 'Assignment Completion', 'Attendance', 'Overall Performance'];
-    const rows = reportData.studentProgress.map(s => [
-      s.name,
-      s.className || 'Unassigned',
-      `${s.score}%`,
-      `${s.progress}%`,
-      `${s.assignmentCompletion}%`,
-      `${s.attendancePercentage ?? 0}%`,
-      `${s.overallPerformance ?? 0}%`
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { Metric: 'Active Users', Value: stats.engagement.activeUsers },
+      { Metric: 'Total Study Hours', Value: formatTime(stats.engagement.totalHours) },
+      { Metric: 'Completion Rate', Value: `${stats.engagement.completionRate}%` },
+      { Metric: 'Achievements Awarded', Value: stats.achievements.totalAwarded },
     ]);
-    let csvContent = "data:text/csv;charset=utf-8,"
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_report_${period}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    toast.success('CSV Report exported');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary Report');
+    XLSX.writeFile(wb, `Academic_Report_${period}.xlsx`);
+    handleClose();
   };
 
-  const exportExcel = () => {
-    handleExportClose();
-    const data = reportData.studentProgress.map(s => ({
-      'Student Name': s.name,
-      'Class': s.className || 'Unassigned',
-      'Quiz Performance (%)': s.score,
-      'Lesson Progress (%)': s.progress,
-      'Assignment Completion (%)': s.assignmentCompletion,
-      'Attendance (%)': s.attendancePercentage ?? 0,
-      'Overall Performance (%)': s.overallPerformance ?? 0
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-    XLSX.writeFile(workbook, `student_report_${period}.xlsx`);
-    toast.success('Excel Report exported');
-  };
-
-  const exportPDF = () => {
-    handleExportClose();
+  const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text(`Student Performance Report - ${period.toUpperCase()}`, 14, 15);
-    doc.autoTable({
-      startY: 20,
-      head: [['Student Name', 'Class', 'Quiz (%)', 'Lesson (%)', 'Assign (%)', 'Att (%)', 'Overall (%)']],
-      body: reportData.studentProgress.map(s => [
-        s.name,
-        s.className || 'Unassigned',
-        `${s.score}%`,
-        `${s.progress}%`,
-        `${s.assignmentCompletion}%`,
-        `${s.attendancePercentage ?? 0}%`,
-        `${s.overallPerformance ?? 0}%`
-      ]),
-    });
-    doc.save(`student_report_${period}.pdf`);
-    toast.success('PDF Report exported');
-  };
+    doc.setFontSize(20);
+    doc.text('Academic Performance Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Period: ${period.toUpperCase()}`, 14, 30);
+    doc.text(`Generated by: ${user?.name}`, 14, 38);
 
-  const exportWord = () => {
-    handleExportClose();
-    const doc = new Document({
-      sections: [{
-        children: [
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Student Performance Report - ${period.toUpperCase()}`,
-                bold: true,
-                size: 32,
-              }),
-            ],
-            spacing: { after: 400 },
-          }),
-          new DocxTable({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            rows: [
-              new DocxTableRow({
-                children: [
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Student Name", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Class", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Quiz", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Lesson", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Assignment", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Attendance", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Overall", bold: true })] })] }),
-                ],
-              }),
-              ...reportData.studentProgress.map(s => new DocxTableRow({
-                children: [
-                  new DocxTableCell({ children: [new Paragraph(s.name)] }),
-                  new DocxTableCell({ children: [new Paragraph(s.className || 'Unassigned')] }),
-                  new DocxTableCell({ children: [new Paragraph(s.score.toString() + "%")] }),
-                  new DocxTableCell({ children: [new Paragraph(s.progress.toString() + "%")] }),
-                  new DocxTableCell({ children: [new Paragraph(s.assignmentCompletion.toString() + "%")] }),
-                  new DocxTableCell({ children: [new Paragraph((s.attendancePercentage ?? 0).toString() + "%")] }),
-                  new DocxTableCell({ children: [new Paragraph((s.overallPerformance ?? 0).toString() + "%")] }),
-                ],
-              })),
-            ],
-          }),
-        ],
-      }],
+    autoTable(doc, {
+      startY: 45,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Active Users', stats.engagement.activeUsers],
+        ['Total Study Hours', formatTime(stats.engagement.totalHours)],
+        ['Completion Rate', `${stats.engagement.completionRate}%`],
+        ['Achievements Awarded', stats.achievements.totalAwarded],
+      ],
     });
 
-    Packer.toBlob(doc).then((blob) => {
-      saveAs(blob, `student_report_${period}.docx`);
-      toast.success('Word Report exported');
-    });
+    doc.save(`Academic_Report_${period}.pdf`);
+    handleClose();
   };
+
+  const exportStudentReport = (student) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text('Student Progress Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Student: ${student.name}`, 14, 30);
+    doc.text(`Class: ${student.className || 'Unassigned'}`, 14, 36);
+    doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 14, 42);
+
+    autoTable(doc, {
+      startY: 50,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Watch Time', `${student.videoMinutes} minutes`],
+        ['Quiz Average', `${student.score}%`],
+        ['Assignment Completion', `${student.assignmentCompletion}%`],
+        ['Overall Performance', `${student.overallPerformance}%`],
+      ],
+      theme: 'grid',
+      headStyles: { fillStyle: theme.palette.primary.main }
+    });
+
+    doc.save(`${student.name.replace(/\s+/g, '_')}_Progress_Report.pdf`);
+    toast.success('Individual report downloaded');
+  };
+
+  const exportWeeklyTrend = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text('Weekly Engagement Overview', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Day', 'Active Students']],
+      body: stats.weeklyActivity.map(a => [a.day, a.active]),
+      theme: 'striped',
+      headStyles: { fillStyle: theme.palette.primary.main }
+    });
+
+    doc.save(`Weekly_Engagement_Report.pdf`);
+    toast.success('Engagement report downloaded');
+  };
+
+  if (loading) return <LinearProgress />;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: { xs: 'flex-start', sm: 'center' },
-        flexDirection: { xs: 'column', sm: 'row' },
-        gap: 3,
-        mb: 4
-      }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', py: 4 }}>
+      <Container maxWidth="xl">
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight="900" sx={{ color: 'text.primary', mb: 1, fontFamily: '"Outfit", sans-serif' }}>
-            Academic Reports 📈
+          <Typography variant="h4" fontWeight="900" sx={{ color: 'primary.main' }}>
+            Academic Intelligence
           </Typography>
-          <Typography color="textSecondary">Analyze student performance and learning engagement metrics.</Typography>
+          <Typography variant="body1" color="textSecondary">
+            System-wide performance analytics and reporting.
+          </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
-          <ButtonGroup variant="outlined" size="small" sx={{ width: { xs: '100%', sm: 'auto' } }}>
-            <Button variant={period === 'daily' ? 'contained' : 'outlined'} onClick={() => setPeriod('daily')} disabled={loading}>
-              Daily
-            </Button>
-            <Button variant={period === 'weekly' ? 'contained' : 'outlined'} onClick={() => setPeriod('weekly')} disabled={loading}>
-              Weekly
-            </Button>
-            <Button variant={period === 'monthly' ? 'contained' : 'outlined'} onClick={() => setPeriod('monthly')} disabled={loading}>
-              Monthly
-            </Button>
+
+        <Stack direction="row" spacing={2}>
+          <ButtonGroup variant="outlined" size="small">
+            <Button onClick={() => setPeriod('weekly')} variant={period === 'weekly' ? 'contained' : 'outlined'}>Weekly</Button>
+            <Button onClick={() => setPeriod('monthly')} variant={period === 'monthly' ? 'contained' : 'outlined'}>Monthly</Button>
+            <Button onClick={() => setPeriod('yearly')} variant={period === 'yearly' ? 'contained' : 'outlined'}>Yearly</Button>
           </ButtonGroup>
+          
           <Button
-            variant="outlined"
+            variant="contained"
             startIcon={<GetApp />}
-            endIcon={<ExpandMore />}
-            onClick={handleExportClick}
-            fullWidth={isMobile}
+            onClick={handleClick}
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
           >
             Export
           </Button>
-          <Menu
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleExportClose}
-            PaperProps={{ sx: { borderRadius: 2, mt: 1, minWidth: 180, boxShadow: 4 } }}
-          >
-            <MenuItem onClick={exportCSV}>Export CSV</MenuItem>
-            <MenuItem onClick={exportExcel}>Export Excel</MenuItem>
-            <MenuItem onClick={exportPDF}>Export PDF</MenuItem>
-            <MenuItem onClick={exportWord}>Export Word</MenuItem>
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+            <MenuItem onClick={exportToExcel}>Export to Excel</MenuItem>
+            <MenuItem onClick={exportToPDF}>Export to PDF</MenuItem>
           </Menu>
-        </Box>
+        </Stack>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Active Students" value={reportData.summary.activeStudents || 0} icon={Group} color="#1a237e" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Lessons Completed" value={reportData.summary.lessonsCompleted || 0} icon={CheckCircle} color="#2e7d32" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Watch Time" value={`${reportData.performanceMetrics.totalHours}h`} icon={AccessTime} color="#f50057" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Avg Score" value={`${reportData.performanceMetrics.avgScore}%`} icon={TrendingUp} color="#ff9800" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Assignment Comp." value={reportData.performanceMetrics.assignmentCompletionRate} icon={Assignment} color="#673ab7" />
-        </Grid>
-      </Grid>
+      <Box sx={{ mb: 4 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by student name or class..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+            sx: { borderRadius: 3, bgcolor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #E2E8F0' }
+          }}
+        />
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={7}>
-          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
-            <Typography variant="h6" gutterBottom>Student Performance</Typography>
-            <Box sx={{ height: { xs: 220, sm: 300 } }}>
-              <Bar data={barData} options={{ maintainAspectRatio: false }} />
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={5}>
-          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
-            <Typography variant="h6" gutterBottom>{period === 'monthly' ? 'Monthly Student Activity' : period === 'daily' ? 'Daily Student Activity' : 'Weekly Student Activity'}</Typography>
-            <Box sx={{ height: { xs: 220, sm: 300 } }}>
-              <Line data={lineData} options={{ maintainAspectRatio: false }} />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      <Paper sx={{ mt: 4, borderRadius: isMobile ? 3 : 6, overflow: 'hidden', border: '1px solid', borderColor: 'rgba(0,0,0,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: alpha('#0B1F3B', 0.02) }}>
-          <Typography variant="h6" fontWeight="800" sx={{ color: '#0B1F3B' }}>Student Performance Rankings</Typography>
-        </Box>
-        {isMobile ? (
-          <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {reportData.studentProgress.map((row) => (
-              <Paper key={row.name} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Box>
-                    <Typography fontWeight="bold" variant="subtitle1">{row.name}</Typography>
-                    <Typography variant="caption" color="textSecondary">{row.className || 'Unassigned'}</Typography>
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    fontWeight="bold"
-                    sx={{
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                      bgcolor: alpha(row.overallPerformance > 80 ? theme.palette.success.main : row.overallPerformance > 50 ? theme.palette.warning.main : theme.palette.error.main, 0.1),
-                      color: row.overallPerformance > 80 ? 'success.main' : row.overallPerformance > 50 ? 'warning.main' : 'error.main'
-                    }}
-                  >
-                    {row.overallPerformance > 80 ? 'Excellent' : row.overallPerformance > 50 ? 'On Track' : 'Needs Review'}
-                  </Typography>
-                </Box>
-
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="textSecondary" display="block">Quiz</Typography>
-                    <Typography variant="body2" fontWeight="bold">{row.score}%</Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="textSecondary" display="block">Lesson</Typography>
-                    <Typography variant="body2" fontWeight="bold">{row.progress}%</Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant="caption" color="textSecondary" display="block">Assign.</Typography>
-                    <Typography variant="body2" fontWeight="bold">{row.assignmentCompletion}%</Typography>
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="caption" color="textSecondary" gutterBottom display="block">Overall Performance</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={row.overallPerformance ?? 0}
-                        sx={{ flex: 1, height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { bgcolor: row.overallPerformance > 80 ? 'success.main' : row.overallPerformance > 50 ? 'warning.main' : 'error.main' } }}
-                      />
-                      <Typography variant="body2" fontWeight="bold">{row.overallPerformance ?? 0}%</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography variant="caption" color="textSecondary">
-                    Last active: {row.lastActive ? new Date(row.lastActive).toLocaleDateString() : 'N/A'}
-                  </Typography>
-                </Box>
-              </Paper>
-            ))}
+      {/* Groups by Class */}
+      {Object.entries(
+        students
+          .filter(s => 
+            s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            (s.className && s.className.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+          .reduce((acc, student) => {
+            const className = student.className || 'Unassigned';
+            if (!acc[className]) acc[className] = [];
+            acc[className].push(student);
+            return acc;
+          }, {})
+      ).map(([className, classStudents]) => (
+        <Paper key={className} sx={{ borderRadius: 4, overflow: 'hidden', mb: 4 }}>
+          <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: 'primary.main' }}>{className}</Typography>
+            <Chip label={`${classStudents.length} Students`} size="small" variant="filled" sx={{ bgcolor: 'primary.main', color: 'white' }} />
           </Box>
-        ) : (
-          <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table sx={{ minWidth: 900 }}>
-              <TableHead sx={{ bgcolor: alpha('#0B1F3B', 0.02) }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 800 }}>Student Name</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Class</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Quiz Perf.</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Lesson Prog.</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Assign. Comp.</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Attendance</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Overall Performance</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Last Active</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800 }}>Status</TableCell>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Student Name</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Watch Time</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Class</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Quiz Avg</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Assignments</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Performance</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Download Report</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {reportData.studentProgress.map((row) => (
-                  <TableRow key={row.name}>
-                    <TableCell component="th" scope="row">
-                      {row.name}
+                {classStudents.map((student) => (
+                  <TableRow key={student.userId} hover>
+                    <TableCell>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          {student.name.charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2" fontWeight="600">{student.name}</Typography>
+                      </Stack>
                     </TableCell>
-                    <TableCell align="center">{row.className || 'Unassigned'}</TableCell>
-                    <TableCell align="center">{row.score}%</TableCell>
-                    <TableCell align="center">{row.progress}%</TableCell>
-                    <TableCell align="center">{row.assignmentCompletion}%</TableCell>
-                    <TableCell align="center">{row.attendancePercentage ?? 0}%</TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
-                        <Typography fontWeight="bold">{row.overallPerformance ?? 0}%</Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={row.overallPerformance ?? 0}
-                          sx={{ width: 50, height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { bgcolor: row.overallPerformance > 80 ? 'success.main' : row.overallPerformance > 50 ? 'warning.main' : 'error.main' } }}
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <Typography variant="body2">{student.videoMinutes}m</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={student.className || 'Unassigned'} 
+                        size="small" 
+                        variant="outlined"
+                        sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'text.secondary' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="body2" fontWeight="bold">{student.score}%</Typography>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={student.score} 
+                          sx={{ width: 60, height: 6, borderRadius: 3, bgcolor: alpha('#EAB308', 0.1), '& .MuiLinearProgress-bar': { bgcolor: '#EAB308' } }} 
                         />
                       </Box>
                     </TableCell>
-                    <TableCell align="center">{row.lastActive ? new Date(row.lastActive).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{student.assignmentCompletion}%</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={student.overallPerformance} 
+                            sx={{ 
+                              height: 8, 
+                              borderRadius: 4,
+                              bgcolor: alpha(theme.palette.primary.main, 0.1),
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: student.overallPerformance > 80 ? theme.palette.primary.main : student.overallPerformance > 50 ? theme.palette.secondary.main : '#F43F5E'
+                              }
+                            }} 
+                          />
+                        </Box>
+                        <Typography variant="caption" fontWeight="bold">
+                          {student.overallPerformance}%
+                        </Typography>
+                      </Box>
+                    </TableCell>
                     <TableCell align="right">
-                      <Typography color={row.overallPerformance > 80 ? 'success.main' : row.overallPerformance > 50 ? 'warning.main' : 'error.main'} fontWeight="bold">
-                        {row.overallPerformance > 80 ? 'Excellent' : row.overallPerformance > 50 ? 'On Track' : 'Needs Review'}
-                      </Typography>
+                      <Tooltip title="Download Report">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => exportStudentReport(student)}
+                          sx={{ color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.1), '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) } }}
+                        >
+                          <Download fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-        )}
-      </Paper>
-    </Container >
+        </Paper>
+      ))}
+
+      {/* Weekly Trend - Shown only if there is activity */}
+      {stats.weeklyActivity?.length > 0 && (
+        <Paper sx={{ p: 4, borderRadius: 4, bgcolor: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #E2E8F0' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: 'primary.main' }}>
+              Weekly Engagement Overview
+            </Typography>
+            <Button 
+              size="small" 
+              startIcon={<GetApp />} 
+              onClick={exportWeeklyTrend}
+              sx={{ color: 'primary.main' }}
+            >
+              Download Data
+            </Button>
+          </Box>
+          <Box sx={{ height: '300px' }}>
+            <Line
+              data={{
+                labels: stats.weeklyActivity.map(a => a.day),
+                datasets: [{
+                  label: 'Active Students',
+                  data: stats.weeklyActivity.map(a => a.active),
+                  borderColor: theme.palette.primary.main,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointBackgroundColor: theme.palette.primary.main,
+                  borderWidth: 3
+                }]
+              }}
+              options={{
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 },
+                    grid: { color: alpha('#E2E8F0', 0.5) }
+                  },
+                  x: { grid: { display: false } }
+                }
+              }}
+            />
+          </Box>
+        </Paper>
+      )}
+
+      {students.length === 0 && !loading && (
+        <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4 }}>
+          <Typography color="textSecondary">No student performance data available for the selected period.</Typography>
+        </Paper>
+      )}
+
+
+      </Container>
+    </Box>
   );
 };
-
-const ReportStatCard = ({ label, value, icon: Icon, color }) => (
-  <Card sx={{
-    borderRadius: 4,
-    border: '1px solid',
-    borderColor: alpha(color, 0.1),
-    transition: 'all 0.3s ease',
-    '&:hover': {
-      transform: 'translateY(-5px)',
-      boxShadow: `0 10px 20px ${alpha(color, 0.1)}`
-    }
-  }}>
-    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 45, height: 45 }}>
-          <Icon />
-        </Avatar>
-        <Box>
-          <Typography variant="caption" color="textSecondary" fontWeight="600">{label}</Typography>
-          <Typography variant="h5" fontWeight="900" sx={{ color: color }}>{value}</Typography>
-        </Box>
-      </Stack>
-    </CardContent>
-  </Card>
-);
 
 export default Reports;

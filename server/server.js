@@ -148,7 +148,9 @@ sequelize.authenticate()
       .then(async () => {
         logger.info('✅ Database synced successfully (alter: true)');
         const seedAdmin = require('./utils/seedAdmin');
+        const seedAchievements = require('./utils/seedAchievements');
         await seedAdmin();
+        await seedAchievements();
       })
       .catch((err) => {
         logger.error('❌ Database sync FAILED:', err);

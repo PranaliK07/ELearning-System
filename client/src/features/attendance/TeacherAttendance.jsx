@@ -42,11 +42,18 @@ import api from '../../utils/axios';
 import { resolveAvatarSrc } from '../../utils/media';
 import logoUrl from '../../img/els-logo.png';
 
-const todayDateOnly = () => new Date().toISOString().slice(0, 10);
+const formatDateOnlyLocal = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const todayDateOnly = () => formatDateOnlyLocal();
 const shiftDays = (days) => {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return formatDateOnlyLocal(d);
 };
 
 const PLATFORM_NAME = 'Kids Learn';
@@ -134,7 +141,12 @@ const TeacherAttendance = () => {
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) => r.name?.toLowerCase().includes(q) || r.email?.toLowerCase().includes(q));
+    return rows.filter((r) => 
+      r.name?.toLowerCase().includes(q) || 
+      r.email?.toLowerCase().includes(q) ||
+      String(r.grade || '').toLowerCase().includes(q) ||
+      `class ${r.grade}`.toLowerCase().includes(q)
+    );
   }, [rows, search]);
 
   const presentCount = useMemo(() => rows.filter((r) => r.status === 'present').length, [rows]);
@@ -516,15 +528,31 @@ const TeacherAttendance = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.6rem', sm: '2.125rem' } }}>
-        Attendance Management
-      </Typography>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
-        Mark daily attendance for your class.
-      </Typography>
+      <Card sx={{ 
+        mb: 4,
+        borderRadius: 4, 
+        overflow: 'hidden',
+        border: '2px solid',
+        borderColor: 'primary.main',
+        borderTop: '10px solid',
+        borderTopColor: 'primary.main',
+        boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)',
+          borderColor: 'primary.main'
+        }
+      }}>
+        <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h4" fontWeight="800" sx={{ color: 'text.primary', letterSpacing: '-0.5px' }}>
+              Attendance Management
+            </Typography>
+            <Typography variant="body1" color="textSecondary" sx={{ mt: 0.5, fontWeight: 500 }}>
+              Mark and track daily attendance for your students
+            </Typography>
+          </Box>
 
-      <Card sx={{ borderRadius: 4 }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           {/* ── Filters row ── */}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
             <FormControl fullWidth>
@@ -554,7 +582,7 @@ const TeacherAttendance = () => {
 
             <TextField
               fullWidth
-              label="Search student"
+              label="Search student or class"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -823,7 +851,7 @@ const TeacherAttendance = () => {
                             fontWeight: 800, 
                             whiteSpace: 'nowrap',
                             bgcolor: '#f8f9fa',
-                            color: '#0B1F3B',
+                            color: '#D18AC4',
                             fontSize: '0.75rem',
                             minWidth: 60
                           }}

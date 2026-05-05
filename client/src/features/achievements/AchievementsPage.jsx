@@ -32,9 +32,9 @@ import {
   ExpandLess,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import axios from '../../utils/axios';
-import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/axios';
 import { resolveAvatarSrc } from '../../utils/media';
 import Confetti from 'react-confetti';
 import jsPDF from 'jspdf';
@@ -44,7 +44,9 @@ const TeacherAchievementsView = ({ dashboardData }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState({
+    name: ''
+  });
   const [expandedClassId, setExpandedClassId] = useState(null);
   const [studentDailyGoals, setStudentDailyGoals] = useState({});
   const [loadingClassId, setLoadingClassId] = useState(null);
@@ -109,19 +111,11 @@ const TeacherAchievementsView = ({ dashboardData }) => {
   }
 
   const filteredClassCards = classCards.filter((classCard) => {
-    const query = normalizeText(searchTerm).trim();
-    if (!query) return true;
+    const nameQuery = normalizeText(columnFilters.name).trim();
 
-    if (normalizeText(classCard.name).includes(query)) return true;
-
-    return classCard.students.some((student) => {
-      const achievements = Array.isArray(student.Achievements) ? student.Achievements : [];
-      return (
-        normalizeText(student.name).includes(query) ||
-        normalizeText(student.email).includes(query) ||
-        achievements.some((achievement) => normalizeText(achievement.name).includes(query))
-      );
-    });
+    return !nameQuery || 
+           normalizeText(classCard.name).includes(nameQuery) ||
+           classCard.students.some(s => normalizeText(s.name).includes(nameQuery) || normalizeText(s.email).includes(nameQuery));
   });
 
   const totalClassCount = classCards.filter((item) => item.id !== 'unassigned' || item.students.length > 0).length;
@@ -201,7 +195,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
             fontWeight="900"
             sx={{
               color: isDarkMode ? 'text.primary' : 'transparent',
-              background: isDarkMode ? 'none' : 'linear-gradient(45deg, #0B1F3B 0%, #B0125B 100%)',
+              background: isDarkMode ? 'none' : 'linear-gradient(45deg, #006D5B 0%, #00897B 100%)',
               WebkitBackgroundClip: isDarkMode ? 'initial' : 'text',
               WebkitTextFillColor: isDarkMode ? 'inherit' : 'transparent',
               mb: 1,
@@ -217,7 +211,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+            <Card sx={{ borderRadius: 4, border: '1.5px solid rgba(0, 109, 91, 0.2)', boxShadow: 2, height: '100%' }}>
               <CardContent>
                 <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                   Classes
@@ -229,7 +223,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+            <Card sx={{ borderRadius: 4, border: '1.5px solid rgba(0, 109, 91, 0.2)', boxShadow: 2, height: '100%' }}>
               <CardContent>
                 <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                   Students
@@ -241,7 +235,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+            <Card sx={{ borderRadius: 4, border: '1.5px solid rgba(0, 109, 91, 0.2)', boxShadow: 2, height: '100%' }}>
               <CardContent>
                 <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                   Achievements
@@ -253,7 +247,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 4, boxShadow: 2, height: '100%' }}>
+            <Card sx={{ borderRadius: 4, border: '1.5px solid rgba(0, 109, 91, 0.2)', boxShadow: 2, height: '100%' }}>
               <CardContent>
                 <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>
                   Active Earners
@@ -266,21 +260,26 @@ const TeacherAchievementsView = ({ dashboardData }) => {
           </Grid>
         </Grid>
 
-        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 4, boxShadow: 1 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by class, student, or achievement..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 4, border: '1.5px solid rgba(0, 109, 91, 0.15)', boxShadow: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Filter by Class or Student Name"
+                placeholder="Search..."
+                value={columnFilters.name}
+                onChange={(e) => setColumnFilters(prev => ({ ...prev, name: e.target.value }))}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
         </Paper>
 
         <Grid container spacing={3}>
@@ -290,6 +289,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
                 onClick={() => navigate(`/achievements/class/${classCard.id}`)}
                 sx={{
                   borderRadius: 4,
+                  border: '1.5px solid rgba(0, 109, 91, 0.25)',
                   boxShadow: 2,
                   overflow: 'hidden',
                   cursor: 'pointer',
@@ -304,7 +304,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
                   sx={{
                     px: 3,
                     py: 2.5,
-                    background: 'linear-gradient(135deg, rgba(11,31,59,0.98) 0%, rgba(176,18,91,0.92) 100%)',
+                    background: 'linear-gradient(135deg, rgba(0, 109, 91, 0.98) 0%, rgba(0, 137, 123, 0.92) 100%)',
                     color: 'white',
                     display: 'flex',
                     alignItems: { xs: 'flex-start', sm: 'center' },
@@ -338,11 +338,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
                     }}
                   />
                 </Box>
-                <CardContent sx={{ py: 1.5 }}>
-                  <Typography variant="body2" color="textSecondary" fontWeight={600}>
-                    Open the class to view its student list in a new page.
-                  </Typography>
-                </CardContent>
+
               </Card>
             </Grid>
           )) : (
@@ -398,7 +394,7 @@ const AchievementsPage = () => {
     }
 
     fetchData();
-  }, [user?.role]);
+  }, [user?.role, isOverviewView]); // Add isOverviewView to dependencies
 
   const fetchData = async () => {
     try {
@@ -410,21 +406,43 @@ const AchievementsPage = () => {
         return;
       }
 
-      const res = await axios.get('/api/dashboard/teacher');
+      // Only show loading if we don't have data yet to avoid flickering
+      const hasData = isOverviewView 
+        ? (teacherDashboard.students.length > 0 || teacherDashboard.classes.length > 0)
+        : (dailyGoal.goals.length > 0);
+
+      if (!hasData) {
+        setLoading(true);
+      }
+
+      const [dashRes, reportsRes] = await Promise.all([
+        api.get('/api/dashboard/teacher').catch(() => ({ data: {} })),
+        api.get('/api/reports', { params: { period: 'monthly' } }).catch(() => ({ data: {} }))
+      ]);
+      
+      const dashboardPayload = dashRes.data?.data || dashRes.data || {};
+      const reportsPayload = reportsRes.data?.data || reportsRes.data || {};
+      
+      let finalStudents = dashboardPayload?.students || [];
+      if (finalStudents.length === 0 && reportsPayload?.students) {
+          finalStudents = reportsPayload.students;
+      }
+      
       setTeacherDashboard({
-        students: res.data.students || [],
-        classes: res.data.classes || [],
-        stats: res.data.stats || {
-          totalStudents: 0,
-          activeClasses: 0,
+        students: finalStudents,
+        classes: dashboardPayload?.classes || [],
+        stats: dashboardPayload?.stats || {
+          totalStudents: finalStudents.length,
+          activeClasses: (dashboardPayload?.classes || []).length,
           assignments: 0,
           avgProgress: 0,
         },
-        recentSubmissions: res.data.recentSubmissions || [],
+        recentSubmissions: dashboardPayload?.recentSubmissions || [],
       });
     } catch (error) {
       if (isOverviewView) {
         console.error('Error fetching achievements:', error);
+        toast.error('Failed to load achievements data. Please try again later.');
       } else {
         console.error('Error fetching teacher achievements:', error);
       }
@@ -527,7 +545,7 @@ const AchievementsPage = () => {
   };
 
   return (
-    <Box sx={{ py: 4, px: 1 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', py: 4, px: 1 }}>
       {isOverviewView ? (
         <TeacherAchievementsView dashboardData={teacherDashboard} />
       ) : (
@@ -591,9 +609,10 @@ const AchievementsPage = () => {
           p: 4, 
           mb: 8, 
           borderRadius: 6, 
-          background: 'linear-gradient(135deg, #B0125B 0%, #0B1F3B 100%)',
+          background: 'linear-gradient(135deg, #006D5B 0%, #00897B 100%)',
           color: '#ffffff',
-          boxShadow: '0 10px 40px rgba(11, 31, 59, 0.4)'
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 10px 40px rgba(0, 109, 91, 0.4)'
         }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
@@ -614,12 +633,12 @@ const AchievementsPage = () => {
                   <Box sx={{ 
                     p: 2, 
                     borderRadius: 4, 
-                    bgcolor: goal.completed ? '#B0125B' : 'rgba(26, 35, 126, 0.3)', 
+                    bgcolor: goal.completed ? '#006D5B' : 'rgba(0, 109, 91, 0.3)', 
                     border: `2px solid ${goal.completed ? '#FFD93D' : 'rgba(255,255,255,0.1)'}`, // Golden border when done
                     textAlign: 'center',
                     height: '100%',
                     transition: 'all 0.3s ease',
-                    boxShadow: goal.completed ? '0 8px 20px rgba(176, 18, 91, 0.4)' : 'none',
+                    boxShadow: goal.completed ? '0 8px 20px rgba(0, 109, 91, 0.4)' : 'none',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -643,7 +662,7 @@ const AchievementsPage = () => {
                         fontWeight: 900, 
                         fontSize: '0.65rem',
                         bgcolor: goal.completed ? '#FFD93D' : 'transparent',
-                        color: goal.completed ? '#0B1F3B' : 'inherit',
+                        color: goal.completed ? '#006D5B' : 'inherit',
                         px: 1,
                         borderRadius: 1
                       }}
@@ -666,7 +685,7 @@ const AchievementsPage = () => {
             <Grid size={{ xs: 12, md: 6 }} key={cert.id}>
               <Card sx={{ 
                 borderRadius: 5, 
-                border: cert.earned ? '2px solid #FFD93D' : '1px solid rgba(0,0,0,0.05)',
+                border: cert.earned ? '2px solid #FFD93D' : '1.5px solid rgba(0, 0, 0, 0.15)',
                 boxShadow: cert.earned ? '0 10px 30px rgba(255, 217, 61, 0.2)' : 'none',
                 opacity: cert.earned ? 1 : 0.8,
                 overflow: 'hidden'
@@ -748,11 +767,11 @@ const AchievementsPage = () => {
           mt: 8, 
           p: 4, 
           textAlign: 'center', 
-          background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', 
+          background: 'linear-gradient(135deg, #006D5B 0%, #004D40 100%)', 
           borderRadius: 6, 
           border: '2px dashed rgba(255,255,255,0.4)',
           color: 'white',
-          boxShadow: '0 10px 30px rgba(11, 31, 59, 0.2)'
+          boxShadow: '0 10px 30px rgba(0, 109, 91, 0.2)'
         }}>
             <Typography variant="body1" fontWeight="700">
                 🎓 Keep studying every day! Top students get a physical certificate mailed home!

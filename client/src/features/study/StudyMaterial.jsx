@@ -158,55 +158,125 @@ const StudyMaterial = () => {
 
     return (
         <Box sx={{ py: 4, px: 1 }}>
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <Box>
-                    <Typography variant="h4" fontWeight="bold" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <FileIcon fontSize="large" sx={{ color: theme.palette.primary.main }} /> Notes
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary">
-                        Browse and download study materials {user?.role === 'student' ? 'subject-wise' : 'class-wise'}
-                    </Typography>
+            <Paper
+                sx={{
+                    mb: 4,
+                    p: { xs: 2, sm: 3 },
+                    borderRadius: 4,
+                    borderTop: '6px solid',
+                    borderColor: 'primary.main',
+                    boxShadow: isDarkMode ? 3 : '0 10px 28px rgba(0,0,0,0.06)',
+                    bgcolor: 'background.paper'
+                }}
+            >
+                <Box
+                    sx={{
+                        mb: 3,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: { xs: 'flex-start', md: 'center' },
+                        flexDirection: { xs: 'column', md: 'row' },
+                        gap: 2
+                    }}
+                >
+                    <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                            <Box
+                                sx={{
+                                    width: 46,
+                                    height: 46,
+                                    borderRadius: 2.5,
+                                    bgcolor: alpha(theme.palette.primary.main, isDarkMode ? 0.22 : 0.1),
+                                    color: 'primary.main',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <FileIcon />
+                            </Box>
+                            <Typography variant="h4" fontWeight="bold" sx={{ color: 'text.primary' }}>
+                                Notes
+                            </Typography>
+                        </Box>
+                        <Typography variant="body1" color="text.secondary">
+                            Browse and download study materials {user?.role === 'student' ? 'subject-wise' : 'class-wise'}
+                        </Typography>
+                    </Box>
+                    <Button startIcon={<Refresh />} onClick={fetchStudyMaterials} variant="outlined" sx={{ borderRadius: 2.5 }}>
+                        Refresh
+                    </Button>
                 </Box>
-                <Button startIcon={<Refresh />} onClick={fetchStudyMaterials}>Refresh</Button>
-            </Box>
 
-            <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 1, borderRadius: 3, boxShadow: isDarkMode ? 2 : '0 4px 12px rgba(0,0,0,0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
-                        <TextField
-                            fullWidth
-                            placeholder="Find specific notes..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            variant="standard"
-                            InputProps={{
-                                disableUnderline: true,
-                                startAdornment: (
-                                    <InputAdornment position="start" sx={{ ml: 1 }}>
-                                        <SearchIcon color="primary" />
-                                    </InputAdornment>
-                                ),
+                <Grid container spacing={2} alignItems="stretch">
+                    <Grid item xs={12} md={8}>
+                        <Paper
+                            sx={{
+                                p: 1.5,
+                                height: '100%',
+                                minHeight: 68,
+                                borderRadius: 3,
+                                borderTop: '6px solid',
+                                borderColor: 'primary.main',
+                                boxShadow: 'none',
+                                border: `1px solid ${surfaceBorder}`,
+                                bgcolor: softSurface
                             }}
-                        />
-                    </Paper>
+                        >
+                            <TextField
+                                fullWidth
+                                placeholder="Find specific notes..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                variant="standard"
+                                sx={{
+                                    '& .MuiInputBase-root': {
+                                        minHeight: 40,
+                                        fontSize: '1.02rem'
+                                    }
+                                }}
+                                InputProps={{
+                                    disableUnderline: true,
+                                    startAdornment: (
+                                        <InputAdornment position="start" sx={{ ml: 1 }}>
+                                            <SearchIcon color="primary" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Filter by Subject"
+                            value={selectedSubjectFilter}
+                            onChange={(e) => setSelectedSubjectFilter(e.target.value)}
+                            variant="outlined"
+                            sx={{
+                                bgcolor: softSurface,
+                                borderRadius: 3,
+                                '& .MuiOutlinedInput-root': {
+                                    minHeight: 68,
+                                    borderRadius: 3,
+                                    fontSize: '1.02rem',
+                                    borderTop: '6px solid',
+                                    borderColor: 'primary.main'
+                                },
+                                '& .MuiInputLabel-root': {
+                                    fontSize: '1rem'
+                                }
+                            }}
+                        >
+                            <MenuItem value="all">All Subjects</MenuItem>
+                            {subjectsList.map(s => (
+                                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={4}>
-                    <TextField
-                        select
-                        fullWidth
-                        label="Filter by Subject"
-                        value={selectedSubjectFilter}
-                        onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-                        variant="outlined"
-                        sx={{ bgcolor: 'background.paper', borderRadius: 3 }}
-                    >
-                        <MenuItem value="all">All Subjects</MenuItem>
-                        {subjectsList.map(s => (
-                            <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                        ))}
-                    </TextField>
-                </Grid>
-            </Grid>
+            </Paper>
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>

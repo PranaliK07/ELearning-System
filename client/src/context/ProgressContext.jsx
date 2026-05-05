@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
@@ -26,7 +26,7 @@ export const ProgressProvider = ({ children }) => {
     }
   }, [user]);
 
-  const fetchProgress = async () => {
+  const fetchProgress = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/progress', {
@@ -38,9 +38,9 @@ export const ProgressProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchWatchTimeStats = async () => {
+  const fetchWatchTimeStats = useCallback(async () => {
     try {
       const response = await axios.get('/api/progress/watchtime', {
         headers: { Authorization: `Bearer ${token}` }
@@ -49,9 +49,9 @@ export const ProgressProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching watch time stats:', error);
     }
-  };
+  }, [token]);
 
-  const updateProgress = async (contentId, data) => {
+  const updateProgress = useCallback(async (contentId, data) => {
     try {
       const response = await axios.post('/api/progress/update', 
         { contentId, ...data },
@@ -60,7 +60,8 @@ export const ProgressProvider = ({ children }) => {
       
       // Update local progress
       setProgress(prev => {
-        const index = prev.findIndex(p => p.ContentId === contentId);
+        const idToMatch = Number(contentId);
+        const index = prev.findIndex(p => Number(p.ContentId) === idToMatch);
         if (index !== -1) {
           const updated = [...prev];
           updated[index] = response.data;
@@ -78,7 +79,7 @@ export const ProgressProvider = ({ children }) => {
       toast.error('Failed to update progress');
       return { success: false };
     }
-  };
+  }, [token, fetchWatchTimeStats]);
 
   const updateWatchTime = async (contentId, secondsWatched = 0) => {
     if (!contentId || !secondsWatched || Number.isNaN(secondsWatched)) {
@@ -124,7 +125,7 @@ export const ProgressProvider = ({ children }) => {
     };
   };
 
-  const value = {
+  const value = useMemo(() => ({
     progress,
     watchTimeStats,
     loading,
@@ -135,7 +136,15 @@ export const ProgressProvider = ({ children }) => {
     updateWatchTime,
     getQuizStats,
     refreshStats: fetchWatchTimeStats
-  };
+  }), [
+    progress, 
+    watchTimeStats, 
+    loading, 
+    updateProgress, 
+    updateWatchTime, 
+    fetchWatchTimeStats, 
+    getQuizStats
+  ]);
 
   return (
     <ProgressContext.Provider value={value}>

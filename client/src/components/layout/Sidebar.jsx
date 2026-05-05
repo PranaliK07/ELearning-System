@@ -273,7 +273,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
               width: 80,
               height: 80,
               margin: '10px auto',
-              border: '3px solid #B0125B'
+              border: '3px solid #B66DC4'
             }}
             src={resolveAvatarSrc(user?.avatar)}
           >

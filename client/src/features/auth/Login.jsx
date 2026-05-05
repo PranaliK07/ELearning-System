@@ -28,19 +28,29 @@ const Login = () => {
   const [passwordStatus, setPasswordStatus] = useState('idle');
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
-    if (e.target.name === 'password') {
+
+    if (name === 'password') {
       setPasswordStatus('idle');
     }
-    // Clear error for this field
-    if (errors[e.target.name]) {
-      setErrors({
-        ...errors,
-        [e.target.name]: ''
-      });
+
+    // Real-time email validation
+    if (name === 'email') {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        setErrors((prev) => ({ ...prev, email: 'Enter a valid email (e.g. user@example.com)' }));
+      } else {
+        setErrors((prev) => ({ ...prev, email: '' }));
+      }
+    } else if (errors[name]) {
+      // Clear error for other fields
+      setErrors((prev) => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
@@ -217,7 +227,7 @@ const Login = () => {
                   <Link
                     to="/register"
                     style={{
-                      color: '#0B1F3B',
+                      color: '#D18AC4',
                       textDecoration: 'none',
                       fontWeight: 'bold'
                     }}

@@ -1442,7 +1442,7 @@ const StudentDashboard = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: goal.completed ? '#B0125B' : 'rgba(255,255,255,0.08)',
+                      bgcolor: goal.completed ? '#B66DC4' : 'rgba(255,255,255,0.08)',
                       mb: 0.5,
                       mx: 'auto',
                       border: goal.completed ? '2px solid #FFD93D' : '1px dashed rgba(255,255,255,0.3)',
@@ -1464,7 +1464,7 @@ const StudentDashboard = () => {
                     whiteSpace: 'nowrap',
                     overflow: 'hidden'
                   }}>
-                    {goal.label || goal.id.toUpperCase()}
+                    {goal.label} {goal.completed ? 'DONE ✨' : 'PENDING'}
                   </Typography>
                 </Box>
               ))}

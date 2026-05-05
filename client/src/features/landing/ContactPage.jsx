@@ -40,6 +40,11 @@ const ContactPage = () => {
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
+  const brandNavy = '#006D5B';
+  const themeColor = '#008C75';
+  const brandSoft = '#F0FDF9';
+
+
   return (
     <Box sx={{ bgcolor: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       <SiteHeader />
@@ -79,7 +84,7 @@ const ContactPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 20% 25%, rgba(11,31,59,0.2), transparent 40%), radial-gradient(circle at 80% 70%, rgba(176,18,91,0.15), transparent 45%)',
+            background: `radial-gradient(circle at 20% 25%, ${alpha(brandNavy, 0.2)}, transparent 40%), radial-gradient(circle at 80% 70%, ${alpha(themeColor, 0.15)}, transparent 45%)`,
             zIndex: 2,
             backgroundSize: '120% 120%',
             animation: 'heroPulse 18s ease-in-out infinite',
@@ -105,7 +110,7 @@ const ContactPage = () => {
                   lineHeight: 1.05,
                   letterSpacing: '-1.5px',
                   fontSize: { xs: '3.2rem', sm: '3.8rem', md: '5.2rem' },
-                  color: '#0B1F3B'
+                  color: brandNavy
                 }}
               >
                 Contact Us
@@ -127,7 +132,7 @@ const ContactPage = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#0B1F3B', mb: 2, fontFamily: '"Sora", sans-serif' }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: brandNavy, mb: 2, fontFamily: '"Sora", sans-serif' }}>
                 Visit Us
               </Typography>
               <Typography variant="body1" sx={{ color: '#6B7280', mb: 4, fontSize: '1.1rem' }}>
@@ -162,7 +167,7 @@ const ContactPage = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="text"
-                sx={{ mt: 2, textTransform: 'none', color: '#B0125B', fontWeight: 700, px: 0, fontSize: '1rem', '&:hover': { background: 'transparent', color: '#0B1F3B' } }}
+                sx={{ mt: 2, textTransform: 'none', color: themeColor, fontWeight: 700, px: 0, fontSize: '1rem', '&:hover': { background: 'transparent', color: brandNavy } }}
               >
                 Open in Google Maps →
               </Button>
@@ -198,7 +203,7 @@ const ContactPage = () => {
                   transition: 'all 0.3s ease',
                   '&:hover': {
                     transform: 'translate(var(--card-x), calc(var(--card-y) - 10px)) !important',
-                    boxShadow: `0 35px 70px -25px ${alpha('#0B1F3B', 0.2)}`
+                    boxShadow: `0 35px 70px -25px ${alpha(brandNavy, 0.2)}`
                   }
                 }}
               >
@@ -210,7 +215,7 @@ const ContactPage = () => {
                   }}>
                     <WhatsApp sx={{ fontSize: 32 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#0B1F3B', fontFamily: '"Sora", sans-serif' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: brandNavy, fontFamily: '"Sora", sans-serif' }}>
                     Chat with us on WhatsApp
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#6B7280', lineHeight: 1.6 }}>

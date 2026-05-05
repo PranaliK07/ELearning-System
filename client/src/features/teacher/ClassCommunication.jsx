@@ -22,14 +22,19 @@ import {
   TextField,
   Typography,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Divider,
+  alpha,
+  Stack,
+  CircularProgress
 } from '@mui/material';
-import { Campaign, Send, Delete, Visibility } from '@mui/icons-material';
+import { Campaign, Send, Delete, Visibility, School, People } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { validateRequiredText } from '../../utils/validation';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { isAdminLikeRole } from '../../utils/roles';
 
 const ClassCommunication = () => {
@@ -49,6 +54,7 @@ const ClassCommunication = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
   const [filters, setFilters] = useState({
     gradeId: '',
@@ -182,73 +188,152 @@ const ClassCommunication = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this communication?')) return;
+  const handleDelete = (id) => {
+    setConfirmDialog({ open: true, id });
+  };
+
+  const processDelete = async () => {
+    const id = confirmDialog.id;
     try {
       await axios.delete(`${basePath}/communications/${id}`);
       toast.success('Communication deleted successfully');
       fetchCommunications();
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Failed to delete communication');
+    } finally {
+      setConfirmDialog({ open: false, id: null });
     }
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' } }}>
-          {isStudent ? 'Teacher Notice' : 'Class Communication'}
-        </Typography>
-      </Box>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 } }}>
+      <Paper sx={{ 
+        p: { xs: 2, sm: 4, md: 6 }, 
+        borderRadius: { xs: 3, sm: 5 }, 
+        bgcolor: '#f8fdfc',
+        border: '2px solid',
+        borderColor: 'primary.main',
+        borderTop: '10px solid',
+        borderTopColor: 'primary.main',
+        boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease-in-out',
+        '&:hover': {
+          boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)',
+          transform: 'translateY(-2px)'
+        }
+      }}>
+        {/* Module Header */}
+        <Box sx={{ 
+          mb: { xs: 4, sm: 6 }, 
+          pb: { xs: 2, sm: 4 },
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          gap: { xs: 1, sm: 3 }
+        }}>
+          <Box>
+            <Typography 
+              variant="h3" 
+              fontWeight="900" 
+              sx={{ 
+                color: 'text.primary', 
+                letterSpacing: '-1.5px', 
+                mb: 1,
+                fontSize: { xs: '1.75rem', sm: '2.4rem', md: '3rem' }
+              }}
+            >
+              Class Communication 💬
+            </Typography>
+            <Typography 
+              variant="body1" 
+              color="textSecondary" 
+              sx={{ 
+                fontWeight: 500, 
+                opacity: 0.8,
+                fontSize: { xs: '0.85rem', sm: '1rem' }
+              }}
+            >
+              {isStudent ? 'Stay updated with the latest messages from your teachers' : 'Broadcast messages and announcements to your classes'}
+            </Typography>
+          </Box>
+        </Box>
 
-      <Grid container spacing={{ xs: 2, sm: 3 }}>
-        {!isStudent && (
-          <Grid item xs={12} md={5}>
-            <Card sx={{ borderRadius: 3 }}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                  <Campaign color="primary" />
-                  <Typography variant="h6">New Message</Typography>
-                </Box>
+        <Grid container spacing={4} alignItems="stretch">
+          {!isStudent && (
+            <Grid item xs={12} lg={5}>
+            <Card sx={{ 
+                borderRadius: 4, 
+                boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+                bgcolor: '#ffffff',
+                overflow: 'hidden',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight="800" sx={{ color: 'primary.main' }}>
+                  {isAdmin ? 'Administrative Broadcast' : 'Send Class Message'}
+                </Typography>
+              </Box>
+              <CardContent sx={{ p: 5 }}>
+                <Stack spacing={4}>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <School fontSize="small" color="primary" /> Target Class
+                      </Typography>
+                      <FormControl fullWidth>
+                        <Select
+                          value={form.gradeId}
+                          onChange={(e) => setForm((prev) => ({ ...prev, gradeId: e.target.value }))}
+                          displayEmpty
+                          sx={{ borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } }}
+                        >
+                          <MenuItem value="">All Classes (Broadcast)</MenuItem>
+                          {classes.map((grade) => (
+                            <MenuItem key={grade.id} value={grade.id}>
+                              {grade.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
 
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gap: 2.5,
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      md: 'repeat(12, minmax(0, 1fr))'
-                    }
-                  }}
-                >
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 3' } }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Class</InputLabel>
-                      <Select
-                        label="Class"
-                        value={form.gradeId}
-                        onChange={(e) => setForm((prev) => ({ ...prev, gradeId: e.target.value }))}
-                      >
-                        <MenuItem value="">All Classes</MenuItem>
-                        {classes.map((grade) => (
-                          <MenuItem key={grade.id} value={grade.id}>
-                            {grade.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <People fontSize="small" color="primary" /> Target Audience
+                      </Typography>
+                      <FormControl fullWidth>
+                        <Select
+                          value={form.audience}
+                          onChange={(e) => setForm((prev) => ({ ...prev, audience: e.target.value }))}
+                          sx={{ borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } }}
+                        >
+                          <MenuItem value="students">Students Only</MenuItem>
+                          <MenuItem value="parents">Parents Only</MenuItem>
+                          <MenuItem value="both">Students & Parents</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
 
                   {isAdmin && (
-                    <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 4' } }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary' }}>
+                        Send Message As
+                      </Typography>
                       <FormControl fullWidth>
-                        <InputLabel>Send As</InputLabel>
                         <Select
-                          label="Send As"
                           value={form.senderId}
                           onChange={(e) => setForm((prev) => ({ ...prev, senderId: e.target.value }))}
+                          sx={{ borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } }}
                         >
-                          <MenuItem value="—">Admin</MenuItem>
+                          <MenuItem value="—">Administrator</MenuItem>
                           {teachers.map((teacher) => (
                             <MenuItem key={teacher.id} value={teacher.id}>
                               {teacher.name}
@@ -259,28 +344,13 @@ const ClassCommunication = () => {
                     </Box>
                   )}
 
-                  <Box
-                    sx={{
-                      gridColumn: { xs: '1 / -1', md: isAdmin ? 'span 5' : 'span 9' }
-                    }}
-                  >
-                    <FormControl fullWidth>
-                      <InputLabel>Audience</InputLabel>
-                      <Select
-                        label="Audience"
-                        value={form.audience}
-                        onChange={(e) => setForm((prev) => ({ ...prev, audience: e.target.value }))}
-                      >
-                        <MenuItem value="students">Students</MenuItem>
-                        <MenuItem value="parents">Parents</MenuItem>
-                        <MenuItem value="both">Both</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary' }}>
+                      Notice Title
+                    </Typography>
                     <TextField
                       fullWidth
-                      label="Title"
+                      placeholder="e.g., Upcoming Science Fair"
                       value={form.title}
                       onChange={(e) => {
                         setForm((prev) => ({ ...prev, title: e.target.value }));
@@ -288,14 +358,19 @@ const ClassCommunication = () => {
                       }}
                       error={!!errors.title}
                       helperText={errors.title}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } } }}
                     />
                   </Box>
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
+
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary' }}>
+                      Message Content
+                    </Typography>
                     <TextField
                       fullWidth
                       multiline
                       minRows={5}
-                      label="Message"
+                      placeholder="Type your detailed message here..."
                       value={form.message}
                       onChange={(e) => {
                         setForm((prev) => ({ ...prev, message: e.target.value }));
@@ -303,34 +378,64 @@ const ClassCommunication = () => {
                       }}
                       error={!!errors.message}
                       helperText={errors.message}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } } }}
                     />
                   </Box>
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / span 3' } }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<Send />}
-                      onClick={handleSend}
-                      disabled={sending}
-                      sx={{
-                        minHeight: 48,
-                        px: 3,
-                        width: { xs: '100%', sm: 'auto' }
-                      }}
-                    >
-                      {sending ? 'Sending...' : 'Send Message'}
-                    </Button>
-                  </Box>
-                </Box>
+
+                  <Button
+                    variant="contained"
+                    startIcon={sending ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                    onClick={handleSend}
+                    disabled={sending}
+                    fullWidth
+                    sx={{
+                      height: 56,
+                      borderRadius: 3,
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      boxShadow: '0 8px 24px rgba(0, 109, 91, 0.25)',
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        boxShadow: '0 12px 32px rgba(0, 109, 91, 0.35)',
+                        transform: 'translateY(-2px)'
+                      }
+                    }}
+                  >
+                    {sending ? 'Processing Broadcast...' : 'Broadcast Message Now'}
+                  </Button>
+                </Stack>
               </CardContent>
             </Card>
           </Grid>
         )}
 
-        <Grid item xs={12} md={isStudent ? 12 : 7}>
-          <Paper sx={{ p: 2, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              {isStudent ? 'Notices' : 'Communication History'}
-            </Typography>
+        <Grid item xs={12} lg={!isStudent ? 7 : 12}>
+          <Paper sx={{ 
+            p: { xs: 2.5, sm: 4 }, 
+            borderRadius: 4, 
+            bgcolor: '#ffffff',
+            boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)',
+              transform: 'translateY(-4px)'
+            }
+          }}>
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <Typography variant="h6" fontWeight="900">
+                  {isStudent ? 'Platform Notices 📚' : 'Communication History 📜'}
+                </Typography>
+                <Chip label={filteredCommunications.length} size="small" color="primary" sx={{ fontWeight: 800, borderRadius: 1.5 }} />
+              </Box>
+              <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>
+                View and manage previously sent messages
+              </Typography>
+            </Box>
 
             {!canViewHistory ? (
               <Typography variant="body2" color="textSecondary">
@@ -338,17 +443,19 @@ const ClassCommunication = () => {
               </Typography>
             ) : (
               <>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid container spacing={2.5} sx={{ mb: 4 }}>
                   {!isStudent && (
                     <>
-                      <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
+                      <Grid item xs={12} sm={4}>
                         <FormControl fullWidth size="small">
-                          <InputLabel>Class</InputLabel>
+                          <Typography variant="caption" sx={{ mb: 0.5, ml: 0.5, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            Filter by Class
+                          </Typography>
                           <Select
-                            label="Class"
                             value={filters.gradeId}
                             onChange={(e) => setFilters((prev) => ({ ...prev, gradeId: e.target.value }))}
-                            sx={{ minWidth: 120 }}
+                            displayEmpty
+                            sx={{ borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } }}
                           >
                             <MenuItem value="">All Classes</MenuItem>
                             {classes.map((grade) => (
@@ -360,59 +467,41 @@ const ClassCommunication = () => {
                         </FormControl>
                       </Grid>
 
-                      {isAdmin && (
-                        <Grid item xs={12} sm={6} md={3}>
-                          <FormControl fullWidth size="small">
-                            <InputLabel>Teacher</InputLabel>
-                            <Select
-                              label="Teacher"
-                              value={filters.teacherId}
-                              onChange={(e) => setFilters((prev) => ({ ...prev, teacherId: e.target.value }))}
-                              sx={{ minWidth: 120 }}
-                            >
-                              <MenuItem value="">All Teachers</MenuItem>
-                              {teachers.map((teacher) => (
-                                <MenuItem key={teacher.id} value={teacher.id}>
-                                  {teacher.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                      )}
-
-                      <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
+                      <Grid item xs={12} sm={4}>
                         <FormControl fullWidth size="small">
-                          <InputLabel>Audience</InputLabel>
+                          <Typography variant="caption" sx={{ mb: 0.5, ml: 0.5, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            Target Audience
+                          </Typography>
                           <Select
-                            label="Audience"
                             value={filters.audience}
                             onChange={(e) => setFilters((prev) => ({ ...prev, audience: e.target.value }))}
-                            sx={{ minWidth: 120 }}
+                            displayEmpty
+                            sx={{ borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } }}
                           >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="students">Students</MenuItem>
-                            <MenuItem value="parents">Parents</MenuItem>
-                            <MenuItem value="both">Students + Parents</MenuItem>
+                            <MenuItem value="">Every Audience</MenuItem>
+                            <MenuItem value="students">Students Only</MenuItem>
+                            <MenuItem value="parents">Parents Only</MenuItem>
+                            <MenuItem value="both">Both</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>
                     </>
                   )}
 
-                  <Grid item xs={12} md={isStudent ? 12 : (isAdmin ? 3 : 4)}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Search notices..."
-                      value={filters.search}
-                      onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: isStudent ? '30px' : '12px'
-                        }
-                      }}
-                    />
+                  <Grid item xs={12} sm={isStudent ? 12 : 4}>
+                    <FormControl fullWidth size="small">
+                      <Typography variant="caption" sx={{ mb: 0.5, ml: 0.5, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Search Content
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Search notices..."
+                        value={filters.search}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: 'action.hover', '& fieldset': { border: 'none' } } }}
+                      />
+                    </FormControl>
                   </Grid>
                 </Grid>
 
@@ -529,77 +618,95 @@ const ClassCommunication = () => {
                     ))}
                   </Box>
                 ) : (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Title</TableCell>
-                        <TableCell>Class</TableCell>
-                        <TableCell>Audience</TableCell>
-                        <TableCell>Recipients</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredCommunications.map((item) => (
-                        <TableRow key={item.id} hover>
-                          <TableCell>
-                            <Typography variant="subtitle2">{item.title}</Typography>
-                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                              {item.message?.slice(0, 50)}
-                              {item.message?.length > 50 ? '...' : ''}
-                            </Typography>
-                            {!isAdmin && (
-                              <Typography variant="caption" color="textSecondary">
-                                From: {item.teacher?.name || '—'}
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>{item.Grade?.name || 'All Classes'}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={audienceLabel[item.audience] || item.audience}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell>{item.recipientCount || 0}</TableCell>
-                          <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
-                          <TableCell align="right">
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => navigate(`/communications/${item.id}`)}
-                                title="View Details"
-                              >
-                                <Visibility fontSize="small" />
-                              </IconButton>
-                              {(isAdmin || (isTeacher && item.teacherId === user.id)) && (
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDelete(item.id)}
-                                  title="Delete"
-                                >
-                                  <Delete fontSize="small" />
-                                </IconButton>
-                                )}
-                              </Box>
-                            </TableCell>
+                    <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+                      <Table>
+                        <TableHead sx={{ bgcolor: 'action.hover' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 800 }}>Title</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }}>Class</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }}>Audience</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }}>Recipients</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 800 }}>Actions</TableCell>
                           </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                          {filteredCommunications.map((item) => (
+                            <TableRow 
+                              key={item.id} 
+                              hover 
+                              sx={{ 
+                                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
+                                transition: 'background-color 0.2s'
+                              }}
+                            >
+                              <TableCell sx={{ py: 3 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', mb: 0.5 }}>{item.title}</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, lineHeight: 1.4 }}>
+                                  {item.message?.slice(0, 120)}
+                                  {item.message?.length > 120 ? '...' : ''}
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', px: 1, py: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                                  From: {item.teacher?.name || 'Vaishnavi vv Sirsat'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">{item.Grade?.name || 'Global'}</Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                                  {audienceLabel[item.audience] || item.audience}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={700}>{item.recipientCount || 0}</Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                  {new Date(item.createdAt).toLocaleDateString()}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => navigate(`/communications/${item.id}`)}
+                                    sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), color: 'primary.main' }}
+                                  >
+                                    <Visibility fontSize="small" />
+                                  </IconButton>
+                                  {(isAdmin || (isTeacher && item.teacherId === user.id)) && (
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => handleDelete(item.id)}
+                                      sx={{ bgcolor: alpha(theme.palette.error.main, 0.05) }}
+                                    >
+                                      <Delete fontSize="small" />
+                                    </IconButton>
+                                  )}
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                 )}
               </>
             )}
           </Paper>
         </Grid>
       </Grid>
+    </Paper>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="Delete Communication"
+        description="Are you sure you want to delete this communication? This action cannot be undone."
+        onConfirm={processDelete}
+        onClose={() => setConfirmDialog({ open: false, id: null })}
+      />
     </Container>
   );
 };

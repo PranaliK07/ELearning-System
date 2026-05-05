@@ -24,7 +24,9 @@ import {
   DialogContentText,
   DialogActions,
   useMediaQuery,
-  useTheme
+  useTheme,
+  alpha,
+  Tooltip
 } from '@mui/material';
 import { Add, Edit, Delete, Source as ContentOverviewIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -103,22 +105,65 @@ const ContentOverview = () => {
     setDeleteDialogOpen(true);
   };
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredContent = content.filter(item => {
+    const search = searchTerm.toLowerCase();
+    const gradeStr = item.Grade ? `Class ${item.Grade.level}` : (item.grade || item.gradeLevel || 'N/A');
+    const subjectStr = item.Subject?.name || item.subject || 'N/A';
+    const statusStr = item.isPublished ? 'published' : (item.status || 'draft');
+    const typeStr = item.type || item.contentType || 'unknown';
+
+    return (
+      String(item.title || item.name || '').toLowerCase().includes(search) ||
+      String(typeStr).toLowerCase().includes(search) ||
+      String(gradeStr).toLowerCase().includes(search) ||
+      String(subjectStr).toLowerCase().includes(search) ||
+      String(statusStr).toLowerCase().includes(search)
+    );
+  });
+
   return (
     <Container maxWidth="lg">
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
+      <Paper sx={{ 
+        p: { xs: 2, sm: 3 }, 
+        borderRadius: 3,
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 32px rgba(0, 109, 91, 0.15)',
+          borderColor: 'primary.main'
+        }
+      }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <ContentOverviewIcon color="primary" />
             <Typography variant="h6">Content Management</Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => navigate('/content/create')}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            Add Content
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, alignItems: 'center' }}>
+            <TextField
+              size="small"
+              placeholder="Search content..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 250, bgcolor: 'background.paper', borderRadius: 1 }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate('/content/create')}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              Add Content
+            </Button>
+          </Box>
         </Box>
 
         {loading ? (
@@ -127,7 +172,7 @@ const ContentOverview = () => {
           </Box>
         ) : isMobile ? (
           <Box sx={{ display: 'grid', gap: 2 }}>
-            {content.length === 0 ? (
+            {filteredContent.length === 0 ? (
               <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="textSecondary" gutterBottom>
                   No content available
@@ -143,8 +188,24 @@ const ContentOverview = () => {
                 </Button>
               </Paper>
             ) : (
-              content.map((item) => (
-                <Paper key={item.id || item._id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              filteredContent.map((item) => (
+                <Paper 
+                  key={item.id || item._id} 
+                  variant="outlined" 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: 2,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 0, 0, 0.04)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+                      borderColor: 'primary.main',
+                      borderWidth: '2px'
+                    }
+                  }}
+                >
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'flex-start' }}>
                       <Box sx={{ minWidth: 0 }}>
@@ -229,39 +290,45 @@ const ContentOverview = () => {
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 700 }}>
               <TableHead>
-                <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Grade</TableCell>
-                  <TableCell>Subject</TableCell>
-                  <TableCell>Views/Attempts</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Title</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Grade</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Subject</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Views</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {content.length === 0 ? (
+                {filteredContent.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} align="center">
                       <Box sx={{ py: 4 }}>
                         <Typography variant="body2" color="textSecondary" gutterBottom>
-                          No content available
+                          No content matches your filters
                         </Typography>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<Add />}
-                          onClick={() => navigate('/content/create')}
-                          sx={{ mt: 1 }}
-                        >
-                          Create your first content
-                        </Button>
                       </Box>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  content.map((item) => (
-                    <TableRow key={item.id || item._id} hover>
+                  filteredContent.map((item) => (
+                    <TableRow 
+                      key={item.id || item._id} 
+                      hover 
+                      sx={{ 
+                        transition: 'all 0.3s ease', 
+                        cursor: 'pointer',
+                        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                        '&:hover': { 
+                          bgcolor: 'rgba(0, 0, 0, 0.04) !important',
+                          boxShadow: 'inset 4px 0 0 #006D5B',
+                          '& .MuiTableCell-root': {
+                            color: 'primary.main'
+                          }
+                        } 
+                      }}
+                    >
                       <TableCell>
                         <Typography variant="subtitle2">
                           {item.title || item.name || 'Untitled'}
@@ -304,19 +371,32 @@ const ContentOverview = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/content/edit/${item.id || item._id}`)}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => openDeleteDialog(item.id || item._id)}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/content/edit/${item.id || item._id}`)}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.info.main, 0.1), 
+                              color: 'info.main',
+                              borderRadius: 1.5,
+                              '&:hover': { bgcolor: 'info.main', color: 'white' }
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => openDeleteDialog(item.id || item._id)}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.error.main, 0.1), 
+                              borderRadius: 1.5,
+                              '&:hover': { bgcolor: 'error.main', color: 'white' }
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))

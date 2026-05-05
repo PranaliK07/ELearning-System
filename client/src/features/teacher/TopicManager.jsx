@@ -31,13 +31,15 @@ import {
   Subject as SubjectIcon,
   Book as TopicIcon,
   Description as DescIcon,
-  ArrowBack,
   Search,
-  School
+  School,
+  Refresh,
+  ArrowBack
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { validateRequiredText, validateSelectRequired } from '../../utils/validation';
 
 const TopicManager = () => {
@@ -61,6 +63,7 @@ const TopicManager = () => {
   const [editErrors, setEditErrors] = useState({});
   const [searchSubject, setSearchSubject] = useState('');
   const [searchTopic, setSearchTopic] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', onConfirm: () => {} });
 
   useEffect(() => {
     fetchGrades();
@@ -228,27 +231,34 @@ const TopicManager = () => {
     }
   };
 
-  const handleDelete = async (type, id) => {
-    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
-    try {
-      setLoading(true);
-      if (type === 'subject') {
-        await axios.delete(`/api/subjects/${id}`);
-        if (String(form.subjectId) === String(id)) {
-          setForm((prev) => ({ ...prev, subjectId: '' }));
-          setTopics([]);
+  const handleDelete = (type, id) => {
+    setConfirmDialog({
+      open: true,
+      title: `Delete ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      description: `Are you sure you want to delete this ${type}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          if (type === 'subject') {
+            await axios.delete(`/api/subjects/${id}`);
+            if (String(form.subjectId) === String(id)) {
+              setForm((prev) => ({ ...prev, subjectId: '' }));
+              setTopics([]);
+            }
+            fetchSubjects(form.gradeId);
+          } else if (type === 'topic') {
+            await axios.delete(`/api/topics/${id}`);
+            fetchTopics(form.subjectId);
+          }
+          toast.success('Deleted successfully');
+        } catch (error) {
+          toast.error(error.response?.data?.message || 'Delete failed');
+        } finally {
+          setLoading(false);
+          setConfirmDialog(prev => ({ ...prev, open: false }));
         }
-        fetchSubjects(form.gradeId);
-      } else if (type === 'topic') {
-        await axios.delete(`/api/topics/${id}`);
-        fetchTopics(form.subjectId);
       }
-      toast.success('Deleted successfully');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Delete failed');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(searchSubject.toLowerCase()));
@@ -262,15 +272,31 @@ const TopicManager = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4, minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Header */}
-      <Box sx={{ mb: 5, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(-1)}
-          sx={{ borderRadius: '12px', px: 3 }}
-        >
-          Go Back
-        </Button>
+      <Box sx={{ mb: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" fontWeight="900" sx={{ color: 'primary.main' }}>Curriculum Manager</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={() => {
+              fetchGrades();
+              if (form.gradeId) fetchSubjects(form.gradeId);
+              if (form.subjectId) fetchTopics(form.subjectId);
+              toast.success('Data refreshed');
+            }}
+            sx={{ borderRadius: '12px', px: 3 }}
+          >
+            Refresh Data
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<ArrowBack />}
+            onClick={() => navigate(-1)}
+            sx={{ borderRadius: '12px', px: 3 }}
+          >
+            Back
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={4}>
@@ -281,12 +307,29 @@ const TopicManager = () => {
               <Box sx={{ p: 1, bgcolor: iconSurface(theme.palette.primary.main), borderRadius: '10px', display: 'flex' }}>
                 <SubjectIcon sx={{ color: theme.palette.primary.main }} />
               </Box>
-              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary' }}>
+              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                {form.gradeId && (
+                  <IconButton size="small" onClick={() => setForm(prev => ({ ...prev, gradeId: '', subjectId: '' }))} sx={{ color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                    <ArrowBack fontSize="small" />
+                  </IconButton>
+                )}
                 Add Subject
               </Typography>
             </Box>
 
-            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: '20px', 
+              boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', 
+              borderTop: '6px solid', 
+              borderColor: 'primary.main', 
+              bgcolor: 'background.paper',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 12px 40px rgba(0, 109, 91, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
               <Typography variant="subtitle2" sx={{ mb: 2, color: subtleText, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Create New Subject
               </Typography>
@@ -350,7 +393,20 @@ const TopicManager = () => {
               </Stack>
             </Paper>
 
-            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+            <Paper sx={{ 
+              p: 0, 
+              borderRadius: '20px', 
+              overflow: 'hidden', 
+              boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', 
+              borderTop: '6px solid', 
+              borderColor: 'primary.main', 
+              bgcolor: 'background.paper',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 12px 40px rgba(0, 109, 91, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
               <Box sx={{ p: 2.5, bgcolor: softSurface, borderBottom: `1px solid ${surfaceBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Typography variant="h6" fontWeight="700">Subjects {selectedClass ? `for Class ${selectedClass.level}` : ''}</Typography>
                 <TextField
@@ -401,7 +457,15 @@ const TopicManager = () => {
                 ) : (
                   <Box sx={{ py: 6, textAlign: 'center', color: subtleText }}>
                     <SubjectIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                    <Typography>No subjects found</Typography>
+                    <Typography gutterBottom>No subjects found</Typography>
+                    <Button 
+                      size="small" 
+                      startIcon={<Refresh fontSize="small" />} 
+                      onClick={() => fetchSubjects(form.gradeId)}
+                      sx={{ mt: 1 }}
+                    >
+                      Refresh
+                    </Button>
                   </Box>
                 )}
               </List>
@@ -416,12 +480,29 @@ const TopicManager = () => {
               <Box sx={{ p: 1, bgcolor: iconSurface(theme.palette.secondary.main), borderRadius: '10px', display: 'flex' }}>
                 <TopicIcon sx={{ color: theme.palette.secondary.main }} />
               </Box>
-              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary' }}>
+              <Typography variant="h5" fontWeight="700" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                {form.subjectId && (
+                  <IconButton size="small" onClick={() => setForm(prev => ({ ...prev, subjectId: '' }))} sx={{ color: 'secondary.main', bgcolor: alpha(theme.palette.secondary.main, 0.1) }}>
+                    <ArrowBack fontSize="small" />
+                  </IconButton>
+                )}
                 Add Topic
               </Typography>
             </Box>
 
-            <Paper sx={{ p: 3, borderRadius: '20px', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: '20px', 
+              boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', 
+              borderTop: '6px solid', 
+              borderColor: 'primary.main', 
+              bgcolor: 'background.paper',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 12px 40px rgba(0, 109, 91, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
               <Typography variant="subtitle2" sx={{ mb: 2, color: subtleText, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Add Topic to {selectedSubject ? selectedSubject.name : 'Selected Subject'}
               </Typography>
@@ -487,7 +568,20 @@ const TopicManager = () => {
               </Stack>
             </Paper>
 
-            <Paper sx={{ p: 0, borderRadius: '20px', overflow: 'hidden', boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', border: `1px solid ${surfaceBorder}`, bgcolor: 'background.paper' }}>
+            <Paper sx={{ 
+              p: 0, 
+              borderRadius: '20px', 
+              overflow: 'hidden', 
+              boxShadow: isDarkMode ? 2 : '0 4px 20px rgba(15, 23, 42, 0.05)', 
+              borderTop: '6px solid', 
+              borderColor: 'primary.main', 
+              bgcolor: 'background.paper',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 12px 40px rgba(0, 109, 91, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
               <Box sx={{ p: 2.5, bgcolor: softSurface, borderBottom: `1px solid ${surfaceBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Typography variant="h6" fontWeight="700">Topics {selectedSubject ? `in ${selectedSubject.name}` : ''}</Typography>
                 <TextField
@@ -535,7 +629,15 @@ const TopicManager = () => {
                 ) : (
                   <Box sx={{ py: 6, textAlign: 'center', color: subtleText }}>
                     <TopicIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                    <Typography>No topics found</Typography>
+                    <Typography gutterBottom>No topics found</Typography>
+                    <Button 
+                      size="small" 
+                      startIcon={<Refresh fontSize="small" />} 
+                      onClick={() => fetchTopics(form.subjectId)}
+                      sx={{ mt: 1 }}
+                    >
+                      Refresh
+                    </Button>
                   </Box>
                 )}
               </List>
@@ -551,7 +653,7 @@ const TopicManager = () => {
         fullWidth 
         maxWidth="sm"
         PaperProps={{
-          sx: { borderRadius: '20px', p: 1, bgcolor: 'background.paper', backgroundImage: 'none' }
+          sx: { borderRadius: '20px', p: 1, bgcolor: 'background.paper', backgroundImage: 'none', border: '3px solid', borderColor: 'primary.main' }
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, color: 'text.primary' }}>Edit {editDialog.type === 'subject' ? 'Subject' : 'Topic'}</DialogTitle>
@@ -585,6 +687,14 @@ const TopicManager = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+      />
     </Container>
   );
 };

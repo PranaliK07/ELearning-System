@@ -110,8 +110,8 @@ const getTeacherDashboard = async (req, res) => {
         { model: Grade, attributes: ['id', 'name', 'level'], required: false },
         {
           model: Achievement,
-          attributes: ['id', 'name', 'icon', 'points', 'category', 'rarity'],
-          through: { attributes: [] },   // don't include junction table columns — avoids earnedAt SQL error
+          attributes: ['id', 'name', 'icon', 'points', 'category', 'rarity', 'createdAt'],
+          through: { attributes: ['createdAt'] },
           required: false
         }
       ],

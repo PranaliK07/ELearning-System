@@ -24,6 +24,7 @@ import {
   DialogContentText,
   DialogActions,
   Tooltip,
+  alpha,
   useTheme,
   useMediaQuery
 } from '@mui/material';
@@ -137,7 +138,7 @@ const UploadedContent = () => {
         <Box>
           <Typography variant={isMobile ? "h5" : "h4"} fontWeight="900" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <ContentOverviewIcon color="primary" fontSize="large" /> 
-            Uploaded Content Hub
+            Uploaded Content 
           </Typography>
           {!isMobile && <Typography variant="body1" color="textSecondary">Manage all your lessons, notes, and interactive quizzes in one place.</Typography>}
         </Box>
@@ -147,7 +148,23 @@ const UploadedContent = () => {
         </Box>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 3,
+          boxShadow: '0 6px 18px rgba(0,0,0,0.04)',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          '&:hover': {
+            transform: 'translateY(-3px)',
+            boxShadow: '0 14px 28px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
         <TextField
           size="small"
           placeholder="Search content..."
@@ -178,14 +195,35 @@ const UploadedContent = () => {
         </FormControl>
       </Paper>
 
-      <Paper sx={{ p: { xs: 1, sm: 3 }, borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider' }}>
+      <Paper
+        sx={{
+          p: { xs: 1, sm: 3 },
+          borderRadius: 4,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+          borderTop: '6px solid',
+          borderColor: 'primary.main',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 18px 36px rgba(0,0,0,0.1)'
+          }
+        }}
+      >
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
         ) : (
-          <TableContainer>
+          <TableContainer sx={{ borderRadius: 3, overflow: 'hidden' }}>
             <Table size={isMobile ? "small" : "medium"}>
               <TableHead>
-                <TableRow>
+                <TableRow
+                  sx={{
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                    '& .MuiTableCell-root': {
+                      borderBottom: '1px solid',
+                      borderColor: alpha(theme.palette.primary.main, 0.16)
+                    }
+                  }}
+                >
                   <TableCell sx={{ fontWeight: 'bold' }}>Title & Description</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
                   {!isMobile && <TableCell sx={{ fontWeight: 'bold' }}>Target</TableCell>}
@@ -202,7 +240,25 @@ const UploadedContent = () => {
                   </TableRow>
                 ) : (
                   filteredContent.map((item) => (
-                    <TableRow key={`${item.type}-${item.id}`} hover>
+                    <TableRow 
+                      key={`${item.type}-${item.id}`} 
+                      hover
+                      sx={{
+                        transition: 'all 0.3s ease', 
+                        cursor: 'pointer',
+                        '& .MuiTableCell-root': {
+                          borderBottom: '1px solid',
+                          borderColor: alpha(theme.palette.primary.main, 0.1)
+                        },
+                        '&:hover': { 
+                          bgcolor: 'rgba(0, 0, 0, 0.04) !important',
+                          boxShadow: 'inset 4px 0 0 #006D5B',
+                          '& .MuiTableCell-root': {
+                            color: 'primary.main'
+                          }
+                        } 
+                      }}
+                    >
                       <TableCell>
                         <Typography variant="subtitle2" fontWeight="bold">{item.title}</Typography>
                         {!isMobile && item.description && (
@@ -235,9 +291,50 @@ const UploadedContent = () => {
                         </TableCell>
                       )}
                       <TableCell align="right">
-                        <Tooltip title="View"><IconButton size="small" onClick={() => handleView(item)}><Visibility fontSize="small" /></IconButton></Tooltip>
-                        <Tooltip title="Edit"><IconButton size="small" onClick={() => handleEdit(item)}><Edit fontSize="small" /></IconButton></Tooltip>
-                        <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => openDeleteDialog(item)}><Delete fontSize="small" /></IconButton></Tooltip>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <Tooltip title="View">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleView(item)}
+                              sx={{ 
+                                bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                                color: 'primary.main',
+                                borderRadius: 1.5,
+                                '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                              }}
+                            >
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleEdit(item)}
+                              sx={{ 
+                                bgcolor: alpha(theme.palette.info.main, 0.1), 
+                                color: 'info.main',
+                                borderRadius: 1.5,
+                                '&:hover': { bgcolor: 'info.main', color: 'white' }
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton 
+                              size="small" 
+                              color="error" 
+                              onClick={() => openDeleteDialog(item)}
+                              sx={{ 
+                                bgcolor: alpha(theme.palette.error.main, 0.1), 
+                                borderRadius: 1.5,
+                                '&:hover': { bgcolor: 'error.main', color: 'white' }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
@@ -259,7 +356,19 @@ const UploadedContent = () => {
                 { label: 'Published Content', count: content.filter(c => c.isPublished).length, color: theme.palette.success.main }
               ].map((stat, idx) => (
                 <Grid item xs={6} sm={3} key={idx}>
-                  <Card variant="outlined" sx={{ borderRadius: 3, borderTop: `4px solid ${stat.color}` }}>
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 3,
+                      borderTop: `6px solid ${stat.color}`,
+                      boxShadow: '0 6px 18px rgba(0,0,0,0.04)',
+                      transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 14px 26px rgba(0,0,0,0.08)'
+                      }
+                    }}
+                  >
                     <CardContent sx={{ textAlign: 'center', py: 2 }}>
                       <Typography variant="h5" fontWeight="900" sx={{ color: stat.color }}>{stat.count}</Typography>
                       <Typography variant="caption" fontWeight="bold" color="textSecondary">{stat.label}</Typography>

@@ -74,7 +74,21 @@ const TeacherDoubts = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 2 }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+        <Paper
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            borderTop: '10px solid',
+            borderTopColor: 'primary.main',
+            boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+            }
+          }}
+        >
           <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Typography variant="h4" fontWeight="800" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

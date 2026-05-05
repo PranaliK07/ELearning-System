@@ -16,6 +16,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack, Assignment, CloudUpload, TaskAlt, InsertDriveFile } from '@mui/icons-material';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
+import { resolveUploadSrc } from '../../utils/media';
 import { validateRequiredText } from '../../utils/validation';
 
 const StudentAssignmentView = () => {
@@ -27,7 +28,6 @@ const StudentAssignmentView = () => {
   const [fileUrl, setFileUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [contentError, setContentError] = useState('');
 
   async function fetchAssignmentDetails() {
     try {
@@ -55,18 +55,16 @@ const StudentAssignmentView = () => {
   }, [assignmentId]);
 
   const handleSubmit = async () => {
-    const hasText = content && content.trim().length >= 1;
-    if (!hasText && !fileUrl) {
-      const err = 'Add some text or upload a file before submitting';
-      setContentError(err);
-      toast.error(err);
+    if (!fileUrl) {
+      toast.error('Please upload your assignment (PDF/Doc/Image) before submitting');
       return;
     }
-    const error = hasText ? validateRequiredText(content, 'Submission', 10) : '';
-    setContentError(error);
-    if (error) return;
+
     try {
-      await axios.post(`/api/assignments/${assignmentId}/submissions`, { content: content.trim(), fileUrl });
+      await axios.post(`/api/assignments/${assignmentId}/submissions`, { 
+        content: content.trim(), 
+        fileUrl 
+      });
       toast.success('Assignment submitted successfully!');
       fetchAssignmentDetails();
     } catch (error) {
@@ -76,7 +74,7 @@ const StudentAssignmentView = () => {
 
   const handleFileUpload = async (file) => {
     if (!file) return;
-    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'image/png', 'image/jpeg'];
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!allowed.includes(file.type)) {
       toast.error('Upload PDF, DOC, PPT, XLS, or image files');
       return;
@@ -89,9 +87,7 @@ const StudentAssignmentView = () => {
     form.append('attachment', file);
     try {
       setUploading(true);
-      const { data } = await axios.post('/api/upload/assignment', form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await axios.post('/api/upload/assignment', form);
       setFileUrl(data.fileUrl);
       toast.success('File uploaded');
     } catch (error) {
@@ -114,7 +110,7 @@ const StudentAssignmentView = () => {
         <Typography variant="h4" fontWeight="bold">Assignment Details</Typography>
       </Box>
 
-      <Paper sx={{ p: 4, borderRadius: 4, mb: 4, borderTop: '8px solid #0B1F3B' }}>
+      <Paper sx={{ p: 4, borderRadius: 4, mb: 4, borderTop: '8px solid #D18AC4' }}>
         <Grid container spacing={3}>
           <Grid size={12}>
             <Box
@@ -144,7 +140,7 @@ const StudentAssignmentView = () => {
             {assignment.attachmentUrl && (
               <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <InsertDriveFile color="primary" />
-                <Button variant="text" onClick={() => window.open(assignment.attachmentUrl, '_blank')}>
+                <Button variant="text" onClick={() => window.open(resolveUploadSrc(assignment.attachmentUrl), '_blank')}>
                   View attached file
                 </Button>
               </Box>
@@ -180,17 +176,14 @@ const StudentAssignmentView = () => {
             fullWidth
             multiline
             rows={8}
-            placeholder="Type your answer here or paste a link to your document..."
+            placeholder="Optional: Provide any additional notes or links here..."
             variant="outlined"
             value={content}
             onChange={(e) => {
               setContent(e.target.value);
-              setContentError('');
             }}
             sx={{ mb: 3 }}
             disabled={alreadySubmitted}
-            error={!!contentError}
-            helperText={contentError}
           />
           <Box display="flex" alignItems="center" gap={2} mb={2}>
             <Button
@@ -199,12 +192,12 @@ const StudentAssignmentView = () => {
               component="label"
               disabled={alreadySubmitted || uploading}
             >
-              {uploading ? 'Uploading...' : 'Upload PDF/Doc'}
+              {uploading ? 'Uploading...' : 'Upload PDF/Doc (Required)'}
               <input type="file" hidden accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={(e) => handleFileUpload(e.target.files?.[0])} />
             </Button>
             {fileUrl && (
               <>
-                <Button variant="text" onClick={() => window.open(fileUrl, '_blank')}>View uploaded</Button>
+                <Button variant="text" onClick={() => window.open(resolveUploadSrc(fileUrl), '_blank')}>View uploaded</Button>
                 {!alreadySubmitted && (
                   <Button color="warning" variant="text" onClick={() => setFileUrl('')}>Remove</Button>
                 )}
@@ -221,7 +214,7 @@ const StudentAssignmentView = () => {
             <Button
               variant="contained"
               size="large"
-              disabled={(!content.trim() && !fileUrl) || alreadySubmitted}
+              disabled={!fileUrl || alreadySubmitted}
               onClick={handleSubmit}
               sx={{ px: 4, borderRadius: 5, width: { xs: '100%', sm: 'auto' } }}
             >

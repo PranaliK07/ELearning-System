@@ -35,14 +35,22 @@ const ProfileForm = ({
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
+    let { name, value } = e.target;
+    
+    // Strict validation for name field (characters and spaces only)
+    if (name === 'name') {
+      value = value.replace(/[^a-zA-Z\s]/g, '');
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
-    if (errors[e.target.name]) {
+
+    if (errors[name]) {
       setErrors({
         ...errors,
-        [e.target.name]: ''
+        [name]: ''
       });
     }
   };
@@ -82,7 +90,21 @@ const ProfileForm = ({
   };
 
   return (
-    <Paper sx={{ p: 4, borderRadius: 4 }}>
+    <Paper
+      sx={{
+        p: 4,
+        borderRadius: 4,
+        border: '2px solid',
+        borderColor: 'primary.main',
+        borderTop: '10px solid',
+        borderTopColor: 'primary.main',
+        boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+        }
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -167,7 +189,7 @@ const ProfileForm = ({
           <TextField
             select
             fullWidth
-            label="Grade/Class"
+            label="Class"
             name="grade"
             value={formData.grade}
             onChange={handleChange}

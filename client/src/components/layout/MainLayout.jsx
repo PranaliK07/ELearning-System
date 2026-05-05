@@ -251,8 +251,8 @@ const MainLayout = () => {
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer + 1,
           background: mode === 'light' 
-            ? 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)' 
-            : 'linear-gradient(135deg, #08162B 0%, #17325C 100%)'
+            ? 'linear-gradient(135deg, #006D5B 0%, #008C75 100%)' 
+            : 'linear-gradient(135deg, #06100E 0%, #0B1A17 100%)'
         }}
       >
         <Toolbar>

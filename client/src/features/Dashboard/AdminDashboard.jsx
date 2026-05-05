@@ -23,17 +23,17 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   CheckCircle,
-  EventAvailable,
   People,
   Refresh,
   ReportProblem,
   School,
   Source,
-  WarningAmber,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -161,13 +161,12 @@ const AdminDashboard = () => {
   };
 
   const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: <People />, color: '#2563eb' },
-    { label: 'Active Users', value: stats.activeUsers, icon: <CheckCircle />, color: '#16a34a' },
-    { label: 'Students', value: stats.totalStudents, icon: <School />, color: '#f59e0b' },
-    { label: 'Teachers', value: stats.totalTeachers, icon: <People />, color: '#ef4444' },
-    { label: 'Total Learning Assets', value: stats.totalContent, icon: <Source />, color: '#7c3aed' },
-    { label: 'Open Reports', value: stats.openReports, icon: <ReportProblem />, color: '#db2777' },
-    { label: 'Attendance (Today)', value: stats.attendanceMarkedToday, icon: <EventAvailable />, color: '#0ea5e9' },
+    { label: 'Total Users', value: stats.totalUsers, icon: <People />, color: '#006D5B' },
+    { label: 'Active Users', value: stats.activeUsers, icon: <CheckCircle />, color: '#008C75' },
+    { label: 'Students', value: stats.totalStudents, icon: <School />, color: '#004D40' },
+    { label: 'Teachers', value: stats.totalTeachers, icon: <People />, color: '#006D5B' },
+    { label: 'Total Learning Assets', value: stats.totalContent, icon: <Source />, color: '#008C75' },
+    { label: 'Open Reports', value: stats.openReports, icon: <ReportProblem />, color: '#004D40' },
   ];
 
   const inactiveUsers = Math.max(stats.totalUsers - stats.activeUsers, 0);
@@ -200,57 +199,75 @@ const AdminDashboard = () => {
             </Typography>
           </Box>
           <Button
-            variant="outlined"
-            startIcon={refreshing ? <CircularProgress size={20} /> : <Refresh />}
+            variant="contained"
+            startIcon={refreshing ? <CircularProgress size={20} color="inherit" /> : <Refresh />}
             onClick={handleRefresh}
             disabled={refreshing}
+            sx={{ borderRadius: '12px', px: 3 }}
           >
-            Refresh
+            Refresh Data
           </Button>
         </Box>
 
-        {loading && <LinearProgress sx={{ mb: 3 }} />}
+        {loading && <LinearProgress sx={{ mb: 4, borderRadius: 2 }} />}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-          <Grid container spacing={3} sx={{ maxWidth: { xs: '100%', sm: 600, md: 700 } }}>
+        {/* SECTION 1: SYSTEM COMMAND CENTER */}
+        <Paper sx={{ 
+          p: { xs: 2.5, sm: 4 }, 
+          mb: 5, 
+          borderRadius: 6, 
+          bgcolor: alpha('#006D5B', 0.03),
+          border: '1px solid rgba(0, 109, 91, 0.1)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+        }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" fontWeight="900" sx={{ color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              Platform Command Center <Box component="span" sx={{ fontSize: '1.2rem' }}>⚡</Box>
+            </Typography>
+            <Typography variant="body2" color="textSecondary">Real-time metrics and system health overview.</Typography>
+          </Box>
+
+          <Grid container spacing={2.5}>
             {statCards.map((card, index) => (
-              <Grid item xs={12} key={card.label}>
+              <Grid item xs={12} sm={6} md={4} key={card.label}>
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  initial={{ opacity: 0, y: 20 }}
+                  whileHover={{ y: -5, scale: 1.01 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card sx={{ 
-                    bgcolor: card.color, 
-                    color: 'white', 
-                    borderRadius: 8, // More rounded as seen in screenshot
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                    minHeight: 110,
-                    display: 'flex',
-                    alignItems: 'center',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    <CardContent sx={{ width: '100%', p: '24px !important' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Card sx={{ 
+                      borderRadius: 4,
+                      border: `2px solid ${alpha(card.color, 0.55)}`, // Vivid themed border
+                      borderTop: `6px solid ${card.color}`,
+                      bgcolor: '#ffffff',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                      height: '100%',
+                      transition: 'all 0.3s ease-in-out'
+                    }}>
+                    <CardContent sx={{ p: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 48,
+                          height: 48,
+                          borderRadius: '12px',
+                          bgcolor: alpha(card.color, 0.1),
+                          color: card.color,
+                          flexShrink: 0
+                        }}>
+                          {React.cloneElement(card.icon, { sx: { fontSize: 24 } })}
+                        </Box>
+                        
                         <Box>
-                          <Typography variant="subtitle2" sx={{ opacity: 0.9, fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'block' }}>
                             {card.label}
                           </Typography>
-                          <Typography variant="h3" fontWeight="900" sx={{ mt: 0.5 }}>
+                          <Typography variant="h5" fontWeight="900" sx={{ color: 'text.primary' }}>
                             {card.value}
                           </Typography>
-                        </Box>
-                        <Box sx={{ 
-                          bgcolor: 'rgba(255,255,255,0.25)',
-                          p: 2,
-                          borderRadius: '24px',
-                          display: 'flex',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                          backdropFilter: 'blur(4px)'
-                        }}>
-                          {React.cloneElement(card.icon, { sx: { fontSize: 40 } })}
                         </Box>
                       </Box>
                     </CardContent>
@@ -259,204 +276,250 @@ const AdminDashboard = () => {
               </Grid>
             ))}
           </Grid>
-        </Box>
+        </Paper>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Platform Overview
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Card variant="outlined" sx={{ height: '100%' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" gutterBottom>
-                        User Distribution
-                      </Typography>
-                      <Stack spacing={1.5}>
-                        <Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="body2">Students</Typography>
-                            <Typography variant="body2">{studentPercentage}%</Typography>
-                          </Box>
-                          <LinearProgress variant="determinate" value={studentPercentage} sx={{ height: 8, borderRadius: 999 }} />
-                        </Box>
-                        <Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="body2">Teachers</Typography>
-                            <Typography variant="body2">{teacherPercentage}%</Typography>
-                          </Box>
-                          <LinearProgress variant="determinate" value={teacherPercentage} color="warning" sx={{ height: 8, borderRadius: 999 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
-                            Inactive accounts
-                          </Typography>
-                          <Typography variant="h5">{inactiveUsers}</Typography>
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
+        {/* SECTION 2: PLATFORM ANALYTICS & INSIGHTS */}
+        <Paper sx={{ 
+          p: { xs: 2.5, sm: 4 }, 
+          mb: 5, 
+          borderRadius: 6, 
+          bgcolor: alpha('#008C75', 0.02),
+          border: '1px solid rgba(0, 140, 117, 0.08)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
+        }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" fontWeight="900" sx={{ color: '#008C75', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              Platform Analytics & Insights <Box component="span" sx={{ fontSize: '1.2rem' }}>📊</Box>
+            </Typography>
+            <Typography variant="body2" color="textSecondary">Deep dive into user distribution and content health.</Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 4, 
+              border: '2px solid rgba(0, 109, 91, 0.45)', // Vivid themed border
+              borderTop: '4px solid #006D5B', 
+              bgcolor: '#ffffff',
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: 'none' 
+            }}>
+              <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  User Distribution
+                </Typography>
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" color="textSecondary">Students</Typography>
+                      <Typography variant="body2" fontWeight="bold">{studentPercentage}%</Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={studentPercentage} sx={{ height: 8, borderRadius: 999 }} />
+                  </Box>
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" color="textSecondary">Teachers</Typography>
+                      <Typography variant="body2" fontWeight="bold">{teacherPercentage}%</Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={teacherPercentage} color="warning" sx={{ height: 8, borderRadius: 999 }} />
+                  </Box>
+                  <Box sx={{ pt: 1 }}>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+                      Inactive accounts
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">{inactiveUsers}</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 4, 
+              border: '2px solid rgba(0, 140, 117, 0.45)', // Vivid Emerald themed border
+              borderTop: '4px solid #008C75', 
+              bgcolor: '#ffffff', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: 'none' 
+            }}>
+              <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Content Summary
+                </Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Videos</Typography>
+                    <Typography variant="h5" fontWeight="bold">{contentBreakdown.videos}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Quizzes</Typography>
+                    <Typography variant="h5" fontWeight="bold">{contentBreakdown.quizzes}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Assignments</Typography>
+                    <Typography variant="h5" fontWeight="bold">{contentBreakdown.assignments}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Published</Typography>
+                    <Typography variant="h5" fontWeight="bold" color="success.main">{contentBreakdown.published}</Typography>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Card variant="outlined" sx={{ height: '100%' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Content Summary
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">Videos</Typography>
-                          <Typography variant="h5">{contentBreakdown.videos}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">Quizzes</Typography>
-                          <Typography variant="h5">{contentBreakdown.quizzes}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">Assignments</Typography>
-                          <Typography variant="h5">{contentBreakdown.assignments}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">Published</Typography>
-                          <Typography variant="h5">{contentBreakdown.published}</Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Recent Reports
-                      </Typography>
-                      {recentReports.length === 0 ? (
-                        <Typography variant="body2" color="textSecondary">
-                          No recent reports available.
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 4, 
+              border: '2px solid rgba(0, 77, 64, 0.45)', // Vivid Forest themed border
+              borderTop: '4px solid #004D40', 
+              bgcolor: '#ffffff', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: 'none' 
+            }}>
+              <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Recent Reports
+                </Typography>
+                {recentReports.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                    No recent reports available.
+                  </Typography>
+                ) : (
+                  <Stack divider={<Divider flexItem />} spacing={1.5} sx={{ mt: 1 }}>
+                    {recentReports.map((report) => (
+                      <Box key={report.id || report._id || `${report.title}-${report.createdAt}`}>
+                        <Typography variant="subtitle2" fontWeight="600" noWrap>
+                          {report.title || 'Untitled'}
                         </Typography>
-                      ) : (
-                        <Stack divider={<Divider flexItem />} spacing={1}>
-                          {recentReports.map((report) => (
-                            <Box key={report.id || report._id || `${report.title}-${report.createdAt}`}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
-                                <Box>
-                                  <Typography variant="subtitle2">
-                                    {report.title || 'Untitled'}
-                                  </Typography>
-                                  <Typography variant="body2" color="textSecondary">
-                                    {report.user || report.reportedBy || 'Anonymous'} • {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'No date'}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                  <Chip size="small" label={report.type || 'general'} />
-                                  <Chip
-                                    size="small"
-                                    label={report.status || 'pending'}
-                                    color={report.status === 'resolved' ? 'success' : report.status === 'in-progress' ? 'warning' : 'error'}
-                                  />
-                                </Box>
-                              </Box>
-                            </Box>
-                          ))}
-                        </Stack>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                          {report.user || report.reportedBy || 'Anonymous'} • {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'No date'}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Chip size="small" label={report.type || 'general'} sx={{ fontSize: '0.65rem', height: 18 }} />
+                          <Chip
+                            size="small"
+                            label={report.status || 'pending'}
+                            color={report.status === 'resolved' ? 'success' : report.status === 'in-progress' ? 'warning' : 'error'}
+                            sx={{ fontSize: '0.65rem', height: 18 }}
+                          />
+                        </Box>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+            </Grid>
+        </Paper>
+
+        {/* SECTION 3: OPERATIONAL ACTIVITY STREAM */}
+        <Paper sx={{ 
+          p: { xs: 2.5, sm: 4 }, 
+          mb: 5, 
+          borderRadius: 6, 
+          bgcolor: alpha('#004D40', 0.02),
+          border: '1px solid rgba(0, 77, 64, 0.08)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
+        }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" fontWeight="900" sx={{ color: '#004D40', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              Operational Activity Stream <Box component="span" sx={{ fontSize: '1.2rem' }}>🚀</Box>
+            </Typography>
+            <Typography variant="body2" color="textSecondary">Real-time monitoring of user activity and support doubts.</Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 4, 
+              border: '2px solid rgba(0, 109, 91, 0.45)', // Vivid themed border
+              borderTop: '4px solid #006D5B', 
+              height: '100%', 
+              boxShadow: 'none' 
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 3, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    Platform Doubts <Box component="span" sx={{ fontSize: '1.1rem', opacity: 0.8 }}>❓</Box>
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    Monitor and manage student-teacher communications.
+                  </Typography>
+                </Box>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => navigate('/admin/doubts')} 
+                  sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+                >
+                  View All History
+                </Button>
+              </Box>
+              <DoubtTable />
             </Paper>
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Stack spacing={3}>
-              <Paper sx={{ p: 3, borderRadius: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Attention Needed
-                </Typography>
-                <Stack spacing={2}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <WarningAmber color="warning" />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Inactive users
-                      </Typography>
-                      <Typography variant="h6">{inactiveUsers}</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <ReportProblem color="error" />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Open reports
-                      </Typography>
-                      <Typography variant="h6">{stats.openReports}</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Source color="secondary" />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Unpublished content
-                      </Typography>
-                      <Typography variant="h6">{Math.max(stats.totalContent - contentBreakdown.published, 0)}</Typography>
-                    </Box>
-                  </Box>
-                </Stack>
-              </Paper>
-
-              <Paper sx={{ p: 3, borderRadius: 3 }}>
-                <Typography variant="h6" gutterBottom>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 4, 
+              border: '1.5px solid rgba(0, 109, 91, 0.2)', 
+              borderTop: '4px solid #008C75', 
+              bgcolor: '#ffffff', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: 'none' 
+            }}>
+              <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Newest Users
                 </Typography>
                 {recentUsers.length === 0 ? (
-                  <Typography variant="body2" color="textSecondary">
+                  <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
                     No users available.
                   </Typography>
                 ) : (
-                  <Stack divider={<Divider flexItem />} spacing={1}>
+                  <Stack divider={<Divider flexItem />} spacing={1.5} sx={{ mt: 1 }}>
                     {recentUsers.map((user) => (
                       <Box key={user.id || user._id || user.email}>
-                        <Typography variant="subtitle2">{user.name || 'Unknown User'}</Typography>
-                        <Typography variant="body2" color="textSecondary">
+                        <Typography variant="subtitle2" fontWeight="700">{user.name || 'Unknown User'}</Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
                           {user.email || 'No email'}
                         </Typography>
                         <Chip
                           size="small"
-                          sx={{ mt: 1 }}
                           label={user.role || 'student'}
-                          color={isAdminLikeRole(user.role) ? 'error' : user.role === 'teacher' ? 'warning' : 'primary'}
+                          sx={{ 
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            fontSize: '0.65rem',
+                            textTransform: 'uppercase',
+                            bgcolor: isAdminLikeRole(user.role) ? alpha('#ef4444', 0.1) : user.role === 'teacher' ? alpha('#f59e0b', 0.1) : alpha('#2563eb', 0.1),
+                            color: isAdminLikeRole(user.role) ? '#ef4444' : user.role === 'teacher' ? '#f59e0b' : '#2563eb',
+                            border: 'none',
+                            height: 20
+                          }}
                         />
                       </Box>
                     ))}
                   </Stack>
                 )}
-              </Paper>
-            </Stack>
+              </CardContent>
+            </Card>
           </Grid>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 4, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-                <Box>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    Platform Doubts ❓
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Monitor and manage student-teacher communications.
-                  </Typography>
-                </Box>
-                <Button variant="contained" onClick={() => navigate('/admin/doubts')} sx={{ borderRadius: 2, flexShrink: 0 }}>
-                  View All History
-                </Button>
-              </Box>
-              
-              <Divider sx={{ mb: 3 }} />
-              
-              <DoubtTable />
-            </Paper>
-          </Grid>
-        </Grid>
+            </Grid>
+        </Paper>
       </motion.div>
     </Container>
   );

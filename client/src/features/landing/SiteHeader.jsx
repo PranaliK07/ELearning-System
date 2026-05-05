@@ -16,7 +16,8 @@ import {
   ListItem,
   ListItemText,
   ListItemButton,
-  Divider
+  Divider,
+  alpha
 } from '@mui/material';
 import {
   Email,
@@ -40,6 +41,10 @@ const SiteHeader = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  const brandNavy = '#006D5B';
+  const themeColor = '#008C75';
+
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -180,7 +185,7 @@ const SiteHeader = () => {
                 sx={{
                   ml: 0.35,
                   fontWeight: 800,
-                  color: '#0B1F3B',
+                  color: brandNavy,
                   letterSpacing: '-0.02em',
                   fontSize: { xs: '1rem', md: '1.25rem' }
                 }}
@@ -203,9 +208,9 @@ const SiteHeader = () => {
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 2,
-                      '&:hover': { color: '#B0125B', bgcolor: 'rgba(176,18,91,0.04)' },
+                      '&:hover': { color: themeColor, bgcolor: alpha(themeColor, 0.04) },
                       '&.active': {
-                        color: '#B0125B',
+                        color: themeColor,
                         fontWeight: 800
                       }
                     }}
@@ -221,16 +226,16 @@ const SiteHeader = () => {
                     startIcon={<Dashboard sx={{ fontSize: 18 }} />}
                     sx={{
                       ml: 1,
-                      background: 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)',
+                      background: `linear-gradient(135deg, ${brandNavy} 0%, ${themeColor} 100%)`,
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 3,
                       py: 1,
                       borderRadius: '50px',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #08162B 0%, #C2185B 100%)',
+                        background: `linear-gradient(135deg, ${themeColor} 0%, ${brandNavy} 100%)`,
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 15px rgba(11,31,59,0.3)'
+                        boxShadow: `0 6px 15px ${alpha(themeColor, 0.3)}`
                       },
                       transition: 'all 0.3s ease'
                     }}
@@ -245,16 +250,16 @@ const SiteHeader = () => {
                     startIcon={<Login sx={{ fontSize: 18 }} />}
                     sx={{
                       ml: 1,
-                      background: 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)',
+                      background: `linear-gradient(135deg, ${brandNavy} 0%, ${themeColor} 100%)`,
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 3,
                       py: 1,
                       borderRadius: '50px',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #08162B 0%, #C2185B 100%)',
+                        background: `linear-gradient(135deg, ${themeColor} 0%, ${brandNavy} 100%)`,
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 15px rgba(11,31,59,0.3)'
+                        boxShadow: `0 6px 15px ${alpha(themeColor, 0.3)}`
                       },
                       transition: 'all 0.3s ease'
                     }}

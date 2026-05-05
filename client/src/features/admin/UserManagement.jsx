@@ -28,11 +28,16 @@ import {
   DialogActions,
   useMediaQuery,
   useTheme,
-  Divider
+  Divider,
+  Stack,
+  alpha,
+  Tooltip
 } from '@mui/material';
-import { Add, Search, Edit, Delete } from '@mui/icons-material';
+import { Add, Search, Edit, Delete, People } from '@mui/icons-material';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
+import { resolveAvatarSrc } from '../../utils/media';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import {
   validateEmail,
   validateName,
@@ -45,9 +50,9 @@ const UserManagement = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
   const [openUserDialog, setOpenUserDialog] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [originalUser, setOriginalUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [newUser, setNewUser] = useState({
@@ -59,6 +64,7 @@ const UserManagement = () => {
     parentPhone: '',
     status: 'active'
   });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, userId: null });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -81,14 +87,22 @@ const UserManagement = () => {
   }, []);
 
   const filteredUsers = useMemo(() => {
-    const term = searchTerm.toLowerCase();
     return (Array.isArray(users) ? users : []).filter((user) => {
-      const matchesSearch = (user.name || '').toLowerCase().includes(term) ||
-        (user.email || '').toLowerCase().includes(term);
-      const matchesRole = filterRole === 'all' || user.role === filterRole;
-      return matchesSearch && matchesRole;
+      const search = searchTerm.toLowerCase();
+      const gradeStr = String(user.grade || '').toLowerCase();
+      const classNameStr = `class ${gradeStr}`;
+      
+      return (
+        String(user.name || '').toLowerCase().includes(search) ||
+        String(user.email || '').toLowerCase().includes(search) ||
+        String(user.role || '').toLowerCase().includes(search) ||
+        gradeStr.includes(search) ||
+        classNameStr.includes(search) ||
+        String(user.parentPhone || '').toLowerCase().includes(search) ||
+        String(user.status || '').toLowerCase().includes(search)
+      );
     });
-  }, [users, searchTerm, filterRole]);
+  }, [users, searchTerm]);
 
   const handleDeleteUser = async (userId) => {
     try {
@@ -136,7 +150,15 @@ const UserManagement = () => {
 
   return (
     <Container maxWidth="lg">
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
+      <Paper sx={{ 
+        p: { xs: 2.5, sm: 4 }, 
+        borderRadius: 5,
+        border: '2.5px solid rgba(0, 109, 91, 0.55)', // Vivid Mint themed border
+        borderTop: '6px solid #006D5B', 
+        bgcolor: '#ffffff',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+        transition: 'all 0.3s ease'
+      }}>
         <Box
           sx={{
             display: 'flex',
@@ -147,22 +169,10 @@ const UserManagement = () => {
             mb: 3
           }}
         >
-          <Typography variant="h6" fontWeight="bold">User Management</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: '1 1 120px' }, minWidth: { sm: 160 } }}>
-              <InputLabel>Filter by Role</InputLabel>
-              <Select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                label="Filter by Role"
-              >
-                <MenuItem value="all">All Roles</MenuItem>
-                <MenuItem value="student">Students</MenuItem>
-                <MenuItem value="teacher">Teachers</MenuItem>
-                <MenuItem value="parent">Parents</MenuItem>
-                <MenuItem value="admin">Admins</MenuItem>
-              </Select>
-            </FormControl>
+          <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <People color="primary" /> User Management
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
               size="small"
               placeholder="Search users..."
@@ -171,18 +181,19 @@ const UserManagement = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search />
+                    <Search fontSize="small" color="action" />
                   </InputAdornment>
-                )
+                ),
               }}
-              sx={{ flex: { xs: '1 1 100%', sm: '1 1 200px' } }}
+              sx={{ minWidth: 250 }}
             />
             <Button
               variant="contained"
               startIcon={<Add />}
-              sx={{ width: { xs: '100%', sm: 'auto' }, py: 1 }}
+              sx={{ px: 3, py: 1, borderRadius: 2 }}
               onClick={() => {
                 setEditingUserId(null);
+                setOriginalUser(null);
                 setNewUser({ name: '', email: '', role: 'student', grade: '', studentEmail: '', parentPhone: '', status: 'active' });
                 setOpenUserDialog(true);
               }}
@@ -205,7 +216,15 @@ const UserManagement = () => {
                 <Paper
                   key={user.id || user._id}
                   variant="outlined"
-                  sx={{ p: 2, borderRadius: 2, position: 'relative' }}
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: 3, 
+                    position: 'relative',
+                    border: '1.5px solid rgba(0, 109, 91, 0.15)',
+                    borderTop: '6px solid #006D5B',
+                    bgcolor: '#ffffff',
+                    transition: 'all 0.3s ease'
+                  }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
@@ -285,11 +304,7 @@ const UserManagement = () => {
                       size="small"
                       color="error"
                       startIcon={<Delete />}
-                      onClick={() => {
-                        if (window.confirm('Delete this user? This cannot be undone.')) {
-                          handleDeleteUser(user.id || user._id);
-                        }
-                      }}
+                      onClick={() => setConfirmDialog({ open: true, userId: user.id || user._id })}
                     >
                       Delete
                     </Button>
@@ -302,13 +317,14 @@ const UserManagement = () => {
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 650 }}>
               <TableHead>
-                <TableRow>
-                  <TableCell>User</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Grade</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Last Login</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>User Name</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Class</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Parent Mobile</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -322,24 +338,35 @@ const UserManagement = () => {
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id || user._id} hover>
+                    <TableRow 
+                      key={user.id || user._id} 
+                      hover 
+                      sx={{ 
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                        '&:hover': { 
+                          bgcolor: 'rgba(0, 0, 0, 0.04) !important',
+                          boxShadow: 'inset 4px 0 0 #006D5B',
+                          '& .MuiTableCell-root': {
+                            color: 'primary.main'
+                          }
+                        } 
+                      }}
+                    >
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
-                            {(user.name || 'U').charAt(0).toUpperCase()}
+                          <Avatar 
+                            sx={{ mr: 2, bgcolor: 'primary.main', width: 32, height: 32, fontSize: '0.875rem' }}
+                            src={resolveAvatarSrc(user.avatar)}
+                          >
+                            {user.name?.charAt(0).toUpperCase()}
                           </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2">{user.name || 'Unknown'}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {user.email || 'No email'}
-                            </Typography>
-                            {user.role === 'student' && user.parent && (
-                              <Typography variant="caption" color="textSecondary" display="block">
-                                Parent: {user.parent.name} ({user.parent.email})
-                              </Typography>
-                            )}
-                          </Box>
+                          <Typography variant="body2" fontWeight="medium">{user.name}</Typography>
                         </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{user.email}</Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -364,37 +391,50 @@ const UserManagement = () => {
                           color={(user.status === 'active' || user.status === 'Active') ? 'success' : 'default'}
                         />
                       </TableCell>
-                      <TableCell>{user.lastLogin || 'Never'}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{user.parentPhone || '-'}</Typography>
+                      </TableCell>
                       <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setEditingUserId(user.id || user._id);
-                            setNewUser({
-                              name: user.name || '',
-                              email: user.email || '',
-                              role: user.role || 'student',
-                              grade: user.grade || '',
-                              studentEmail: '',
-                              parentPhone: user.parentPhone || '',
-                              status: (user.status === 'inactive' || user.isActive === false) ? 'inactive' : 'active'
-                            });
-                            setOpenUserDialog(true);
-                          }}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => {
-                            if (window.confirm('Delete this user? This cannot be undone.')) {
-                              handleDeleteUser(user.id || user._id);
-                            }
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              const userData = {
+                                name: user.name || '',
+                                email: user.email || '',
+                                role: user.role || 'student',
+                                grade: user.grade || '',
+                                studentEmail: '',
+                                parentPhone: user.parentPhone || '',
+                                status: (user.status === 'inactive' || user.isActive === false) ? 'inactive' : 'active'
+                              };
+                              setEditingUserId(user.id || user._id);
+                              setOriginalUser(userData);
+                              setNewUser(userData);
+                              setOpenUserDialog(true);
+                            }}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.info.main, 0.1), 
+                              color: 'info.main',
+                              borderRadius: 1.5,
+                              '&:hover': { bgcolor: 'info.main', color: 'white' }
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setConfirmDialog({ open: true, userId: user.id || user._id })}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.error.main, 0.1), 
+                              borderRadius: 1.5,
+                              '&:hover': { bgcolor: 'error.main', color: 'white' }
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
@@ -414,120 +454,117 @@ const UserManagement = () => {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>{editingUserId ? 'Edit User' : 'Add New User'}</DialogTitle>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>{editingUserId ? 'Edit User' : 'Add New User'}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                value={newUser.name}
-                onChange={(e) => {
-                  setNewUser((prev) => ({ ...prev, name: e.target.value }));
-                  setFormErrors((prev) => ({ ...prev, name: '' }));
-                }}
-                error={!!formErrors.name}
-                helperText={formErrors.name}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                type="email"
-                label="Email"
-                value={newUser.email}
-                onChange={(e) => {
-                  setNewUser((prev) => ({ ...prev, email: e.target.value }));
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              variant="outlined"
+              value={newUser.name}
+              onChange={(e) => {
+                // Only allow characters and spaces
+                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                setNewUser((prev) => ({ ...prev, name: val }));
+                setFormErrors((prev) => ({ ...prev, name: '' }));
+              }}
+              error={!!formErrors.name}
+              helperText={formErrors.name}
+            />
+            <TextField
+              fullWidth
+              type="email"
+              label="Email Address"
+              variant="outlined"
+              value={newUser.email}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewUser((prev) => ({ ...prev, email: val }));
+                if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                  setFormErrors((prev) => ({ ...prev, email: 'Please enter a valid email address' }));
+                } else {
                   setFormErrors((prev) => ({ ...prev, email: '' }));
+                }
+              }}
+              error={!!formErrors.email}
+              helperText={formErrors.email}
+            />
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>User Role</InputLabel>
+              <Select
+                label="User Role"
+                value={newUser.role}
+                onChange={(e) => {
+                  setNewUser((prev) => ({ ...prev, role: e.target.value, studentEmail: '' }));
+                  setFormErrors((prev) => ({ ...prev, role: '', grade: '', studentEmail: '' }));
                 }}
-                error={!!formErrors.email}
-                helperText={formErrors.email}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  label="Role"
-                  value={newUser.role}
-                  onChange={(e) => {
-                    setNewUser((prev) => ({ ...prev, role: e.target.value, studentEmail: '' }));
-                    setFormErrors((prev) => ({ ...prev, role: '', grade: '', studentEmail: '' }));
-                  }}
-                  error={!!formErrors.role}
-                >
-                  <MenuItem value="student">Student</MenuItem>
-                  <MenuItem value="teacher">Teacher</MenuItem>
-                  <MenuItem value="demo">Demo User</MenuItem>
-                  <MenuItem value="parent">Parent</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+                error={!!formErrors.role}
+              >
+                <MenuItem value="student">Student</MenuItem>
+                <MenuItem value="teacher">Teacher</MenuItem>
+                <MenuItem value="demo">Demo User</MenuItem>
+                <MenuItem value="parent">Parent</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Account Status</InputLabel>
+              <Select
+                label="Account Status"
+                value={newUser.status}
+                onChange={(e) => {
+                  setNewUser((prev) => ({ ...prev, status: e.target.value }));
+                  setFormErrors((prev) => ({ ...prev, status: '' }));
+                }}
+                error={!!formErrors.status}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Class"
+              placeholder="Enter class number"
+              disabled={newUser.role !== 'student'}
+              value={newUser.grade}
+              onChange={(e) => {
+                setNewUser((prev) => ({ ...prev, grade: e.target.value.replace(/[^\d]/g, '') }));
+                setFormErrors((prev) => ({ ...prev, grade: '' }));
+              }}
+              error={!!formErrors.grade}
+              helperText={formErrors.grade || (newUser.role !== 'student' ? "Only applicable for students" : "")}
+            />
+            <TextField
+              fullWidth
+              label="Primary Contact Number"
+              placeholder="+91 00000 00000"
+              value={newUser.parentPhone}
+              onChange={(e) => {
+                // Allow digits and '+' at the start
+                const val = e.target.value.replace(/[^\d+]/g, '');
+                setNewUser((prev) => ({ ...prev, parentPhone: val }));
+                setFormErrors((prev) => ({ ...prev, parentPhone: '' }));
+              }}
+              error={!!formErrors.parentPhone}
+              helperText={formErrors.parentPhone}
+            />
+            {newUser.role === 'parent' && (
               <TextField
                 fullWidth
-                label="Grade (if student)"
-                value={newUser.grade}
+                label="Student Email to Link"
+                variant="filled"
+                value={newUser.studentEmail}
                 onChange={(e) => {
-                  setNewUser((prev) => ({ ...prev, grade: e.target.value.replace(/[^\d]/g, '') }));
-                  setFormErrors((prev) => ({ ...prev, grade: '' }));
+                  setNewUser((prev) => ({ ...prev, studentEmail: e.target.value }));
+                  setFormErrors((prev) => ({ ...prev, studentEmail: '' }));
                 }}
-                disabled={newUser.role !== 'student'}
-                error={!!formErrors.grade}
-                helperText={formErrors.grade}
+                placeholder="Enter student's email to link this parent"
+                error={!!formErrors.studentEmail}
+                helperText={formErrors.studentEmail}
               />
-            </Grid>
-            {(newUser.role === 'parent' || newUser.role === 'student') && (
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={newUser.role === 'student' ? "Parent Mobile (SMS notifications)" : "Parent Mobile Number"}
-                  value={newUser.parentPhone}
-                  onChange={(e) => {
-                    setNewUser((prev) => ({ ...prev, parentPhone: e.target.value }));
-                    setFormErrors((prev) => ({ ...prev, parentPhone: '' }));
-                  }}
-                  error={!!formErrors.parentPhone}
-                  helperText={formErrors.parentPhone}
-                  placeholder="+91 9876543210"
-                />
-              </Grid>
             )}
-            {newUser.role === 'parent' && (
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Student Email to Link"
-                  value={newUser.studentEmail}
-                  onChange={(e) => {
-                    setNewUser((prev) => ({ ...prev, studentEmail: e.target.value }));
-                    setFormErrors((prev) => ({ ...prev, studentEmail: '' }));
-                  }}
-                  placeholder="Optional"
-                  error={!!formErrors.studentEmail}
-                  helperText={formErrors.studentEmail}
-                />
-              </Grid>
-            )}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  label="Status"
-                  value={newUser.status}
-                  onChange={(e) => {
-                    setNewUser((prev) => ({ ...prev, status: e.target.value }));
-                    setFormErrors((prev) => ({ ...prev, status: '' }));
-                  }}
-                  error={!!formErrors.status}
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+          </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
@@ -562,6 +599,21 @@ const UserManagement = () => {
                 let response;
 
                 if (editingUserId) {
+                  // Check if any changes were actually made
+                  const isUnchanged = 
+                    originalUser.name === newUser.name.trim() &&
+                    originalUser.email === newUser.email.trim() &&
+                    originalUser.role === newUser.role &&
+                    String(originalUser.grade) === String(newUser.grade) &&
+                    originalUser.status === newUser.status &&
+                    originalUser.parentPhone === String(newUser.parentPhone || '').trim();
+
+                  if (isUnchanged) {
+                    setOpenUserDialog(false);
+                    setEditingUserId(null);
+                    return;
+                  }
+
                   response = await api.put(`/api/users/${editingUserId}`, payload);
                   await fetchUsers();
                 } else {
@@ -603,6 +655,17 @@ const UserManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This action cannot be undone."
+        onConfirm={() => {
+          handleDeleteUser(confirmDialog.userId);
+          setConfirmDialog({ open: false, userId: null });
+        }}
+        onClose={() => setConfirmDialog({ open: false, userId: null })}
+      />
     </Container>
   );
 };

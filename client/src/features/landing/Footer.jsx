@@ -37,8 +37,8 @@ const Footer = ({ onNavigate }) => {
   const isDark = theme.palette.mode === 'dark';
   const footerBg = '#0B1220';
   const footerText = '#E2E8F0';
-  const footerMuted = '#C7D2FE';
-  const footerAccent = '#A5B4FC';
+  const footerMuted = '#88B0A8';
+  const footerAccent = '#00A389';
   return (
     <Box
       component="footer"
@@ -58,7 +58,7 @@ const Footer = ({ onNavigate }) => {
           position: 'absolute',
           inset: 0,
           background:
-            'radial-gradient(circle at 20% 10%, rgba(102,126,234,0.25), transparent 40%), radial-gradient(circle at 85% 80%, rgba(118,75,162,0.2), transparent 40%)',
+            'radial-gradient(circle at 20% 10%, rgba(0,109,91,0.25), transparent 40%), radial-gradient(circle at 85% 80%, rgba(0,140,117,0.2), transparent 40%)',
           opacity: isDark ? 0.9 : 0.25,
           pointerEvents: 'none'
         }}

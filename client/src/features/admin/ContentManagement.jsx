@@ -27,7 +27,8 @@ import {
     CardActionArea,
     Radio,
     FormControlLabel,
-    Stack
+    Stack,
+    alpha
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
@@ -295,10 +296,28 @@ const ContentManagement = () => {
     };
 
     const categoryCards = [
-        { id: 'video', title: 'Video Lesson', icon: <VideoLibrary sx={{ fontSize: 40 }} />, color: '#B0125B' },
-        { id: 'reading', title: 'Study Notes', icon: <LibraryBooks sx={{ fontSize: 40 }} />, color: '#0B1F3B' },
+        { id: 'video', title: 'Video Lesson', icon: <VideoLibrary sx={{ fontSize: 40 }} />, color: '#00A389' },
+        { id: 'reading', title: 'Study Notes', icon: <LibraryBooks sx={{ fontSize: 40 }} />, color: '#00D09E' },
         { id: 'quiz', title: 'Interactive Quiz', icon: <QuizIcon sx={{ fontSize: 40 }} />, color: '#FF9800' }
     ];
+
+    const selectedTypeMeta = {
+        video: {
+            title: contentId ? 'Update Video Lesson' : 'Add Video Lesson',
+            subtitle: 'Upload your lesson video, attach a thumbnail, and organize it by class, subject, and topic.',
+            icon: <VideoLibrary sx={{ fontSize: 26 }} />
+        },
+        reading: {
+            title: contentId ? 'Update Study Notes' : 'Add Study Notes',
+            subtitle: 'Add clear reading material with the right class and subject so students can find it quickly.',
+            icon: <LibraryBooks sx={{ fontSize: 26 }} />
+        },
+        quiz: {
+            title: contentId ? 'Update Interactive Quiz' : 'Add Interactive Quiz',
+            subtitle: 'Build a quick assessment with structured questions, answer options, and scoring settings.',
+            icon: <QuizIcon sx={{ fontSize: 26 }} />
+        }
+    };
 
     if (!selectedType) {
         return (
@@ -311,8 +330,16 @@ const ContentManagement = () => {
                             <Card 
                                 sx={{ 
                                     borderRadius: 4, 
-                                    border: selectedType === card.id ? `3px solid ${card.color}` : '3px solid transparent',
-                                    boxShadow: selectedType === card.id ? 10 : 2
+                                    borderTop: '6px solid',
+                                    borderColor: 'primary.main',
+                                    boxShadow: selectedType === card.id ? 12 : 2,
+                                    bgcolor: selectedType === card.id ? alpha(theme.palette.primary.main, 0.05) : 'background.paper',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        boxShadow: 8,
+                                        transform: 'translateY(-4px)',
+                                        bgcolor: alpha(theme.palette.primary.main, 0.02)
+                                    }
                                 }}
                             >
                                 <CardActionArea onClick={() => setSelectedType(card.id)} sx={{ p: 3, textAlign: 'center' }}>
@@ -330,13 +357,99 @@ const ContentManagement = () => {
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Box sx={{ mb: 2 }}><Button onClick={() => setSelectedType(null)}>Back</Button></Box>
-            <Paper sx={{ p: 4, borderRadius: 4, mb: 6, boxShadow: 3 }}>
+            <Paper
+                sx={{
+                    p: 4,
+                    borderRadius: 4,
+                    mb: 6,
+                    boxShadow: 3,
+                    borderTop: '6px solid',
+                    borderColor: 'primary.main'
+                }}
+            >
+                <Box
+                    sx={{
+                        mb: 4,
+                        px: { xs: 0.5, sm: 1 },
+                        py: { xs: 1.5, sm: 2 },
+                        borderRadius: 3,
+                        bgcolor: alpha(theme.palette.primary.main, 0.06),
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                        gap: 2
+                    }}
+                >
+                    <Box
+                        sx={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: 2.5,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            boxShadow: '0 10px 24px rgba(0,109,91,0.18)'
+                        }}
+                    >
+                        {selectedTypeMeta[selectedType]?.icon}
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography
+                            variant="h4"
+                            sx={{
+                                fontWeight: 900,
+                                lineHeight: 1.1,
+                                letterSpacing: '-0.03em',
+                                fontSize: { xs: '1.65rem', sm: '2rem' },
+                                color: 'text.primary'
+                            }}
+                        >
+                            {selectedTypeMeta[selectedType]?.title}
+                        </Typography>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                mt: 1,
+                                maxWidth: 760,
+                                color: 'text.secondary',
+                                fontWeight: 500
+                            }}
+                        >
+                            {selectedTypeMeta[selectedType]?.subtitle}
+                        </Typography>
+                    </Box>
+                </Box>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 6 }}><TextField select fullWidth label="Class" value={formData.gradeId} onChange={(e) => setFormData({...formData, gradeId: e.target.value})}>{grades.map(g => <MenuItem key={g.id} value={g.id}>Class {g.level}</MenuItem>)}</TextField></Grid>
                         <Grid size={{ xs: 12, sm: 6 }}><TextField select fullWidth label="Subject" value={formData.subjectId} onChange={(e) => setFormData({...formData, subjectId: e.target.value})} disabled={!formData.gradeId}>{subjects.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}</TextField></Grid>
                         <Grid size={{ xs: 12, sm: 9 }}><TextField select fullWidth label="Topic" value={formData.topicId} onChange={(e) => setFormData({...formData, topicId: e.target.value})} disabled={!formData.subjectId}>{topics.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}</TextField></Grid>
-                        <Grid size={{ xs: 12, sm: 3 }}><Button fullWidth variant="outlined" sx={{ height: '56px' }} startIcon={<Add />} onClick={() => setTopicDialogOpen(true)} disabled={!formData.subjectId}>New Topic</Button></Grid>
+                        <Grid size={{ xs: 12, sm: 3 }}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                sx={{
+                                    height: '56px',
+                                    borderTop: '6px solid',
+                                    borderColor: 'primary.main',
+                                    transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-3px)',
+                                        boxShadow: '0 12px 24px rgba(0,0,0,0.08)',
+                                        borderColor: 'primary.main'
+                                    }
+                                }}
+                                startIcon={<Add />}
+                                onClick={() => setTopicDialogOpen(true)}
+                                disabled={!formData.subjectId}
+                            >
+                                New Topic
+                            </Button>
+                        </Grid>
                         <Grid size={12}><TextField fullWidth label="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required /></Grid>
 
                         {selectedType === 'quiz' ? (
@@ -374,7 +487,19 @@ const ContentManagement = () => {
                                 </Grid>
                                 <Stack spacing={4}>
                                     {questions.map((q, qIndex) => (
-                                        <Card key={q.id} variant="outlined" sx={{ p: 3, borderRadius: 3, position: 'relative' }}>
+                                        <Card 
+                                            key={q.id} 
+                                            variant="outlined" 
+                                            sx={{ 
+                                                p: 3, 
+                                                borderRadius: 3, 
+                                                position: 'relative',
+                                                borderTop: '6px solid',
+                                                borderColor: 'primary.main',
+                                                '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
                                             <IconButton 
                                                 onClick={() => handleRemoveQuestion(q.id)} 
                                                 sx={{ position: 'absolute', top: 10, right: 10 }}
@@ -415,16 +540,70 @@ const ContentManagement = () => {
                         ) : (
                             <>
                                 <Grid size={selectedType === 'video' ? 6 : 12}>
-                                    <Button variant="outlined" component="label" fullWidth startIcon={<CloudUpload />} sx={{ height: 100, borderStyle: 'dashed' }}>
+                                    <Button 
+                                        variant="outlined" 
+                                        component="label" 
+                                        fullWidth 
+                                        startIcon={<CloudUpload />} 
+                                        sx={{ 
+                                            height: 100, 
+                                            borderTop: '6px solid',
+                                            borderRadius: 3,
+                                            borderStyle: 'dashed', 
+                                            borderWidth: '2px',
+                                            borderColor: 'primary.main',
+                                            transition: 'transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease',
+                                            '&:hover': {
+                                                transform: 'translateY(-3px)',
+                                                boxShadow: '0 12px 24px rgba(0,0,0,0.08)',
+                                                borderWidth: '2px',
+                                                borderColor: 'primary.main',
+                                                bgcolor: alpha(theme.palette.primary.main, 0.05)
+                                            }
+                                        }}
+                                    >
                                         {selectedType === 'video' ? (videoFile ? videoFile.name : 'Upload Video') : (readingFile ? readingFile.name : 'Upload PDF')}
-                                        <input type="file" hidden name={selectedType} onChange={handleFileChange} />
+                                        <input 
+                                            type="file" 
+                                            hidden 
+                                            name={selectedType} 
+                                            onChange={handleFileChange} 
+                                            accept={selectedType === 'video' ? "video/mp4,video/mpeg,video/quicktime" : ".pdf,.doc,.docx"}
+                                        />
                                     </Button>
                                 </Grid>
                                 {selectedType === 'video' && (
                                     <Grid size={6}>
-                                        <Button variant="outlined" component="label" fullWidth startIcon={<CloudUpload />} sx={{ height: 100, borderStyle: 'dashed' }}>
+                                        <Button 
+                                            variant="outlined" 
+                                            component="label" 
+                                            fullWidth 
+                                            startIcon={<CloudUpload />} 
+                                            sx={{ 
+                                                height: 100, 
+                                                borderTop: '6px solid',
+                                                borderRadius: 3,
+                                                borderStyle: 'dashed', 
+                                                borderWidth: '2px',
+                                                borderColor: 'primary.main',
+                                                transition: 'transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-3px)',
+                                                    boxShadow: '0 12px 24px rgba(0,0,0,0.08)',
+                                                    borderWidth: '2px',
+                                                    borderColor: 'primary.main',
+                                                    bgcolor: alpha(theme.palette.primary.main, 0.05)
+                                                }
+                                            }}
+                                        >
                                             {thumbnailFile ? thumbnailFile.name : 'Upload Thumbnail'}
-                                            <input type="file" hidden name="thumbnail" onChange={handleFileChange} />
+                                            <input 
+                                                type="file" 
+                                                hidden 
+                                                name="thumbnail" 
+                                                onChange={handleFileChange} 
+                                                accept="image/*"
+                                            />
                                         </Button>
                                     </Grid>
                                 )}
@@ -436,7 +615,13 @@ const ContentManagement = () => {
                 </form>
             </Paper>
 
-            <Dialog open={topicDialogOpen} onClose={() => setTopicDialogOpen(false)}>
+            <Dialog 
+                open={topicDialogOpen} 
+                onClose={() => setTopicDialogOpen(false)}
+                PaperProps={{
+                    sx: { borderRadius: 4, borderTop: '6px solid', borderColor: 'primary.main', p: 1 }
+                }}
+            >
                 <DialogTitle>Quick Topic Setup</DialogTitle>
                 <DialogContent><TextField fullWidth label="Topic Name" sx={{ mt: 2 }} value={newTopic.name} onChange={(e) => setNewTopic({name: e.target.value})} /></DialogContent>
                 <DialogActions sx={{ p: 2 }}><Button onClick={() => setTopicDialogOpen(false)}>Cancel</Button><Button variant="contained" onClick={handleCreateTopic}>Add Topic</Button></DialogActions>

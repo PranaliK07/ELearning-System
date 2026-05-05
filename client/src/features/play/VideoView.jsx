@@ -30,7 +30,7 @@ import { resolveUploadSrc } from '../../utils/media';
 
 const VideoView = () => {
   const { contentId } = useParams();
-  const { updateProgress } = useProgress();
+  const { updateProgress, updateWatchTime } = useProgress();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(true);
@@ -49,6 +49,9 @@ const VideoView = () => {
 
   const playerRef = useRef(null);
   const watchTimeInterval = useRef(null);
+  const lastReportedTime = useRef(0);
+  const totalSecondsWatched = useRef(0);
+  const unreportedSeconds = useRef(0);
 
   useEffect(() => {
     fetchContent();
@@ -101,15 +104,36 @@ const VideoView = () => {
   };
 
   const startWatchTimeTracking = () => {
-    watchTimeInterval.current = setInterval(() => {
-      setWatchTime((prev) => prev + 1);
-    }, 60000);
+    if (watchTimeInterval.current) return;
+    watchTimeInterval.current = setInterval(async () => {
+      totalSecondsWatched.current += 1;
+      unreportedSeconds.current += 1;
+      
+      // Update local watch time display (in minutes) every minute
+      if (totalSecondsWatched.current % 60 === 0) {
+        setWatchTime((prev) => prev + 1);
+      }
+
+      // Report to server every 30 seconds
+      if (unreportedSeconds.current >= 30) {
+        const toReport = unreportedSeconds.current;
+        unreportedSeconds.current = 0; // Reset before async call to avoid races
+        await updateWatchTime(contentId, toReport);
+      }
+    }, 1000);
   };
 
-  const stopWatchTimeTracking = () => {
+  const stopWatchTimeTracking = async () => {
     if (watchTimeInterval.current) {
       clearInterval(watchTimeInterval.current);
       watchTimeInterval.current = null;
+      
+      // Report remaining seconds when pausing/stopping
+      if (unreportedSeconds.current > 0) {
+        const toReport = unreportedSeconds.current;
+        unreportedSeconds.current = 0;
+        await updateWatchTime(contentId, toReport);
+      }
     }
   };
 
@@ -163,9 +187,9 @@ const VideoView = () => {
 
   const handleVideoEnd = async () => {
     setPlaying(false);
+    await stopWatchTimeTracking();
     await updateProgress(contentId, {
-      completed: true,
-      watchTime: Math.round(duration * played)
+      completed: true
     });
   };
 

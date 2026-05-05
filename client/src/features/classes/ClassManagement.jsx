@@ -111,7 +111,22 @@ const ClassManagement = () => {
         Add or delete classes.
       </Typography>
 
-      <Card sx={{ borderRadius: 4 }}>
+      <Card sx={{ 
+        p: 1,
+        borderRadius: '20px', 
+        boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', 
+        border: '2px solid', 
+        borderColor: 'primary.main', 
+        borderTop: '10px solid',
+        borderTopColor: 'primary.main',
+        bgcolor: 'background.paper',
+        transition: 'all 0.3s ease',
+        overflow: 'hidden',
+        '&:hover': {
+          boxShadow: '0 12px 40px rgba(0, 109, 91, 0.15)',
+          transform: 'translateY(-4px)'
+        }
+      }}>
         <CardContent>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
             <TextField
@@ -154,7 +169,18 @@ const ClassManagement = () => {
                 <CircularProgress />
               </Box>
             ) : isMobile ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 2,
+                p: 2,
+                borderRadius: 4,
+                bgcolor: 'background.paper',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 8px 32px rgba(0, 109, 91, 0.1)'
+                }
+              }}>
                 {filtered.map((c) => (
                   <Paper key={c.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -181,7 +207,20 @@ const ClassManagement = () => {
                 )}
               </Box>
             ) : (
-              <TableContainer component={Box} sx={{ maxHeight: 560, overflowX: 'auto' }}>
+              <TableContainer 
+                component={Paper} 
+                elevation={0}
+                sx={{ 
+                  maxHeight: 560, 
+                  overflowX: 'auto', 
+                  borderRadius: '20px',
+                  bgcolor: 'background.paper',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 32px rgba(0, 109, 91, 0.1)'
+                  }
+                }}
+              >
                 <Table stickyHeader size="small" sx={{ minWidth: 520 }}>
                   <TableHead>
                     <TableRow>

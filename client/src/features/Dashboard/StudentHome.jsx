@@ -53,8 +53,20 @@ import { resolveMediaUrl } from '../../utils/helpers';
 import { toast } from 'react-hot-toast';
 
 const StatCard = ({ title, value, icon: Icon, color, percent }) => (
-  <Card sx={{ borderRadius: 4, height: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
-    <Box sx={{ position: 'absolute', top: -10, right: -10, opacity: 0.1, transform: 'scale(1.5)' }}>
+  <Card sx={{ 
+    borderRadius: 4, 
+    height: '100%', 
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+    position: 'relative', 
+    overflow: 'hidden',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      transform: 'translateY(-8px)',
+      boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+      '& .stat-icon': { transform: 'scale(1.7)', opacity: 0.15 }
+    }
+  }}>
+    <Box className="stat-icon" sx={{ position: 'absolute', top: -10, right: -10, opacity: 0.1, transform: 'scale(1.5)', transition: 'all 0.4s ease' }}>
       <Icon sx={{ fontSize: 100, color }} />
     </Box>
     <CardContent>
@@ -94,8 +106,14 @@ const VideoCard = ({ video, onWatch }) => {
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      transition: 'transform 0.2s',
-      '&:hover': { transform: 'translateY(-5px)', boxShadow: theme.shadows[4] }
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      border: '1px solid transparent',
+      '&:hover': { 
+        transform: 'translateY(-10px)', 
+        boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+        borderColor: 'primary.light',
+        '& .play-overlay': { opacity: 1 }
+      }
     }}>
       <Box sx={{ position: 'relative' }}>
         <CardMedia
@@ -108,16 +126,16 @@ const VideoCard = ({ video, onWatch }) => {
           alt={video.title}
         />
         <Box 
+          className="play-overlay"
           sx={{ 
             position: 'absolute', 
             inset: 0, 
-            bgcolor: 'rgba(0,0,0,0.2)', 
+            bgcolor: 'rgba(0,0,0,0.3)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             opacity: 0,
-            transition: 'opacity 0.2s',
-            '&:hover': { opacity: 1 }
+            transition: 'opacity 0.3s ease',
           }}
           onClick={() => onWatch(video.id)}
         >
@@ -164,11 +182,11 @@ const SubjectCard = ({ subject, color, icon: Icon, onClick }) => (
       cursor: 'pointer',
       textAlign: 'center',
       p: 2,
-      transition: 'all 0.2s',
+      transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       bgcolor: alpha(color, 0.05),
       border: '1px solid',
       borderColor: alpha(color, 0.1),
-      '&:hover': { transform: 'scale(1.05)', bgcolor: alpha(color, 0.1), borderColor: color }
+      '&:hover': { transform: 'scale(1.08) translateY(-5px)', bgcolor: alpha(color, 0.12), borderColor: color, boxShadow: `0 8px 24px ${alpha(color, 0.2)}` }
     }}
   >
     <Avatar sx={{ width: 60, height: 60, mx: 'auto', mb: 1.5, bgcolor: color }}>

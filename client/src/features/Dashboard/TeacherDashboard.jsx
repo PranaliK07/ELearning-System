@@ -32,6 +32,8 @@ import {
   Tab,
   Badge,
   Stack,
+  alpha,
+  useTheme
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -64,10 +66,14 @@ import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
 import { resolveAvatarSrc } from '../../utils/media';
 import DoubtSection from '../doubts/DoubtSection';
+import { ThemeContext } from '../../context/ThemeContext';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const theme = useTheme();
+  const { mode } = React.useContext(ThemeContext);
+  const [pendingDoubts, setPendingDoubts] = useState([]);
   const [data, setData] = useState({
     students: [],
     classes: [],
@@ -79,7 +85,10 @@ const TeacherDashboard = () => {
     },
     recentSubmissions: [],  
   });
-  const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState({
+    student: '',
+    grade: '',
+  });
   const [loading, setLoading] = useState(true);
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
   const exportOpen = Boolean(exportAnchorEl);
@@ -235,15 +244,17 @@ const TeacherDashboard = () => {
     });
   };
 
-  const filteredStudents = data.students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = data.students.filter(student => {
+    const matchesStudent = (student.name || '').toLowerCase().includes(columnFilters.student.toLowerCase()) ||
+                           (student.email || '').toLowerCase().includes(columnFilters.student.toLowerCase());
+    const matchesGrade = (student.Grade?.name || `Class ${student.grade}` || '').toLowerCase().includes(columnFilters.grade.toLowerCase());
+    return matchesStudent && matchesGrade;
+  });
 
   const statsConfig = [
-    { label: 'Total Students', value: data.stats.totalStudents, icon: <People />, color: '#0B1F3B' },
-    { label: 'Active Classes', value: data.stats.activeClasses, icon: <School />, color: '#f50057' },
-    { label: 'Assignments', value: data.stats.assignments, icon: <AssignmentIcon />, color: '#4caf50' },
+    { label: 'Total Students', value: data.stats.totalStudents, icon: <People />, color: '#006D5B' },
+    { label: 'Active Classes', value: data.stats.activeClasses, icon: <School />, color: '#008C75' },
+    { label: 'Assignments', value: data.stats.assignments, icon: <AssignmentIcon />, color: '#004D40' },
   ];
 
   if (loading) {
@@ -263,243 +274,338 @@ const TeacherDashboard = () => {
         transition={{ duration: 0.5 }}
       >
         {/* Header Section */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+        <Box sx={{ 
+          mb: 5, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          gap: 3,
+          p: 3,
+          borderRadius: 4,
+          background: mode === 'light' 
+            ? 'linear-gradient(135deg, rgba(0, 109, 91, 0.08) 0%, rgba(0, 140, 117, 0.05) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%)',
+          border: '1px solid',
+          borderColor: mode === 'light' ? 'rgba(0, 109, 91, 0.12)' : 'rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+        }}>
           <Box>
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
+            <Typography variant="h4" fontWeight="800" sx={{ color: 'text.primary', letterSpacing: '-0.5px' }}>
               Welcome back, {user?.name}! 👨‍🏫
             </Typography>
-            <Typography variant="body1" color="textSecondary">
+            <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5, fontWeight: 500 }}>
               Here's an overview of your classes and student progress
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<Person />}
-            onClick={() => navigate('/profile')}
-            sx={{ borderRadius: 2 }}
-          >
-            My Profile
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              startIcon={<Person />}
+              onClick={() => navigate('/profile')}
+              sx={{ 
+                borderRadius: 3, 
+                px: 3, 
+                py: 1.2, 
+                textTransform: 'none', 
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(0, 109, 91, 0.2)',
+                bgcolor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.dark' }
+              }}
+            >
+              My Profile
+            </Button>
+          </Stack>
         </Box>
 
         {/* Stats Grid */}
-        <Grid container spacing={3} sx={{ mb: 4 }} justifyContent="center">
-              {statsConfig.map((stat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card sx={{ 
-                      bgcolor: stat.color, 
-                      color: 'white', 
-                      borderRadius: 3, 
-                      boxShadow: 3, 
-                      height: { xs: 'auto', md: '100%' },
-                      minHeight: { xs: 100, md: 'auto' }
-                    }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Box display="flex" alignItems="center" justifyContent="space-between">
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ opacity: 0.9, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>
-                              {stat.label}
-                            </Typography>
-                            <Typography variant="h3" fontWeight="800" sx={{ mt: 0.5 }}>
-                              {stat.value}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ 
-                            fontSize: { xs: 35, md: 45 }, 
-                            opacity: 0.8,
-                            bgcolor: 'rgba(255,255,255,0.2)',
-                            p: 1.5,
-                            borderRadius: '50%',
-                            display: 'flex'
-                          }}>
-                            {stat.icon}
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-              {/* Export Data Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Card sx={{ 
-                    bgcolor: 'white', 
-                    border: '2px dashed #e0e0e0', 
-                    borderRadius: 3, 
-                    boxShadow: 1, 
-                    height: { xs: 'auto', md: '100%' },
-                    minHeight: { xs: 100, md: 'auto' },
-                    display: 'flex', 
-                    alignItems: 'center' 
-                  }}>
-                    <CardContent sx={{ textAlign: 'center', width: '100%', p: 2.5 }}>
-                      <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                        Quick Reports
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={<Download />}
-                        endIcon={<ExpandMore />}
-                        onClick={handleExportClick}
-                        fullWidth
-                        sx={{ 
-                          borderRadius: '12px',
-                          py: 1.2,
-                          fontWeight: 'bold',
-                          boxShadow: '0 4px 14px 0 rgba(76, 175, 80, 0.39)'
-                        }}
-                      >
-                        Export Data
-                      </Button>
-                      <Menu
-                        anchorEl={exportAnchorEl}
-                        open={exportOpen}
-                        onClose={handleExportClose}
-                        PaperProps={{
-                          sx: { borderRadius: '12px', mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }
-                        }}
-                      >
-                        <MenuItem onClick={exportCSV}>Export as CSV</MenuItem>
-                        <MenuItem onClick={exportExcel}>Export as Excel</MenuItem>
-                        <MenuItem onClick={exportPDF}>Export as PDF</MenuItem>
-                        <MenuItem onClick={exportWord}>Export as Word</MenuItem>
-                      </Menu>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Grid>
-            </Grid>
-
-
-
-
-
-          <Grid container spacing={3}>
-            {/* Recent Submissions */}
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 3, borderRadius: 3, height: '100%', boxShadow: 2 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Recent Submissions
-                </Typography>
-                {data.recentSubmissions.length > 0 ? (
-                  <Box>
-                    {data.recentSubmissions.map((sub) => (
-                      <Box key={sub.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Avatar src={resolveAvatarSrc(sub.student?.avatar)} sx={{ width: 32, height: 32, mr: 1 }} />
-                          <Typography variant="subtitle2">{sub.student?.name}</Typography>
-                        </Box>
-                        <Typography variant="caption" color="textSecondary" display="block">
-                          Submitted: {sub.Assignment?.title}
+        <Grid container spacing={3} sx={{ mb: 6 }}>
+          {statsConfig.map((stat, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <motion.div
+                whileHover={{ y: -8 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card sx={{ 
+                  bgcolor: stat.color, 
+                  color: 'white', 
+                  borderRadius: 4, 
+                  boxShadow: `0 8px 24px ${alpha(stat.color, 0.25)}`, 
+                  height: '100%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    width: 100,
+                    height: 100,
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '50%',
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                      <Box>
+                        <Typography variant="overline" sx={{ opacity: 0.8, fontWeight: 800, letterSpacing: 1.5 }}>
+                          {stat.label}
                         </Typography>
-                        <Typography variant="caption" color="primary">
-                          {new Date(sub.createdAt).toLocaleDateString()}
+                        <Typography variant="h3" fontWeight="900" sx={{ mt: 1 }}>
+                          {stat.value}
                         </Typography>
                       </Box>
-                    ))}
-                  </Box>
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <AssignmentIcon sx={{ fontSize: 48, color: 'divider' }} />
-                    <Typography color="textSecondary">No recent submissions</Typography>
-                  </Box>
-                )}
-              </Paper>
+                      <Box sx={{ 
+                        p: 1.5, 
+                        borderRadius: 3, 
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        display: 'flex',
+                        color: 'white'
+                      }}>
+                        {React.cloneElement(stat.icon, { sx: { fontSize: 32 } })}
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </Grid>
-
-            {/* Students Table */}
-            <Grid item xs={12} md={8}>
-              <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'stretch', sm: 'center' },
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 2,
-                    mb: 3
-                  }}
-                >
-                  <Typography variant="h6" fontWeight="bold">
-                    Students Overview
+          ))}
+          
+          {/* Quick Reports Card */}
+          <Grid item xs={12} sm={6} md={3}>
+            <motion.div
+              whileHover={{ y: -8 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card sx={{ 
+                bgcolor: 'background.paper', 
+                borderRadius: 4, 
+                border: '2px dashed',
+                borderColor: 'divider',
+                boxShadow: 'none',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <CardContent sx={{ textAlign: 'center', width: '100%', p: 3 }}>
+                  <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 800, letterSpacing: 1.5, mb: 2, display: 'block' }}>
+                    Quick Reports
                   </Typography>
-                  <TextField
-                    size="small"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search />
-                        </InputAdornment>
-                      )
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<Download />}
+                    endIcon={<ExpandMore />}
+                    onClick={handleExportClick}
+                    fullWidth
+                    sx={{ 
+                      borderRadius: 3,
+                      py: 1.5,
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      boxShadow: '0 4px 14px 0 rgba(76, 175, 80, 0.3)'
                     }}
-                    sx={{ width: { xs: '100%', sm: 200 } }}
-                  />
-                </Box>
-
-                <TableContainer sx={{ maxHeight: 400, overflowX: 'auto' }}>
-                  <Table stickyHeader sx={{ minWidth: 650 }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Student</TableCell>
-                        <TableCell>Grade</TableCell>
-                        <TableCell>Last Active</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredStudents.map((student) => (
-                        <TableRow key={student.id} hover>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }} src={resolveAvatarSrc(student.avatar)}>
-                                {student.name.charAt(0)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="subtitle2">{student.name}</Typography>
-                                <Typography variant="caption" color="textSecondary">{student.email}</Typography>
-                              </Box>
-                            </Box>
-                          </TableCell>
-                          <TableCell>{student.Grade?.name || (student.grade ? `Class ${student.grade}` : 'Unassigned')}</TableCell>
-                          <TableCell>{new Date(student.updatedAt).toLocaleDateString()}</TableCell>
-                          <TableCell align="right">
-                            <Tooltip title="Send Email">
-                              <IconButton size="small" onClick={() => window.location.href = `mailto:${student.email}`}>
-                                <Email fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredStudents.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                            No students found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Paper>
-            </Grid>
+                  >
+                    Export Data
+                  </Button>
+                  <Menu
+                    anchorEl={exportAnchorEl}
+                    open={exportOpen}
+                    onClose={handleExportClose}
+                    PaperProps={{
+                      sx: { 
+                        borderRadius: 3, 
+                        mt: 1, 
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                        minWidth: 200
+                      }
+                    }}
+                  >
+                    <MenuItem onClick={exportCSV} sx={{ py: 1.5 }}>Export as CSV</MenuItem>
+                    <MenuItem onClick={exportExcel} sx={{ py: 1.5 }}>Export as Excel</MenuItem>
+                    <MenuItem onClick={exportPDF} sx={{ py: 1.5 }}>Export as PDF</MenuItem>
+                    <MenuItem onClick={exportWord} sx={{ py: 1.5 }}>Export as Word</MenuItem>
+                  </Menu>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
+        </Grid>
+
+        <Grid container spacing={4}>
+          {/* Recent Submissions */}
+          <Grid item xs={12} lg={4}>
+            <Paper sx={{ p: 4, borderRadius: 4, height: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h6" fontWeight="800">
+                  Recent Submissions
+                </Typography>
+                <Chip label={`${data.recentSubmissions.length} New`} size="small" color="primary" sx={{ fontWeight: 700 }} />
+              </Box>
+
+              {data.recentSubmissions.length > 0 ? (
+                <Stack spacing={3}>
+                  {data.recentSubmissions.map((sub) => (
+                    <Box key={sub.id} sx={{ 
+                      p: 2, 
+                      borderRadius: 3, 
+                      bgcolor: 'action.hover',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: 'action.selected' }
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                        <Avatar 
+                          src={resolveAvatarSrc(sub.student?.avatar)} 
+                          sx={{ width: 40, height: 40, mr: 2, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+                        />
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight="700">{sub.student?.name}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {new Date(sub.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ pl: 7 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                          Submitted: <Box component="span" sx={{ color: 'primary.main', fontWeight: 700 }}>{sub.Assignment?.title}</Box>
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Avatar sx={{ width: 80, height: 80, bgcolor: 'action.hover', mx: 'auto', mb: 2 }}>
+                    <AssignmentIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
+                  </Avatar>
+                  <Typography color="textSecondary" fontWeight="600">No recent submissions</Typography>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+
+          {/* Students Table */}
+          <Grid item xs={12} lg={8}>
+            <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" fontWeight="800">
+                  Students Overview
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Manage and monitor your students' activity
+                </Typography>
+              </Box>
+
+              <TableContainer sx={{ maxHeight: 500 }}>
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', py: 2 }}>
+                        Student
+                        <TextField
+                          size="small"
+                          fullWidth
+                          placeholder="Search name/email..."
+                          value={columnFilters.student}
+                          onChange={(e) => setColumnFilters(prev => ({ ...prev, student: e.target.value }))}
+                          sx={{ mt: 1.5, '& .MuiInputBase-root': { fontSize: '0.85rem', borderRadius: 2, bgcolor: 'action.hover' } }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Search fontSize="small" sx={{ color: 'text.disabled' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', py: 2 }}>
+                        Grade
+                        <TextField
+                          size="small"
+                          fullWidth
+                          placeholder="Filter class..."
+                          value={columnFilters.grade}
+                          onChange={(e) => setColumnFilters(prev => ({ ...prev, grade: e.target.value }))}
+                          sx={{ mt: 1.5, '& .MuiInputBase-root': { fontSize: '0.85rem', borderRadius: 2, bgcolor: 'action.hover' } }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', py: 2 }}>Last Active</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, bgcolor: 'background.paper', py: 2 }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredStudents.map((student) => (
+                      <TableRow key={student.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar 
+                              sx={{ mr: 2, bgcolor: 'primary.light', width: 44, height: 44, fontWeight: 700 }} 
+                              src={resolveAvatarSrc(student.avatar)}
+                            >
+                              {student.name.charAt(0)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight="700">{student.name}</Typography>
+                              <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Email sx={{ fontSize: 12 }} /> {student.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={student.Grade?.name || (student.grade ? `Class ${student.grade}` : 'Unassigned')} 
+                            size="small" 
+                            variant="outlined"
+                            sx={{ fontWeight: 700, borderRadius: 2, color: 'primary.main', borderColor: 'primary.light' }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                            {new Date(student.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Send Email">
+                            <IconButton 
+                              size="medium" 
+                              onClick={() => window.location.href = `mailto:${student.email}`}
+                              sx={{ 
+                                bgcolor: 'primary.light', 
+                                color: 'primary.main',
+                                '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                                transition: 'all 0.2s',
+                                borderRadius: 2
+                              }}
+                            >
+                              <Email fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredStudents.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 10 }}>
+                          <Box sx={{ opacity: 0.5 }}>
+                            <Search sx={{ fontSize: 48, mb: 1 }} />
+                            <Typography variant="h6" fontWeight="700">No students found</Typography>
+                            <Typography variant="body2">Try adjusting your search filters</Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </Grid>
+        </Grid>
 
 
       </motion.div>

@@ -124,7 +124,7 @@ const PlayHub = () => {
                       height: 80, 
                       mx: 'auto', 
                       mb: 2, 
-                      background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', // Dark Pink to Navy Blue Gradient
+                      background: 'linear-gradient(135deg, #B66DC4 0%, #1a237e 100%)', // Dark Pink to Navy Blue Gradient
                       boxShadow: '0 8px 24px rgba(26, 35, 126, 0.25)',
                       border: '3px solid white'
                     }}>
@@ -134,7 +134,7 @@ const PlayHub = () => {
                     <Chip 
                       label={`${subject.quizzes.length} Quizzes Available`} 
                       size="small" 
-                      sx={{ fontWeight: 600, bgcolor: 'rgba(176, 18, 91, 0.1)', color: '#B0125B' }} 
+                      sx={{ fontWeight: 600, bgcolor: 'rgba(176, 18, 91, 0.1)', color: '#B66DC4' }} 
                     />
                   </CardContent>
                 </Card>
@@ -153,7 +153,7 @@ const PlayHub = () => {
               >
                 Back to Subjects
               </Button>
-              <Typography variant="h4" fontWeight="900" sx={{ color: '#B0125B', textTransform: 'uppercase' }}>
+              <Typography variant="h4" fontWeight="900" sx={{ color: '#B66DC4', textTransform: 'uppercase' }}>
                 {selectedSubject} Quizzes
               </Typography>
             </Box>
@@ -173,7 +173,7 @@ const PlayHub = () => {
                         }}>
                             <Box sx={{ 
                                 height: 140, 
-                                background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', // Dark Pink to Navy Blue
+                                background: 'linear-gradient(135deg, #B66DC4 0%, #1a237e 100%)', // Dark Pink to Navy Blue
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 justifyContent: 'center',
@@ -196,7 +196,7 @@ const PlayHub = () => {
                                     <Chip 
                                         label={quiz.Topic?.name || 'General'} 
                                         size="small" 
-                                        sx={{ bgcolor: 'rgba(176, 18, 91, 0.1)', fontWeight: 600, color: '#B0125B' }} 
+                                        sx={{ bgcolor: 'rgba(176, 18, 91, 0.1)', fontWeight: 600, color: '#B66DC4' }} 
                                     />
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />

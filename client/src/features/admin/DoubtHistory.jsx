@@ -29,7 +29,21 @@ import toast from 'react-hot-toast';
 const DoubtHistory = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+      <Paper
+        sx={{
+          p: 4,
+          borderRadius: 4,
+          border: '2px solid',
+          borderColor: 'primary.main',
+          borderTop: '10px solid',
+          borderTopColor: 'primary.main',
+          boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+          }
+        }}
+      >
         <Box sx={{ mb: 4 }}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Platform Doubts ❓
@@ -122,7 +136,17 @@ const DoubtTable = () => {
 
   return (
     <>
-      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto', border: 'none', boxShadow: 'none' }}>
+      <TableContainer
+        component={Paper}
+        variant="outlined"
+        sx={{
+          overflowX: 'auto',
+          border: '1px solid',
+          borderColor: 'primary.main',
+          borderRadius: 3,
+          boxShadow: 'none'
+        }}
+      >
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: 'action.hover' }}>

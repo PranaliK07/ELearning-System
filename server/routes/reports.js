@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
-const { getDailyReport, getWeeklyReport, getMonthlyReport } = require('../controllers/reportsController');
+const { getDailyReport, getWeeklyReport, getMonthlyReport, getStudentsProgress } = require('../controllers/reportsController');
 
 router.use(protect);
 router.use(authorize('teacher', 'admin'));
+
+router.get('/students', getStudentsProgress);
 
 const reportHandlerByPeriod = {
   daily: getDailyReport,

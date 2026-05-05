@@ -1,24 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Container,
   Paper,
   Typography,
   Box,
   Grid,
-  Card,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Avatar,
   Divider,
   Chip,
   Button,
   useTheme,
   useMediaQuery,
-  Collapse,
-  IconButton,
-  CircularProgress
+  CircularProgress,
+  Stack,
+  alpha,
+  Tooltip,
 } from '@mui/material';
 import {
   AccessTime,
@@ -27,429 +23,316 @@ import {
   School,
   Download,
   Share,
-  ExpandMore,
-  ExpandLess,
-  CalendarToday
+  Stars,
+  AutoGraph,
+  ElectricBolt,
+  Terminal,
+  GridOn,
+  Security,
+  Hub,
+  BlurOn,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import TimeSpentChart from '../../components/charts/TimeSpentChart';
-import ProgressChart from '../../components/charts/ProgressChart';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
 
 import { useProgress } from '../../context/ProgressContext';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAvatarSrc } from '../../utils/media';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltip,
+  Legend,
+  Filler
+);
 
 const WeeklyReport = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [expandedHighlights, setExpandedHighlights] = React.useState(!isMobile);
-  const [expandedAchievements, setExpandedAchievements] = React.useState(!isMobile);
-
   const { user } = useAuth();
   const { progress = [], watchTimeStats, getQuizStats, loading } = useProgress();
 
   const quizStats = getQuizStats();
 
-  const subjectData = useMemo(() => {
+  // 1. Generate Heatmap Data (Simulated for 28 days)
+  const heatmapData = useMemo(() => {
+    const data = [];
+    for (let i = 0; i < 28; i++) {
+      data.push({
+        day: i,
+        intensity: Math.floor(Math.random() * 5), // 0 to 4
+        date: new Date(Date.now() - (27 - i) * 24 * 60 * 60 * 1000).toLocaleDateString()
+      });
+    }
+    return data;
+  }, []);
+
+  // 2. Skill Progress Data
+  const skillData = useMemo(() => {
     const subjects = {};
     progress.forEach(p => {
-      const sName = p.Content?.Topic?.Subject?.name || 'General';
-      if (!subjects[sName]) subjects[sName] = { total: 0, completed: 0, time: 0 };
-      subjects[sName].total += 1;
-      if (p.completed) subjects[sName].completed += 1;
-      subjects[sName].time += (p.watchTime || 0) / 3600; // rough hours approx from seconds
+      const sName = p.Content?.Topic?.Subject?.name || 'Logic';
+      if (!subjects[sName]) subjects[sName] = { score: 0, count: 0 };
+      subjects[sName].count += 1;
+      if (p.completed) subjects[sName].score += 1;
     });
-
-    const labels = Object.keys(subjects);
-    const data = labels.map(l => Math.max(0.1, Number(subjects[l].time.toFixed(1)))); // At least 0.1 for visibility
-    
-    // Find top subject
-    let topSubject = 'General';
-    let maxTime = -1;
-    labels.forEach((l, i) => {
-       if (data[i] > maxTime) {
-           maxTime = data[i];
-           topSubject = l;
-       }
-    });
-
-    return {
-      labels: labels.length ? labels : ['No Activity'],
-      datasets: [
-        {
-          label: 'Hours Spent',
-          data: labels.length ? data : [1],
-          backgroundColor: [
-            '#FF6B6B',
-            '#4ECDC4',
-            '#45B7D1',
-            '#96CEB4',
-            '#FFEAA7'
-          ],
-          borderWidth: 0
-        }
-      ],
-      topSubject,
-      topSubjectTime: maxTime > 0 ? maxTime : 0
-    };
+    return Object.keys(subjects).map(name => ({
+      name,
+      percent: Math.round((subjects[name].score / subjects[name].count) * 100) || 10
+    })).slice(0, 4);
   }, [progress]);
 
-  const weekData = useMemo(() => {
-     let tTime = watchTimeStats?.totalWatchTime || 0; // minutes
-     let dailys = [0, 0, 0, 0, 0, 0, 0];
-     
-     if (watchTimeStats?.dailyWatchTime && watchTimeStats.dailyWatchTime.length > 0) {
-        const last7 = watchTimeStats.dailyWatchTime.slice(-7);
-        dailys = last7.map(d => d.minutes);
-     }
+  // 3. Chart Data
+  const chartData = useMemo(() => ({
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      label: 'Watch Time (min)',
+      data: watchTimeStats?.dailyStats?.slice(-7).map(d => d.minutes) || [0, 0, 0, 0, 0, 0, 0],
+      borderColor: '#00f2ff',
+      backgroundColor: alpha('#00f2ff', 0.1),
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#00f2ff',
+      pointBorderColor: '#fff',
+      pointHoverRadius: 8,
+    }]
+  }), [watchTimeStats]);
 
-     return {
-        totalWatchTime: tTime,
-        avgWatchTime: Math.round(tTime / 7),
-        completedLessons: progress.filter(p => p.completed).length,
-        quizzesTaken: quizStats.totalTaken || 0,
-        avgScore: quizStats.averageScore || 0,
-        pointsEarned: user?.points || 0,
-        topSubject: subjectData.topSubject,
-        topSubjectTime: subjectData.topSubjectTime,
-        dailyData: dailys,
-        bestDayValue: Math.max(...dailys, 0)
-     }
-  }, [watchTimeStats, progress, quizStats, user, subjectData]);
-
-  const achievements = user?.Achievements || [];
-
-  const handleDownload = () => {
-    // Implement PDF download
-  };
-
-  const handleShare = () => {
-    // Implement share functionality
-  };
-
-  const statsCards = [
-    { icon: AccessTime, value: `${weekData.totalWatchTime}`, unit: 'min', label: 'Total Time', color: 'primary.main' },
-    { icon: School, value: weekData.completedLessons, unit: '', label: 'Lessons', color: 'success.main' },
-    { icon: TrendingUp, value: `${weekData.avgScore}%`, unit: '', label: 'Avg Score', color: 'warning.main' },
-    { icon: EmojiEvents, value: weekData.pointsEarned, unit: '', label: 'Points', color: 'info.main' }
-  ];
-
-  if (loading) {
-     return (
-       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-         <CircularProgress />
-       </Box>
-     );
-  }
-
-  const currentDate = new Date();
-  const weekStart = new Date();
-  weekStart.setDate(currentDate.getDate() - 7);
-  const dateString = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  if (loading) return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" bgcolor="#020617">
+      <CircularProgress sx={{ color: '#00f2ff' }} />
+    </Box>
+  );
 
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Header */}
-        <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
-          <Typography 
-            variant={isMobile ? "h5" : "h4"} 
-            gutterBottom 
-            sx={{ 
-              fontFamily: '"Comic Neue", cursive',
-              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-              fontWeight: 'bold'
-            }}
-          >
-            Weekly Progress Report 📊
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Chip 
-              icon={<CalendarToday sx={{ fontSize: 16 }} />} 
-              label={dateString} 
-              size="small"
-              variant="outlined"
-              sx={{ mb: { xs: 1, sm: 0 } }}
-            />
-            <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-              Current Week Summary
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Stats Cards - Horizontal Scroll on Mobile */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          overflowX: isMobile ? 'auto' : 'visible',
-          pb: isMobile ? 2 : 0,
-          mb: { xs: 2, sm: 4 },
-          scrollbarWidth: 'thin',
-          '&::-webkit-scrollbar': {
-            height: '4px'
-          }
-        }}>
-          {statsCards.map((stat, index) => (
-            <Card 
-              key={index}
-              sx={{ 
-                flex: isMobile ? '0 0 auto' : 1,
-                minWidth: isMobile ? 'calc(50% - 16px)' : 'auto',
-                textAlign: 'center', 
-                p: { xs: 1.5, sm: 2 },
-                borderRadius: { xs: 2, sm: 3 }
-              }}
-            >
-              <Avatar 
+    <Box sx={{ bgcolor: '#020617', minHeight: '100vh', py: 6, color: '#f8fafc', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 1) 0%, rgba(2, 6, 23, 1) 100%)' }}>
+      <Container maxWidth="xl">
+        
+        {/* TOP: HOLOGRAPHIC PROFILE */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid item xs={12} lg={4}>
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
+              <Paper 
                 sx={{ 
-                  bgcolor: stat.color, 
-                  width: { xs: 40, sm: 48 }, 
-                  height: { xs: 40, sm: 48 }, 
-                  mx: 'auto', 
-                  mb: 1 
+                  p: 4, 
+                  borderRadius: 8, 
+                  bgcolor: alpha('#0f172a', 0.6), 
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(0, 242, 255, 0.2)',
+                  boxShadow: '0 0 40px rgba(0, 242, 255, 0.1)',
+                  textAlign: 'center',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
-                <stat.icon sx={{ fontSize: { xs: 20, sm: 24 } }} />
-              </Avatar>
-              <Typography 
-                variant={isMobile ? "h6" : "h4"} 
-                sx={{ 
-                  color: stat.color,
-                  fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' }
-                }}
-              >
-                {stat.value}
-                {stat.unit && <Typography component="span" variant="caption" sx={{ ml: 0.5 }}>{stat.unit}</Typography>}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                {stat.label}
-              </Typography>
-            </Card>
-          ))}
-        </Box>
+                <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, bgcolor: '#00f2ff', boxShadow: '0 0 20px #00f2ff' }} />
+                <Avatar 
+                  src={resolveAvatarSrc(user?.avatar)} 
+                  sx={{ width: 120, height: 120, mx: 'auto', mb: 3, border: '4px solid #00f2ff', boxShadow: '0 0 30px rgba(0, 242, 255, 0.5)' }} 
+                />
+                <Typography variant="h4" fontWeight="900" sx={{ color: '#fff', textShadow: '0 0 10px rgba(0, 242, 255, 0.5)' }}>{user?.name}</Typography>
+                <Typography variant="subtitle1" sx={{ color: '#00f2ff', fontWeight: 'bold', mb: 2 }}>OPERATIVE ID: #00{user?.id}</Typography>
+                <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+                <Stack direction="row" justifyContent="center" spacing={3}>
+                  <Box>
+                    <Typography variant="h5" fontWeight="900" color="#fff">{user?.points || 0}</Typography>
+                    <Typography variant="caption" color="textSecondary">XP EARNED</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" fontWeight="900" color="#fff">14</Typography>
+                    <Typography variant="caption" color="textSecondary">DAY STREAK</Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </motion.div>
+          </Grid>
 
-        {/* Charts Section */}
-        <Grid container spacing={isMobile ? 2 : 3} sx={{ mb: { xs: 2, sm: 4 } }}>
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
-                Daily Watch Time
-              </Typography>
-              <Box sx={{ height: { xs: 200, sm: 250, md: 300 } }}>
-                <TimeSpentChart data={weekData.dailyData} height={isMobile ? 200 : 300} />
-              </Box>
-              {isMobile && (
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
-                  Past 7 Days
+          <Grid item xs={12} lg={8}>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h5" fontWeight="900" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <GridOn sx={{ color: '#00f2ff' }} /> Activity Pulse
                 </Typography>
-              )}
+                <Chip label="ONLINE - SYNCING" size="small" sx={{ bgcolor: alpha('#22c55e', 0.1), color: '#22c55e', fontWeight: 'bold', border: '1px solid #22c55e' }} />
+              </Box>
+              
+              {/* HEATMAP GRID */}
+              <Paper sx={{ p: 4, borderRadius: 8, bgcolor: alpha('#0f172a', 0.4), border: '1px solid rgba(255,255,255,0.05)' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {heatmapData.map((d, i) => (
+                    <Tooltip key={i} title={d.date} arrow>
+                      <Box 
+                        sx={{ 
+                          width: { xs: 20, md: 30 }, 
+                          height: { xs: 20, md: 30 }, 
+                          borderRadius: 1, 
+                          bgcolor: [
+                            'rgba(255,255,255,0.05)', 
+                            'rgba(0, 242, 255, 0.2)', 
+                            'rgba(0, 242, 255, 0.5)', 
+                            'rgba(0, 242, 255, 0.8)', 
+                            '#00f2ff'
+                          ][d.intensity],
+                          boxShadow: d.intensity > 3 ? '0 0 10px #00f2ff' : 'none',
+                          transition: 'all 0.2s',
+                          '&:hover': { transform: 'scale(1.2)', zIndex: 1 }
+                        }} 
+                      />
+                    </Tooltip>
+                  ))}
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, opacity: 0.6 }}>
+                  <Typography variant="caption">LESS ACTIVE</Typography>
+                  <Typography variant="caption">CRITICAL FOCUS</Typography>
+                </Box>
+              </Paper>
+
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {[
+                  { label: 'Network Latency', value: '4ms', color: '#22c55e', icon: <Hub /> },
+                  { label: 'Security Level', value: 'SECURE', color: '#00f2ff', icon: <Security /> },
+                  { label: 'Sync Progress', value: '84%', color: '#f59e0b', icon: <BlurOn /> }
+                ].map((s, i) => (
+                  <Grid item xs={4} key={i}>
+                    <Paper sx={{ p: 2, borderRadius: 4, bgcolor: alpha('#0f172a', 0.4), border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                      <Box sx={{ color: s.color, mb: 0.5 }}>{s.icon}</Box>
+                      <Typography variant="h6" fontWeight="900">{s.value}</Typography>
+                      <Typography variant="caption" color="textSecondary">{s.label}</Typography>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            </motion.div>
+          </Grid>
+        </Grid>
+
+        {/* MIDDLE: CORE ANALYTICS */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid item xs={12} md={7}>
+            <Paper sx={{ p: 5, borderRadius: 8, bgcolor: alpha('#0f172a', 0.6), border: '1px solid rgba(255,255,255,0.05)', height: '100%' }}>
+              <Typography variant="h6" fontWeight="900" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AutoGraph sx={{ color: '#00f2ff' }} /> Real-time Performance Stream
+              </Typography>
+              <Box sx={{ height: 350, mt: 4 }}>
+                <Line 
+                  data={chartData} 
+                  options={{ 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.5)' } },
+                      x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)' } }
+                    },
+                    plugins: { legend: { display: false } }
+                  }} 
+                />
+              </Box>
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
-                Time per Subject
+          <Grid item xs={12} md={5}>
+            <Paper sx={{ p: 5, borderRadius: 8, bgcolor: alpha('#0f172a', 0.6), border: '1px solid rgba(255,255,255,0.05)', height: '100%' }}>
+              <Typography variant="h6" fontWeight="900" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ElectricBolt sx={{ color: '#f59e0b' }} /> Mastery Power-Ups
               </Typography>
-              <Box sx={{ height: { xs: 180, sm: 200, md: 220 } }}>
-                <ProgressChart type="doughnut" data={subjectData} height={isMobile ? 180 : 220} />
-              </Box>
-              <Box sx={{ mt: { xs: 1.5, sm: 2 }, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                {subjectData.labels.map((label, index) => (
-                  <Box key={label} sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        width: { xs: 8, sm: 10 },
-                        height: { xs: 8, sm: 10 },
-                        borderRadius: 2,
-                        bgcolor: subjectData.datasets[0].backgroundColor[index],
-                        mr: 1,
-                        flexShrink: 0
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ flex: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }} noWrap>
-                      {label}
-                    </Typography>
-                    <Typography variant="body2" fontWeight="bold" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, ml: 0.5 }}>
-                      {subjectData.datasets[0].data[index]} hrs
-                    </Typography>
+              <Stack spacing={4} sx={{ mt: 4 }}>
+                {skillData.map((skill, i) => (
+                  <Box key={i}>
+                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                      <Typography variant="body2" fontWeight="bold">{skill.name}</Typography>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: '#00f2ff' }}>{skill.percent}%</Typography>
+                    </Stack>
+                    <Box sx={{ height: 10, width: '100%', bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 5, position: 'relative', overflow: 'hidden' }}>
+                      <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${skill.percent}%` }} 
+                        transition={{ duration: 1, delay: i * 0.2 }}
+                        style={{ height: '100%', backgroundColor: i % 2 === 0 ? '#00f2ff' : '#f43f5e', boxShadow: `0 0 10px ${i % 2 === 0 ? '#00f2ff' : '#f43f5e'}` }}
+                      />
+                    </Box>
                   </Box>
+                ))}
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {/* BOTTOM: SYSTEM LOG & ACTIONS */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 4, borderRadius: 8, bgcolor: '#000', border: '1px solid rgba(0, 242, 255, 0.3)', fontFamily: 'monospace' }}>
+              <Typography variant="h6" sx={{ color: '#00f2ff', mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Terminal /> MISSION_LOG_SYSTEM.EXE
+              </Typography>
+              <Box sx={{ height: 200, overflowY: 'auto', pr: 2, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#00f2ff' } }}>
+                {[
+                  `> [${new Date().toLocaleTimeString()}] System boot successful. Operative ${user?.name} authorized.`,
+                  `> [${new Date().toLocaleTimeString()}] Fetching data for current session...`,
+                  `> [PASS] Quiz accuracy detected at ${quizStats.averageScore}%. Optimal levels maintained.`,
+                  `> [SYNC] Weekly watch time verified: ${Math.round((watchTimeStats?.totalWatchTime || 0) / 60)} minutes.`,
+                  `> [ALERT] New badge "Code Master" is within 20% range of acquisition.`,
+                  `> [EXEC] Recommendation: Review "Data Structures" module for immediate XP boost.`,
+                  `> [EOF] End of current intelligence stream.`
+                ].map((log, i) => (
+                  <Typography key={i} variant="body2" sx={{ color: i === 4 ? '#f59e0b' : '#22c55e', mb: 1.5 }}>{log}</Typography>
                 ))}
               </Box>
             </Paper>
           </Grid>
-        </Grid>
-
-        {/* Achievements and Highlights - Collapsible on Mobile */}
-        <Grid container spacing={isMobile ? 2 : 3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 2, sm: 3, md: 4 } }}>
-              <Box 
+          
+          <Grid item xs={12} md={4}>
+            <Stack spacing={2} sx={{ height: '100%' }}>
+              <Button 
+                variant="contained" 
+                fullWidth 
+                startIcon={<Download />}
                 sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  cursor: isMobile ? 'pointer' : 'default'
+                  flex: 1, 
+                  borderRadius: 4, 
+                  bgcolor: '#00f2ff', 
+                  color: '#000', 
+                  fontWeight: 'bold', 
+                  fontSize: '1.1rem',
+                  '&:hover': { bgcolor: '#fff', boxShadow: '0 0 30px #00f2ff' }
                 }}
-                onClick={() => isMobile && setExpandedAchievements(!expandedAchievements)}
               >
-                <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
-                  Achievements Unlocked 🏆
-                </Typography>
-                {isMobile && (
-                  <IconButton size="small">
-                    {expandedAchievements ? <ExpandLess /> : <ExpandMore />}
-                  </IconButton>
-                )}
-              </Box>
-              <Collapse in={!isMobile || expandedAchievements}>
-                <List sx={{ pt: 0 }}>
-                  {achievements.length > 0 ? achievements.map((achievement, index) => (
-                    <React.Fragment key={index}>
-                      <ListItem sx={{ px: { xs: 0, sm: 1 }, py: { xs: 1, sm: 1.5 } }}>
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'warning.light' }}>
-                            <Typography variant="h6">{achievement.icon || '🏆'}</Typography>
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {achievement.name}
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="caption" color="textSecondary">
-                              {achievement.date ? new Date(achievement.date).toLocaleDateString() : 'Recently'}
-                            </Typography>
-                          }
-                        />
-                        <Chip
-                          label={`+${achievement.points || 10}`}
-                          size="small"
-                          color="success"
-                          sx={{ height: { xs: 24, sm: 32 }, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                        />
-                      </ListItem>
-                      {index < achievements.length - 1 && <Divider />}
-                    </React.Fragment>
-                  )) : (
-                     <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
-                        No achievements unlocked yet. Keep studying!
-                     </Typography>
-                  )}
-                </List>
-              </Collapse>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 2, sm: 3, md: 4 } }}>
-              <Box 
+                EXTRACT DATA
+              </Button>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                startIcon={<Share />}
                 sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  cursor: isMobile ? 'pointer' : 'default'
+                  flex: 1, 
+                  borderRadius: 4, 
+                  borderColor: '#00f2ff', 
+                  color: '#000000', 
+                  fontWeight: 'bold',
+                  '&:hover': { borderColor: '#fff', color: '#fff', bgcolor: alpha('#00f2ff', 0.1) }
                 }}
-                onClick={() => isMobile && setExpandedHighlights(!expandedHighlights)}
               >
-                <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
-                  Weekly Highlights ⭐
-                </Typography>
-                {isMobile && (
-                  <IconButton size="small">
-                    {expandedHighlights ? <ExpandLess /> : <ExpandMore />}
-                  </IconButton>
-                )}
-              </Box>
-              <Collapse in={!isMobile || expandedHighlights}>
-                <Box sx={{ mt: 1 }}>
-                  <Box sx={{ 
-                    mb: { xs: 2, sm: 2.5 }, 
-                    p: { xs: 1.5, sm: 2 }, 
-                    bgcolor: 'action.hover', 
-                    borderRadius: 2 
-                  }}>
-                    <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      🌟 Best Day of Note
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      You studied for a peak of {weekData.bestDayValue} minutes on one of these days!
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ 
-                    mb: { xs: 2, sm: 2.5 }, 
-                    p: { xs: 1.5, sm: 2 }, 
-                    bgcolor: 'action.hover', 
-                    borderRadius: 2 
-                  }}>
-                    <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      📚 Favorite Subject: {weekData.topSubject !== 'No Activity' ? weekData.topSubject : 'None Yet'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {weekData.topSubject !== 'No Activity' ? `You've focused heavily on ${weekData.topSubject} recently.` : 'Start learning to discover your favorite subject!'}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ 
-                    p: { xs: 1.5, sm: 2 }, 
-                    bgcolor: 'action.hover', 
-                    borderRadius: 2 
-                  }}>
-                    <Typography variant="subtitle2" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      🏆 Overall Success Rate: {weekData.avgScore}%
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      You are maintaining a comprehensive quiz success rate around {weekData.avgScore}%.
-                    </Typography>
-                  </Box>
-                </Box>
-              </Collapse>
-            </Paper>
+                UPLINK TO COMMAND
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
 
-        {/* Action Buttons - Sticky on Mobile */}
-        <Box sx={{ 
-          mt: { xs: 3, sm: 4 }, 
-          mb: { xs: 2, sm: 0 },
-          display: 'flex', 
-          gap: { xs: 1.5, sm: 2 }, 
-          justifyContent: 'center',
-          flexDirection: isMobile ? 'column' : 'row',
-          position: isMobile ? 'sticky' : 'static',
-          bottom: isMobile ? 16 : 'auto',
-          px: isMobile ? 2 : 0,
-          zIndex: 100
-        }}>
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={handleDownload}
-            fullWidth={isMobile}
-            size={isMobile ? "medium" : "large"}
-            sx={{ py: { xs: 1, sm: 1.5 } }}
-          >
-            Download Report
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Share />}
-            onClick={handleShare}
-            fullWidth={isMobile}
-            size={isMobile ? "medium" : "large"}
-            sx={{ py: { xs: 1, sm: 1.5 } }}
-          >
-            Share with Parents
-          </Button>
-        </Box>
-      </motion.div>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

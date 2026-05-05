@@ -54,7 +54,7 @@ const SubjectCard = ({ subject, progress, onClick, index }) => {
       case 'evs':
         return '#FFE08A';
       default:
-        return '#B0125B'; // Dark Pink fallback
+        return '#B66DC4'; // Dark Pink fallback
     }
   };
 

@@ -18,9 +18,23 @@ import { motion } from 'framer-motion';
 
 const SystemSettings = () => {
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            borderTop: '10px solid',
+            borderTopColor: 'primary.main',
+            boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+            }
+          }}
+        >
           <Typography variant="h4" gutterBottom>
             System Settings
           </Typography>
@@ -30,7 +44,17 @@ const SystemSettings = () => {
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Card sx={{ p: 2, height: '100%' }}>
+              <Card
+                sx={{
+                  p: 2,
+                  height: '100%',
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  borderTop: '10px solid',
+                  borderTopColor: 'primary.main',
+                  boxShadow: '0 10px 24px rgba(0, 109, 91, 0.1)'
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
                   Platform Settings
                 </Typography>
@@ -53,7 +77,17 @@ const SystemSettings = () => {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Card sx={{ p: 2, height: '100%' }}>
+              <Card
+                sx={{
+                  p: 2,
+                  height: '100%',
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  borderTop: '10px solid',
+                  borderTopColor: 'primary.main',
+                  boxShadow: '0 10px 24px rgba(0, 109, 91, 0.1)'
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
                   System Health
                 </Typography>

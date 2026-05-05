@@ -429,7 +429,14 @@ const VideosHome = () => {
                 borderRadius: 3,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                border: '1px solid transparent',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  borderColor: 'primary.main',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                }
               }}
             >
               <Box sx={{ position: 'relative', flexGrow: 1, bgcolor: 'black', minHeight: 400 }}>

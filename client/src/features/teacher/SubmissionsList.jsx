@@ -22,13 +22,15 @@ import {
   useMediaQuery,
   useTheme,
   Divider,
-  Grid
+  Grid,
+  InputAdornment,
+  alpha
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowBack, Grade } from '@mui/icons-material';
+import { ArrowBack, Grade, Search } from '@mui/icons-material';
 import axios from '../../utils/axios.js';
 import { toast } from 'react-hot-toast';
-import { resolveAvatarSrc } from '../../utils/media';
+import { resolveAvatarSrc, resolveUploadSrc } from '../../utils/media';
 
 const SubmissionsList = () => {
   const { assignmentId } = useParams();
@@ -69,11 +71,28 @@ const SubmissionsList = () => {
     }
   };
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredSubmissions = submissions.filter(sub => {
+    const search = searchTerm.toLowerCase();
+    const student = (sub.student?.name || '').toLowerCase();
+    const email = (sub.student?.email || '').toLowerCase();
+    const status = (sub.status || '').toLowerCase();
+
+    return (
+      student.includes(search) ||
+      email.includes(search) ||
+      status.includes(search) ||
+      String(sub.assignment?.gradeId || '').toLowerCase().includes(search) ||
+      `class ${sub.assignment?.gradeId || ''}`.toLowerCase().includes(search)
+    );
+  });
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'flex-start', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
         <IconButton onClick={() => navigate(-1)} sx={{ mt: isMobile ? 0 : 1 }}><ArrowBack /></IconButton>
-        <Box>
+        <Box sx={{ flex: 1 }}>
           <Typography variant={isMobile ? "h5" : "h4"} fontWeight="bold">
             Submissions: {assignment?.title || 'Loading...'}
           </Typography>
@@ -81,12 +100,28 @@ const SubmissionsList = () => {
             Review and grade student submissions
           </Typography>
         </Box>
+        <Box sx={{ mt: isMobile ? 2 : 1 }}>
+          <TextField
+            size="small"
+            placeholder="Search student or class..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 250, bgcolor: 'background.paper', borderRadius: 1 }}
+          />
+        </Box>
       </Box>
 
       <Paper sx={{ borderRadius: 3, overflow: 'hidden', p: isMobile ? 2 : 0 }}>
         {isMobile ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {submissions.map((sub) => (
+            {filteredSubmissions.map((sub) => (
               <Paper key={sub.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Avatar sx={{ mr: 2 }} src={resolveAvatarSrc(sub.student?.avatar)}>{sub.student?.name?.charAt(0)}</Avatar>
@@ -113,7 +148,7 @@ const SubmissionsList = () => {
                 </Grid>
 
                 {sub.fileUrl && (
-                  <Button size="small" variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => window.open(sub.fileUrl, '_blank')}>
+                  <Button size="small" variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => window.open(resolveUploadSrc(sub.fileUrl), '_blank')}>
                     View Attachment
                   </Button>
                 )}
@@ -134,28 +169,44 @@ const SubmissionsList = () => {
                 </Button>
               </Paper>
             ))}
-            {submissions.length === 0 && (
+            {filteredSubmissions.length === 0 && (
               <Box textAlign="center" py={4}>
-                <Typography color="textSecondary">No submissions yet</Typography>
+                <Typography color="textSecondary">No submissions match your filters</Typography>
               </Box>
             )}
           </Box>
         ) : (
           <TableContainer>
             <Table>
-              <TableHead sx={{ bgcolor: 'secondary.main' }}>
+              <TableHead sx={{ bgcolor: 'action.hover' }}>
                 <TableRow>
-                  <TableCell sx={{ color: 'white' }}>Student</TableCell>
-                  <TableCell sx={{ color: 'white' }}>Submitted Date</TableCell>
-                  <TableCell sx={{ color: 'white' }}>Attachment</TableCell>
-                  <TableCell sx={{ color: 'white' }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white' }}>Grade</TableCell>
-                  <TableCell align="right" sx={{ color: 'white' }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Student</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Submitted Date</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Attachment</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Grade</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Remarks</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {submissions.map((sub) => (
-                  <TableRow key={sub.id} hover>
+                {filteredSubmissions.map((sub) => (
+                  <TableRow 
+                    key={sub.id} 
+                    hover 
+                    sx={{ 
+                      transition: 'all 0.3s ease', 
+                      cursor: 'pointer',
+                      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                      '&:hover': { 
+                        bgcolor: 'rgba(0, 0, 0, 0.04) !important',
+                        boxShadow: 'inset 4px 0 0 #006D5B',
+                        '& .MuiTableCell-root': {
+                          color: 'primary.main'
+                        }
+                      } 
+                    }}
+                  >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Avatar sx={{ mr: 2 }} src={resolveAvatarSrc(sub.student?.avatar)}>{sub.student?.name?.charAt(0)}</Avatar>
@@ -168,7 +219,7 @@ const SubmissionsList = () => {
                     <TableCell>{new Date(sub.submittedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       {sub.fileUrl ? (
-                        <Button size="small" variant="text" onClick={() => window.open(sub.fileUrl, '_blank')}>
+                        <Button size="small" variant="text" onClick={() => window.open(resolveUploadSrc(sub.fileUrl), '_blank')}>
                           Open
                         </Button>
                       ) : (
@@ -183,13 +234,26 @@ const SubmissionsList = () => {
                       />
                     </TableCell>
                     <TableCell>{sub.grade ? `${sub.grade}/100` : 'Not graded'}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sub.feedback || '—'}
+                      </Typography>
+                    </TableCell>
                     <TableCell align="right">
                       <Button
+                        variant="contained"
                         startIcon={<Grade />}
                         onClick={() => {
                           setSelectedSubmission(sub);
                           setGradeData({ grade: sub.grade || '', feedback: sub.feedback || '' });
                           setOpen(true);
+                        }}
+                        sx={{ 
+                          bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                          color: 'primary.main',
+                          borderRadius: 2,
+                          px: 3,
+                          '&:hover': { bgcolor: 'primary.main', color: 'white' }
                         }}
                       >
                         Grade
@@ -221,7 +285,7 @@ const SubmissionsList = () => {
               </Box>
             )}
             {selectedSubmission?.fileUrl && (
-              <Button variant="outlined" onClick={() => window.open(selectedSubmission.fileUrl, '_blank')}>
+              <Button variant="outlined" onClick={() => window.open(resolveUploadSrc(selectedSubmission.fileUrl), '_blank')}>
                 View uploaded file
               </Button>
             )}

@@ -51,14 +51,27 @@ const Register = () => {
   const steps = ['Personal Info', 'Account Details', 'Preferences'];
 
   const handleChange = (e) => {
+    let { name, value } = e.target;
+    
+    // Strict validation for name fields (characters and spaces only)
+    if (['firstName', 'middleName', 'lastName'].includes(name)) {
+      value = value.replace(/[^a-zA-Z\s]/g, '');
+    }
+
+    // Strict validation for phone field (numbers and + only)
+    if (name === 'parentPhone') {
+      value = value.replace(/[^\d+]/g, '');
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
-    if (errors[e.target.name]) {
+
+    if (errors[name]) {
       setErrors({
         ...errors,
-        [e.target.name]: ''
+        [name]: ''
       });
     }
   };
@@ -290,7 +303,7 @@ const Register = () => {
               <TextField
                 select
                 fullWidth
-                label="Grade/Class"
+                label="Class"
                 name="grade"
                 value={formData.grade}
                 onChange={handleChange}
@@ -449,7 +462,7 @@ const Register = () => {
                   <Link
                     to="/login"
                     style={{
-                      color: '#0B1F3B',
+                      color: '#D18AC4',
                       textDecoration: 'none',
                       fontWeight: 'bold'
                     }}

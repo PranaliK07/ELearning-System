@@ -155,7 +155,22 @@ const ProfileView = () => {
         transition={{ duration: 0.5 }}
       >
         {/* Profile Header */}
-        <Paper sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4, mb: 3 }}>
+        <Paper
+          sx={{
+            p: { xs: 2.5, sm: 4 },
+            borderRadius: 4,
+            mb: 3,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            borderTop: '10px solid',
+            borderTopColor: 'primary.main',
+            boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+            }
+          }}
+        >
           <Grid container spacing={4} alignItems="center">
             <Grid size={{ xs: 12, md: 3 }} sx={{ textAlign: 'center' }}>
               <motion.div

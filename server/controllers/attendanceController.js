@@ -1,11 +1,21 @@
 const { Attendance, Grade, User, sequelize, Notification } = require('../models');
 const { Op } = require('sequelize');
 
+const formatDateOnlyLocal = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const normalizeDateOnly = (value) => {
   if (!value) return null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return value.trim();
+  }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
+  return formatDateOnlyLocal(parsed);
 };
 
 const listDatesInclusive = (from, to) => {
@@ -26,7 +36,7 @@ const listDatesInclusive = (from, to) => {
 const getGradeAttendance = async (req, res) => {
   try {
     const { gradeId } = req.params;
-    const date = normalizeDateOnly(req.query.date) || new Date().toISOString().slice(0, 10);
+    const date = normalizeDateOnly(req.query.date) || formatDateOnlyLocal();
 
     const grade = await Grade.findByPk(gradeId, { attributes: ['id', 'name', 'level'] });
     if (!grade) return res.status(404).json({ message: 'Class not found' });
@@ -72,11 +82,11 @@ const getGradeAttendance = async (req, res) => {
 const getGradeAttendanceReport = async (req, res) => {
   try {
     const { gradeId } = req.params;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatDateOnlyLocal();
     const defaultFrom = (() => {
       const d = new Date();
       d.setDate(d.getDate() - 30);
-      return d.toISOString().slice(0, 10);
+      return formatDateOnlyLocal(d);
     })();
 
     const from = normalizeDateOnly(req.query.from) || defaultFrom;
@@ -128,7 +138,7 @@ const markGradeAttendance = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { gradeId } = req.params;
-    const date = normalizeDateOnly(req.body?.date) || new Date().toISOString().slice(0, 10);
+    const date = normalizeDateOnly(req.body?.date) || formatDateOnlyLocal();
     const records = Array.isArray(req.body?.records) ? req.body.records : [];
 
     const grade = await Grade.findByPk(gradeId, { attributes: ['id', 'name', 'level'], transaction });
@@ -226,8 +236,8 @@ const getMyAttendance = async (req, res) => {
     const defaultFrom = new Date(today);
     defaultFrom.setDate(defaultFrom.getDate() - 30);
 
-    const from = normalizeDateOnly(req.query.from) || defaultFrom.toISOString().slice(0, 10);
-    const to = normalizeDateOnly(req.query.to) || today.toISOString().slice(0, 10);
+    const from = normalizeDateOnly(req.query.from) || formatDateOnlyLocal(defaultFrom);
+    const to = normalizeDateOnly(req.query.to) || formatDateOnlyLocal(today);
 
     const rows = await Attendance.findAll({
       where: {
@@ -255,7 +265,7 @@ module.exports = {
 
 async function getAttendanceSummary(req, res) {
   try {
-    const date = normalizeDateOnly(req.query.date) || new Date().toISOString().slice(0, 10);
+    const date = normalizeDateOnly(req.query.date) || formatDateOnlyLocal();
 
     const grouped = await Attendance.findAll({
       where: { date },

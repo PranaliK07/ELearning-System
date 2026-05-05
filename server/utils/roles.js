@@ -10,10 +10,17 @@ const hasRoleAccess = (userRole, requiredRole) => {
   const normalizedRequiredRole = normalizeRole(requiredRole);
 
   if (!normalizedRequiredRole) return false;
+  
+  // Basic match
   if (normalizedUserRole === normalizedRequiredRole) return true;
 
-  // Demo users are treated as admin for access checks.
-  if (normalizedRequiredRole === 'admin' && normalizedUserRole === 'demo') {
+  // Admin and Demo users are super-users with full access.
+  if (normalizedUserRole === 'admin' || normalizedUserRole === 'demo') {
+    return true;
+  }
+
+  // Teachers can access student-level resources.
+  if (normalizedUserRole === 'teacher' && normalizedRequiredRole === 'student') {
     return true;
   }
 

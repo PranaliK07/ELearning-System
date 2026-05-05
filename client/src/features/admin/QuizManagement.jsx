@@ -19,7 +19,9 @@ import {
     Button,
     Avatar,
     Stack,
-    Divider
+    Divider,
+    alpha,
+    useTheme
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -36,6 +38,7 @@ import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const QuizManagement = () => {
     const navigate = useNavigate();
@@ -43,6 +46,7 @@ const QuizManagement = () => {
     const [loading, setLoading] = useState(false);
     const [quizzes, setQuizzes] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null });
 
     const fetchAllQuizzes = useCallback(async () => {
         try {
@@ -82,23 +86,36 @@ const QuizManagement = () => {
         fetchAllQuizzes();
     }, [fetchAllQuizzes]);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this quiz?')) return;
+    const handleDelete = (id) => {
+        setConfirmDialog({
+            open: true,
+            quizId: id
+        });
+    };
+
+    const processDelete = async () => {
+        const id = confirmDialog.quizId;
         try {
             await api.delete(`/api/quiz/${id}`);
             toast.success('Quiz deleted successfully');
             fetchAllQuizzes();
         } catch (err) {
             toast.error('Delete failed');
+        } finally {
+            setConfirmDialog({ open: false, quizId: null });
         }
     };
 
     const filteredQuizzes = useMemo(() => {
-        return quizzes.filter(q => 
-            q.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            q.topicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            q.subjectName?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        return quizzes.filter(q => {
+            const search = searchTerm.toLowerCase();
+            return (
+                (q.title || '').toLowerCase().includes(search) ||
+                (q.topicName || '').toLowerCase().includes(search) ||
+                (q.subjectName || '').toLowerCase().includes(search) ||
+                String(q.gradeLevel || '').includes(search)
+            );
+        });
     }, [quizzes, searchTerm]);
 
     return (
@@ -108,7 +125,21 @@ const QuizManagement = () => {
                     <Typography variant="h4" fontWeight="bold" gutterBottom>Quiz Management</Typography>
                     <Typography variant="body1" color="textSecondary">Manage all interactive quizzes and student assessments</Typography>
                 </Box>
-                <Stack direction="row" spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                <Stack direction="row" spacing={2} sx={{ width: { xs: '100%', sm: 'auto' }, alignItems: 'center' }}>
+                    <TextField
+                        size="small"
+                        placeholder="Search quizzes..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search fontSize="small" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ minWidth: 250, bgcolor: 'background.paper', borderRadius: 1 }}
+                    />
                     <Button 
                         variant="outlined" 
                         startIcon={<Refresh />} 
@@ -128,24 +159,23 @@ const QuizManagement = () => {
                 </Stack>
             </Box>
 
-            <Paper sx={{ p: 2, mb: 4, borderRadius: 3, display: 'flex', gap: 2 }}>
-                <TextField
-                    fullWidth
-                    placeholder="Search quizzes by title, topic, or subject..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search color="action" />
-                            </InputAdornment>
-                        ),
-                    }}
-                    sx={{ '& .MuiInputBase-root': { bgcolor: 'background.paper' } }}
-                />
-            </Paper>
 
-            <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: 3, overflow: 'hidden', overflowX: 'auto' }}>
+
+            <TableContainer 
+                component={Paper} 
+                sx={{ 
+                    borderRadius: 4, 
+                    boxShadow: 3, 
+                    overflow: 'hidden', 
+                    overflowX: 'auto',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        boxShadow: '0 8px 32px rgba(0, 109, 91, 0.15)',
+                        borderColor: 'primary.main'
+                    }
+                }}
+            >
                 <Table sx={{ minWidth: 600 }}>
                     <TableHead sx={{ bgcolor: 'action.hover' }}>
                         <TableRow>
@@ -171,7 +201,22 @@ const QuizManagement = () => {
                             </TableRow>
                         ) : (
                             filteredQuizzes.map((quiz) => (
-                                <TableRow key={quiz.id} hover>
+                                <TableRow 
+                                    key={quiz.id} 
+                                    hover 
+                                    sx={{ 
+                                        transition: 'all 0.3s ease', 
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(0, 0, 0, 0.04) !important',
+                                            boxShadow: 'inset 4px 0 0 #006D5B',
+                                            '& .MuiTableCell-root': {
+                                                color: 'primary.main'
+                                            }
+                                        } 
+                                    }}
+                                >
                                     <TableCell sx={{ pl: 3 }}>
                                         <Typography variant="subtitle2" fontWeight="bold">{quiz.title}</Typography>
                                         <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
@@ -192,7 +237,7 @@ const QuizManagement = () => {
                                             label={`Class ${quiz.gradeLevel || 'N/A'}`} 
                                             size="small"
                                             icon={<School sx={{ fontSize: '1rem !important' }} />}
-                                            sx={{ bgcolor: '#0B1F3B', color: 'white' }}
+                                            sx={{ bgcolor: '#D18AC4', color: 'white' }}
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -208,9 +253,49 @@ const QuizManagement = () => {
                                         </Typography>
                                     </TableCell>
                                     <TableCell align="right" sx={{ pr: 3 }}>
-                                        <Tooltip title="Play Preview"><IconButton size="small" onClick={() => navigate(`/quiz/${quiz.id}/start`)}><PlayArrow color="primary" /></IconButton></Tooltip>
-                                        <Tooltip title="Edit Quiz"><IconButton size="small"><Edit /></IconButton></Tooltip>
-                                        <Tooltip title="Delete Quiz"><IconButton size="small" color="error" onClick={() => handleDelete(quiz.id)}><Delete /></IconButton></Tooltip>
+                                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                                            <Tooltip title="Play Preview">
+                                                <IconButton 
+                                                    size="small" 
+                                                    onClick={() => navigate(`/quiz/${quiz.id}/start`)}
+                                                    sx={{ 
+                                                        bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                                                        color: 'primary.main',
+                                                        borderRadius: 1.5,
+                                                        '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                                                    }}
+                                                >
+                                                    <PlayArrow fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Edit Quiz">
+                                                <IconButton 
+                                                    size="small"
+                                                    sx={{ 
+                                                        bgcolor: alpha(theme.palette.info.main, 0.1), 
+                                                        color: 'info.main',
+                                                        borderRadius: 1.5,
+                                                        '&:hover': { bgcolor: 'info.main', color: 'white' }
+                                                    }}
+                                                >
+                                                    <Edit fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Delete Quiz">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="error" 
+                                                    onClick={() => handleDelete(quiz.id)}
+                                                    sx={{ 
+                                                        bgcolor: alpha(theme.palette.error.main, 0.1), 
+                                                        borderRadius: 1.5,
+                                                        '&:hover': { bgcolor: 'error.main', color: 'white' }
+                                                    }}
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -218,6 +303,14 @@ const QuizManagement = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <ConfirmDialog
+                open={confirmDialog.open}
+                title="Delete Quiz"
+                description="Are you sure you want to delete this quiz? This action cannot be undone."
+                onConfirm={processDelete}
+                onClose={() => setConfirmDialog({ open: false, quizId: null })}
+            />
         </Container>
     );
 };

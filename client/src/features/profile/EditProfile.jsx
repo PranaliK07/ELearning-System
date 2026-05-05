@@ -129,7 +129,21 @@ const EditProfile = () => {
           Back to Profile
         </Button>
 
-        <Paper sx={{ p: 4, borderRadius: 4 }}>
+        <Paper
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            borderTop: '10px solid',
+            borderTopColor: 'primary.main',
+            boxShadow: '0 14px 34px rgba(0, 109, 91, 0.12)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 18px 40px rgba(0, 109, 91, 0.18)'
+            }
+          }}
+        >
           <Typography variant="h4" gutterBottom align="center">
             Edit Profile
           </Typography>

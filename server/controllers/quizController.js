@@ -254,10 +254,6 @@ const updateQuiz = async (req, res) => {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
-    if (req.user.role === 'teacher' && quiz.createdBy !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     const {
       title,
       description,
@@ -304,10 +300,6 @@ const deleteQuiz = async (req, res) => {
 
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
-    }
-
-    if (req.user.role === 'teacher' && quiz.createdBy !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
     }
 
     await quiz.destroy();

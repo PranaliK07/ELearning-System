@@ -26,6 +26,7 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const lastCountRef = React.useRef(0);
+  const lastShownIdRef = React.useRef(null);
 
   const showNotification = (message, severity = 'info') => {
     setNotification({
@@ -57,12 +58,19 @@ export const NotificationProvider = ({ children }) => {
       console.log(`[Notification Diagnostic] User: ${user?.id} (${user?.role}) | New Count: ${newCount} | Prev: ${lastCountRef.current}`);
 
       if (newCount > lastCountRef.current) {
+        // Update ref immediately to prevent parallel calls from showing the same toast
+        const prevCount = lastCountRef.current;
+        lastCountRef.current = newCount;
+        setUnreadCount(newCount);
+
         console.log(`[Notification Diagnostic] Fetching latest notification for ${user?.id}...`);
         try {
           const latestRes = await api.get('/api/notifications', { params: { limit: 1 } });
           const latest = latestRes.data?.notifications?.[0];
-          console.log('[Notification Diagnostic] Latest notification:', latest);
-          if (latest && !latest.isRead) {
+          
+          if (latest && !latest.isRead && latest.id !== lastShownIdRef.current) {
+            lastShownIdRef.current = latest.id;
+            console.log('[Notification Diagnostic] Showing toast for:', latest.id);
             toast.success((t) => (
               <div onClick={() => toast.dismiss(t.id)}>
                 <div style={{ fontWeight: 800, fontSize: '1rem', color: theme.palette.text.primary }}>
@@ -85,15 +93,16 @@ export const NotificationProvider = ({ children }) => {
                   : '0 10px 24px rgba(0,0,0,0.35)'
               }
             });
-
           }
         } catch (latestErr) {
           console.error('Failed to fetch latest notification for popup:', latestErr);
         }
+      } else {
+        setUnreadCount(newCount);
+        lastCountRef.current = newCount;
       }
 
-      setUnreadCount(newCount);
-      lastCountRef.current = newCount;
+
     } catch (error) {
       if (error?.response?.status === 401) {
         setUnreadCount(0);

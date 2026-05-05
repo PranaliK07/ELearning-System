@@ -1,4 +1,4 @@
-const { Progress, Content, User, WatchTime } = require('../models');
+const { Progress, Content, User, Topic, Subject, WatchTime, Assignment, Submission, Grade, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const moment = require('moment');
 
@@ -34,9 +34,24 @@ const updateProgress = async (req, res) => {
 
     if (progress) {
       // Update existing progress
-      if (watchTime !== undefined) progress.watchTime += watchTime || 0;
+      if (watchTime !== undefined) {
+        const wtVal = Number(watchTime) || 0;
+        progress.watchTime = (Number(progress.watchTime) || 0) + wtVal;
+      }
       progress.lastWatched = new Date();
       
+      // Award points for completing content (one-time)
+      if (completed && !progress.completed) {
+        await User.increment('points', { by: 10, where: { id: userId } });
+      }
+
+      // Award points for quiz passing (one-time)
+      const passingScore = 70; // Default passing score
+      if (quizScore >= passingScore && (!progress.quizPassed)) {
+        progress.quizPassed = true;
+        await User.increment('points', { by: 20, where: { id: userId } });
+      }
+
       if (completed !== undefined) {
         progress.completed = completed;
         progress.completedAt = completed ? new Date() : null;
@@ -65,20 +80,41 @@ const updateProgress = async (req, res) => {
         completed: completed || notesDownloaded || false,
         completedAt: (completed || notesDownloaded) ? new Date() : null,
         quizScore: quizScore || null,
+        quizPassed: (quizScore >= 70),
         notesDownloaded: notesDownloaded || false
       });
+
+      // Award points for initial completion
+      if (progress.completed) {
+        await User.increment('points', { by: 10, where: { id: userId } });
+      }
+      if (progress.quizPassed) {
+        await User.increment('points', { by: 20, where: { id: userId } });
+      }
     }
 
     // Record watch time for analytics
     if (watchTime) {
-      await WatchTime.create({
-        UserId: userId,
-        ContentId: contentId,
-        minutes: Math.ceil(watchTime / 60),
-        date: new Date()
+      const today = moment().format('YYYY-MM-DD');
+      const contentIdInt = Number(contentId);
+      
+      // Find or create watch time record for today and this content
+      let [wtRecord, created] = await WatchTime.findOrCreate({
+        where: {
+          UserId: userId,
+          ContentId: contentIdInt,
+          date: today
+        },
+        defaults: {
+          seconds: Number(watchTime)
+        }
       });
 
-      // Update user total watch time
+      if (!created) {
+        await wtRecord.increment('seconds', { by: Number(watchTime) });
+      }
+
+      // Update user total watch time (cached)
       await User.increment('totalWatchTime', {
         by: watchTime,
         where: { id: userId }
@@ -100,8 +136,14 @@ const getWatchTimeStats = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findByPk(userId);
 
+    // Sum all watch time from progress table for real data
+    const totalWatchSeconds = await Progress.sum('watchTime', {
+      where: { UserId: userId }
+    }) || 0;
+
     // Get last 30 days watch time
-    const thirtyDaysAgo = moment().subtract(30, 'days').toDate();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const watchTimes = await WatchTime.findAll({
       where: {
@@ -111,11 +153,16 @@ const getWatchTimeStats = async (req, res) => {
       order: [['date', 'ASC']]
     });
 
-    // Group by date
-    const dailyStats = {};
+    // Group by date in seconds first to avoid rounding errors
+    const dailySeconds = {};
     watchTimes.forEach(wt => {
       const date = moment(wt.date).format('YYYY-MM-DD');
-      dailyStats[date] = (dailyStats[date] || 0) + wt.minutes;
+      dailySeconds[date] = (dailySeconds[date] || 0) + wt.seconds;
+    });
+
+    const dailyStats = {};
+    Object.keys(dailySeconds).forEach(date => {
+      dailyStats[date] = Math.round(dailySeconds[date] / 60);
     });
 
     // Format for chart
@@ -124,8 +171,25 @@ const getWatchTimeStats = async (req, res) => {
       minutes
     }));
 
+    // Resolve Grade ID if only grade level is present
+    let targetGradeId = user.GradeId;
+    if (!targetGradeId && user.grade) {
+      const gradeRecord = await Grade.findOne({ where: { level: user.grade } });
+      targetGradeId = gradeRecord?.id;
+    }
+
+    // Calculate total possible watch time for user's grade (convert minutes to seconds)
+    const totalPossibleSeconds = await Content.sum('duration', {
+      where: { 
+        type: 'video',
+        isPublished: true,
+        GradeId: targetGradeId || null
+      }
+    }) * 60 || 0;
+
     res.json({
-      totalWatchTime: user.totalWatchTime,
+      totalWatchTime: totalWatchSeconds,
+      totalPossibleTime: totalPossibleSeconds,
       dailyStats: chartData,
       averagePerDay: chartData.length ? 
         chartData.reduce((sum, d) => sum + d.minutes, 0) / chartData.length : 0

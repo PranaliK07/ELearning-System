@@ -44,7 +44,7 @@ const renderStars = (count, total = 5, size = 18) => (
       index < count ? (
         <Star key={index} sx={{ color: '#FFD93D', fontSize: size, filter: 'drop-shadow(0 0 4px #FFD93D)' }} />
       ) : (
-        <StarBorder key={index} sx={{ color: 'rgba(11,31,59,0.18)', fontSize: size }} />
+        <StarBorder key={index} sx={{ color: 'rgba(0,109,91,0.18)', fontSize: size }} />
       )
     ))}
   </Box>
@@ -69,7 +69,7 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
           sx={{
             px: 3,
             py: 2.5,
-            background: 'linear-gradient(135deg, rgba(11,31,59,0.98) 0%, rgba(176,18,91,0.92) 100%)',
+            background: 'linear-gradient(135deg, rgba(0, 109, 91, 0.98) 0%, rgba(0, 137, 123, 0.92) 100%)',
             color: 'white',
             display: 'flex',
             justifyContent: 'space-between',
@@ -123,7 +123,7 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
                   size="small"
                   sx={{
                     fontWeight: 700,
-                    bgcolor: goal.completed ? 'rgba(76,175,80,0.12)' : 'rgba(11,31,59,0.06)',
+                    bgcolor: goal.completed ? 'rgba(76,175,80,0.12)' : 'rgba(209,138,196,0.06)',
                     color: goal.completed ? 'success.dark' : 'text.secondary',
                     border: goal.completed ? '1px solid rgba(76,175,80,0.3)' : '1px solid rgba(0,0,0,0.08)',
                   }}
@@ -142,7 +142,7 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <WorkspacePremium sx={{ color: '#FFD93D', fontSize: 20 }} />
               <Typography variant="body2" fontWeight={800}>
-                Achievements History ({achievements.length})
+                Achievements History ({progress?.history ? progress.history.length : 0} days)
               </Typography>
             </Box>
             <IconButton size="small">
@@ -152,65 +152,41 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
 
           <Collapse in={expanded}>
             <Box sx={{ mt: 1.5 }}>
-              {achievements.length === 0 ? (
+              {(!progress?.history || progress.history.length === 0) ? (
                 <Box sx={{ py: 2, textAlign: 'center' }}>
                   <Typography variant="body2" color="textSecondary">
-                    No achievements earned yet.
+                    No history available yet.
                   </Typography>
                 </Box>
               ) : (
-                <Stack spacing={1.5}>
-                  {achievements.map((ach, idx) => (
-                    <Box
-                      key={ach.id || idx}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1.5,
-                        p: 1.5,
-                        borderRadius: 3,
-                        bgcolor: 'rgba(255,215,0,0.06)',
-                        border: '1px solid rgba(255,215,0,0.2)',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '50%',
-                          bgcolor: '#FFD93D',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          fontSize: '1.2rem',
-                        }}
-                      >
-                        {ach.icon || '🏆'}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="subtitle2" fontWeight={800} noWrap>
-                          {ach.name || ach.title || 'Achievement'}
+                <Stack spacing={2}>
+                  {progress.history.map((dayData, idx) => {
+                    const dateStr = new Date(dayData.date).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric'
+                    });
+                    return (
+                      <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Typography variant="caption" fontWeight={800} color="textSecondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          {dateStr}
                         </Typography>
-                        {(ach.description || ach.desc) && (
-                          <Typography variant="caption" color="textSecondary" display="block">
-                            {ach.description || ach.desc}
-                          </Typography>
-                        )}
-                        {(ach.earnedAt || ach.createdAt) && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                            <AccessTime sx={{ fontSize: 12, color: 'text.disabled' }} />
-                            <Typography variant="caption" color="textDisabled">
-                              {new Date(ach.earnedAt || ach.createdAt).toLocaleDateString('en-IN', {
-                                day: 'numeric', month: 'short', year: 'numeric'
-                              })}
-                            </Typography>
-                          </Box>
-                        )}
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {dayData.goals.map(goal => (
+                            <Chip
+                              key={goal.id}
+                              label={`${goal.icon || ''} ${goal.label}`}
+                              size="small"
+                              sx={{
+                                fontWeight: 700,
+                                bgcolor: goal.completed ? 'rgba(76,175,80,0.12)' : 'rgba(209,138,196,0.06)',
+                                color: goal.completed ? 'success.dark' : 'text.secondary',
+                                border: goal.completed ? '1px solid rgba(76,175,80,0.3)' : '1px solid rgba(0,0,0,0.08)',
+                              }}
+                            />
+                          ))}
+                        </Stack>
                       </Box>
-                      <CheckCircle sx={{ color: 'success.main', fontSize: 18, flexShrink: 0, mt: 0.25 }} />
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Stack>
               )}
             </Box>
@@ -229,7 +205,10 @@ const TeacherClassStudentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [classData, setClassData] = useState(null);
   const [studentDailyGoals, setStudentDailyGoals] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState({
+    student: '',
+    achievement: ''
+  });
 
   const normalizeGradeId = (student) => student?.Grade?.id ?? student?.GradeId ?? student?.grade ?? null;
 
@@ -312,22 +291,29 @@ const TeacherClassStudentsPage = () => {
   }, [classId]);
 
   const filteredStudents = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+    const studentQuery = columnFilters.student.trim().toLowerCase();
+    const achievementQuery = columnFilters.achievement.trim().toLowerCase();
     const students = Array.isArray(classData?.students) ? classData.students : [];
-    if (!query) return students;
 
     return students.filter((student) => {
+      const studentClass = classData?.name?.toLowerCase() || '';
+      
+      const matchesStudent = !studentQuery || 
+                             String(student.name || '').toLowerCase().includes(studentQuery) ||
+                             String(student.email || '').toLowerCase().includes(studentQuery) ||
+                             studentClass.includes(studentQuery);
+
       const progress = studentDailyGoals[student.id];
       const goalNames = (progress?.goals || []).map((goal) => String(goal.label || '')).join(' ').toLowerCase();
       const achievementNames = (student.Achievements || []).map(a => String(a.name || a.title || '')).join(' ').toLowerCase();
-      return (
-        String(student.name || '').toLowerCase().includes(query) ||
-        String(student.email || '').toLowerCase().includes(query) ||
-        goalNames.includes(query) ||
-        achievementNames.includes(query)
-      );
+      
+      const matchesAchievement = !achievementQuery || 
+                                 goalNames.includes(achievementQuery) ||
+                                 achievementNames.includes(achievementQuery);
+
+      return matchesStudent && matchesAchievement;
     });
-  }, [classData?.students, searchTerm, studentDailyGoals]);
+  }, [classData?.students, columnFilters, studentDailyGoals]);
 
   const selectedClassName = classData?.name || classData?.level || 'Class';
   const totalStars = filteredStudents.reduce((sum, s) => sum + (studentDailyGoals[s.id]?.starsEarned || 0), 0);
@@ -369,7 +355,7 @@ const TeacherClassStudentsPage = () => {
           {/* Summary Cards */}
           <Grid container spacing={2} sx={{ mb: 3 }} alignItems="stretch">
             {[
-              { label: 'Students', value: classData.students.length, color: '#0B1F3B' },
+              { label: 'Students', value: classData.students.length, color: '#D18AC4' },
               { label: 'Daily Stars Today', value: totalStars, color: '#f59e0b' },
               { label: 'Active Earners', value: activeEarners, color: '#16a34a' },
               { label: 'Total Achievements', value: totalAchievements, color: '#7c3aed' },
@@ -400,20 +386,42 @@ const TeacherClassStudentsPage = () => {
 
           {/* Search */}
           <Paper sx={{ p: 2.5, mb: 3, borderRadius: 4, boxShadow: 1 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search by student, goal, or achievement..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Search Student or Class"
+                  placeholder="Name, Email or Class..."
+                  value={columnFilters.student}
+                  onChange={(e) => setColumnFilters(prev => ({ ...prev, student: e.target.value }))}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Filter by Achievement"
+                  placeholder="Achievement name, goal..."
+                  value={columnFilters.achievement}
+                  onChange={(e) => setColumnFilters(prev => ({ ...prev, achievement: e.target.value }))}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmojiEvents />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </Grid>
           </Paper>
 
           {/* Student Cards */}

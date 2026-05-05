@@ -61,10 +61,18 @@ const AboutPage = () => {
     if (target !== '/#features') {
     }
   };
+
+  const brandNavy = '#006D5B';
+  const brandNavyDark = '#004D40';
+  const brandNavyMid = '#005D4D';
+  const themeColor = '#008C75';
+  const themeColorDark = '#005D4D';
+  const brandSoft = '#F0FDF9';
+
   const roleModules = [
-    { icon: <Psychology />, title: 'Student', items: ['Lessons & Topics', 'Quizzes & Practice', 'Progress Tracker'], color: brandNavy, bg: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' },
-    { icon: <AutoGraph />, title: 'Teacher', items: ['Assignments & Feedback', 'Class Insights', 'Content Management'], color: brandPink, bg: 'linear-gradient(135deg, #ffffff 0%, #fff0f7 100%)' },
-    { icon: <Dashboard />, title: 'Admin', items: ['User & Role Management', 'Reports & Analytics', 'System Settings'], color: brandNavyMid, bg: 'linear-gradient(135deg, #ffffff 0%, #f7f0ff 100%)' }
+    { icon: <Psychology />, title: 'Student', items: ['Lessons & Topics', 'Quizzes & Practice', 'Progress Tracker'], color: brandNavy, bg: 'linear-gradient(135deg, #ffffff 0%, #f0fdf9 100%)' },
+    { icon: <AutoGraph />, title: 'Teacher', items: ['Assignments & Feedback', 'Class Insights', 'Content Management'], color: themeColor, bg: 'linear-gradient(135deg, #ffffff 0%, #f0fdf9 100%)' },
+    { icon: <Dashboard />, title: 'Admin', items: ['User & Role Management', 'Reports & Analytics', 'System Settings'], color: brandNavyMid, bg: 'linear-gradient(135deg, #ffffff 0%, #f0fdf9 100%)' }
   ];
 
   const dashboardShots = [
@@ -81,13 +89,36 @@ const AboutPage = () => {
     setOpenDashboard(null);
   };
   
+  const stats = [
+    { label: 'Active Students', value: '15k+' },
+    { label: 'Lessons Delivered', value: '2.5k+' },
+    { label: 'Partner Schools', value: '120+' },
+    { label: 'User Satisfaction', value: '98%' }
+  ];
 
-  const brandNavy = '#0B1F3B';
-  const brandNavyDark = '#08162B';
-  const brandNavyMid = '#17325C';
-  const brandPink = '#B0125B';
-  const brandPinkDark = '#C2185B';
-  const brandSoft = '#F4F5F9';
+  const testimonials = [
+    {
+      name: 'Sarah J.',
+      role: 'Student',
+      text: 'ELS made learning so much easier for me. I love how I can see exactly what I need to do next.',
+      avatar: 'SJ'
+    },
+    {
+      name: 'Mr. David',
+      role: 'High School Teacher',
+      text: 'The class insights are a game changer. I can identify struggling students before they even fall behind.',
+      avatar: 'MD'
+    },
+    {
+      name: 'Elena R.',
+      role: 'Parent',
+      text: 'Finally, a platform that keeps me in the loop without being overwhelming. The progress reports are great.',
+      avatar: 'ER'
+    }
+  ];
+
+
+
 
   return (
     <Box sx={{ bgcolor: '#ffffff', overflowX: 'hidden', fontFamily: '"Poppins", "Segoe UI", "Inter", system-ui, sans-serif' }}>
@@ -120,7 +151,7 @@ const AboutPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(11,31,59,0.32)',
+            background: alpha(brandNavy, 0.32),
             zIndex: 0
           }}
         />
@@ -128,7 +159,7 @@ const AboutPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: `radial-gradient(circle at 15% 20%, ${alpha(brandNavy, 0.4)}, transparent 40%), radial-gradient(circle at 85% 75%, ${alpha(brandPink, 0.3)}, transparent 45%)`,
+            background: `radial-gradient(circle at 15% 20%, ${alpha(brandNavy, 0.4)}, transparent 40%), radial-gradient(circle at 85% 75%, ${alpha(themeColor, 0.3)}, transparent 45%)`,
             pointerEvents: 'none',
             zIndex: 0,
           }}
@@ -246,13 +277,13 @@ const AboutPage = () => {
                       borderRadius: '24px',
                       overflow: 'hidden',
                       background: '#ffffff',
-                      border: '1px solid rgba(11,31,59,0.1)',
+                      border: `1px solid ${alpha(brandNavy, 0.1)}`,
                       boxShadow: '0 20px 40px -20px rgba(0,0,0,0.15)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         transform: 'translateY(-10px)',
-                        boxShadow: `0 30px 60px -20px ${alpha(brandNavy, 0.3)}`,
+                      boxShadow: `0 30px 60px -20px ${alpha(brandNavy, 0.3)}`,
                       }
                     }}
                   >
@@ -394,7 +425,35 @@ const AboutPage = () => {
         </Container>
       </Box>
 
+      {/* Statistics Section */}
+      <Box sx={{ bgcolor: brandNavy, py: { xs: 6, md: 10 }, color: '#FFFFFF' }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={4} justifyContent="center">
+            {stats.map((stat, idx) => (
+              <Grid size={{ xs: 6, md: 3 }} key={stat.label}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                >
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, fontFamily: '"Fraunces", serif', color: themeColor }}>
+                      {stat.value}
+                    </Typography>
+                    <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                      {stat.label}
+                    </Typography>
+                  </Box>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
       <Box sx={{ bgcolor: '#FFFFFF', height: { xs: 24, md: 32 } }} />
+
 
       {/* Values */}
       <Box sx={{ bgcolor: brandSoft, pt: { xs: 4, md: 6 }, pb: { xs: 6, md: 10 } }}>
@@ -424,7 +483,7 @@ const AboutPage = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       borderRadius: '24px',
-                      border: '1px solid rgba(11,31,59,0.1)',
+                      border: `1px solid ${alpha(brandNavy, 0.1)}`,
                       background: 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(10px)',
                       transition: 'all 0.3s ease',
@@ -451,6 +510,69 @@ const AboutPage = () => {
                       </Typography>
                     </CardContent>
                   </Card>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Testimonials */}
+      <Box sx={{ bgcolor: '#FFFFFF', py: { xs: 8, md: 12 } }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 8 }}>
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, color: brandNavy, fontFamily: '"Fraunces", serif' }}>
+              What Our Users Say
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#4B5563', maxWidth: 600, mx: 'auto' }}>
+              Real feedback from the community we serve every day.
+            </Typography>
+          </Box>
+          <Grid container spacing={4}>
+            {testimonials.map((t, idx) => (
+              <Grid size={{ xs: 12, md: 4 }} key={t.name}>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: idx * 0.2 }}
+                >
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 4,
+                      borderRadius: '24px',
+                      bgcolor: brandSoft,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      border: `1px solid ${alpha(brandNavy, 0.05)}`,
+                      transition: 'transform 0.3s ease',
+                      '&:hover': { transform: 'translateY(-10px)' }
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ fontStyle: 'italic', color: '#4B5563', mb: 4, lineHeight: 1.8, flexGrow: 1 }}>
+                      "{t.text}"
+                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Box sx={{ 
+                        width: 48, height: 48, borderRadius: '50%', 
+                        bgcolor: brandNavy, color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '0.9rem'
+                      }}>
+                        {t.avatar}
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: brandNavy }}>
+                          {t.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: themeColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                          {t.role}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
                 </motion.div>
               </Grid>
             ))}

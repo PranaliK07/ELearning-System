@@ -63,9 +63,14 @@ const imageStorage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedImageTypes = (process.env.ALLOWED_IMAGE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(',');
   const allowedDocumentTypes = (process.env.ALLOWED_DOCUMENT_TYPES || 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/png,image/jpeg,image/jpg').split(',');
+  const allowedVideoTypes = (process.env.ALLOWED_VIDEO_TYPES || 'video/mp4,video/mpeg,video/quicktime').split(',');
 
   if (file.fieldname === 'video') {
-    cb(null, true);
+    if (allowedVideoTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid video format. Only MP4, MPEG, and MOV are allowed.'), false);
+    }
   } else if (['thumbnail', 'avatar', 'badge'].includes(file.fieldname)) {
     if (allowedImageTypes.includes(file.mimetype)) {
       cb(null, true);
