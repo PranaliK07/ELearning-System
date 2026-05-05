@@ -36,6 +36,7 @@ import toast from 'react-hot-toast';
 import {
   validateEmail,
   validateName,
+  validatePassword,
   validatePositiveInteger,
   validateSelectRequired
 } from '../../utils/validation';
