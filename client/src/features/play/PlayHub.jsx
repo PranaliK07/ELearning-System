@@ -114,7 +114,7 @@ const PlayHub = () => {
                       transform: 'scale(1.03)',
                       boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
                       bgcolor: 'action.hover',
-                      borderColor: '#1a237e'
+                      borderColor: '#5E35B1'
                     }
                   }}
                 >
@@ -124,8 +124,8 @@ const PlayHub = () => {
                       height: 80, 
                       mx: 'auto', 
                       mb: 2, 
-                      background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', // Dark Pink to Navy Blue Gradient
-                      boxShadow: '0 8px 24px rgba(26, 35, 126, 0.25)',
+                      background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)', // Mint gradient
+                      boxShadow: '0 8px 24px rgba(15, 118, 110, 0.25)',
                       border: '3px solid white'
                     }}>
                       <PsychologyIcon sx={{ fontSize: 45, color: '#fff' }} /> {/* White Icon */}
@@ -134,7 +134,7 @@ const PlayHub = () => {
                     <Chip 
                       label={`${subject.quizzes.length} Quizzes Available`} 
                       size="small" 
-                      sx={{ fontWeight: 600, bgcolor: 'rgba(176, 18, 91, 0.1)', color: '#B0125B' }} 
+                      sx={{ fontWeight: 600, bgcolor: 'rgba(15, 118, 110, 0.1)', color: '#0F766E' }}
                     />
                   </CardContent>
                 </Card>
@@ -153,7 +153,7 @@ const PlayHub = () => {
               >
                 Back to Subjects
               </Button>
-              <Typography variant="h4" fontWeight="900" sx={{ color: '#B0125B', textTransform: 'uppercase' }}>
+              <Typography variant="h4" fontWeight="900" sx={{ color: '#0F766E', textTransform: 'uppercase' }}>
                 {selectedSubject} Quizzes
               </Typography>
             </Box>
@@ -173,7 +173,7 @@ const PlayHub = () => {
                         }}>
                             <Box sx={{ 
                                 height: 140, 
-                                background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', // Dark Pink to Navy Blue
+                                background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)', // Mint gradient
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 justifyContent: 'center',
@@ -196,7 +196,7 @@ const PlayHub = () => {
                                     <Chip 
                                         label={quiz.Topic?.name || 'General'} 
                                         size="small" 
-                                        sx={{ bgcolor: 'rgba(176, 18, 91, 0.1)', fontWeight: 600, color: '#B0125B' }} 
+                                        sx={{ bgcolor: 'rgba(15, 118, 110, 0.1)', fontWeight: 600, color: '#0F766E' }}
                                     />
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -232,7 +232,7 @@ const PlayHub = () => {
                                         borderRadius: 2.5, 
                                         py: 1.2, 
                                         fontWeight: 'bold',
-                                        bgcolor: '#1a237e',
+                                        bgcolor: '#5E35B1',
                                         '&:hover': { bgcolor: '#121858' },
                                     }}
                                 >

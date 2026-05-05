@@ -133,6 +133,12 @@ const ClassCommunication = () => {
         title.includes(query) ||
         message.includes(query) ||
         className.includes(query) ||
+        senderName.includes(query) ||
+        String(item?.audience || '').toLowerCase().includes(query) ||
+        String(item?.recipientCount || 0).toLowerCase().includes(query) ||
+        new Date(item.createdAt).toLocaleDateString().toLowerCase().includes(query) ||
+        message.includes(query) ||
+        className.includes(query) ||
         senderName.includes(query)
       );
     });
@@ -435,9 +441,9 @@ const ClassCommunication = () => {
                           borderRadius: 3,
                           borderColor: 'primary.light',
                           borderWidth: 1.5,
-                          backgroundColor: 'rgba(11, 31, 59, 0.02)',
+                          backgroundColor: 'rgba(106, 27, 154, 0.02)',
                           cursor: 'pointer',
-                          '&:hover': { backgroundColor: 'rgba(11, 31, 59, 0.05)' }
+                          '&:hover': { backgroundColor: 'rgba(106, 27, 154, 0.05)' }
                         }}
                         onClick={() => navigate(`/communications/${item.id}`)}
                       >

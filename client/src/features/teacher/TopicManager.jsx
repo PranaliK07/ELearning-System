@@ -38,7 +38,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios';
 import { toast } from 'react-hot-toast';
-import { validateRequiredText, validateSelectRequired } from '../../utils/validation';
+import { validateName, validateRequiredText, validateSelectRequired } from '../../utils/validation';
 
 const TopicManager = () => {
   const navigate = useNavigate();
@@ -132,7 +132,7 @@ const TopicManager = () => {
   const handleCreateSubject = async () => {
     const nextErrors = {};
     const gradeError = validateSelectRequired(form.gradeId, 'Class');
-    const subjectError = validateRequiredText(form.subjectName, 'Subject name', 2);
+    const subjectError = validateName(form.subjectName, 'Subject Name');
     if (gradeError) nextErrors.gradeId = gradeError;
     if (subjectError) nextErrors.subjectName = subjectError;
     setErrors((prev) => ({ ...prev, ...nextErrors }));
@@ -197,7 +197,9 @@ const TopicManager = () => {
 
   const handleEditSave = async () => {
     if (!editDialog.item) return;
-    const nameError = validateRequiredText(editDialog.values.name, 'Name', 2);
+    const nameError = editDialog.type === 'subject' 
+      ? validateName(editDialog.values.name, 'Subject Name') 
+      : validateRequiredText(editDialog.values.name, 'Topic Name', 2);
     if (nameError) {
       setEditErrors({ name: nameError });
       return toast.error(nameError);
@@ -251,8 +253,14 @@ const TopicManager = () => {
     }
   };
 
-  const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(searchSubject.toLowerCase()));
-  const filteredTopics = topics.filter(t => t.name.toLowerCase().includes(searchTopic.toLowerCase()));
+  const filteredSubjects = subjects.filter(s => 
+    s.name.toLowerCase().includes(searchSubject.toLowerCase()) ||
+    (s.description || '').toLowerCase().includes(searchSubject.toLowerCase())
+  );
+  const filteredTopics = topics.filter(t => 
+    t.name.toLowerCase().includes(searchTopic.toLowerCase()) ||
+    (t.description || '').toLowerCase().includes(searchTopic.toLowerCase())
+  );
   const surfaceBorder = theme.palette.divider;
   const softSurface = theme.palette.background.default;
   const iconSurface = (color) => alpha(color, isDarkMode ? 0.2 : 0.12);
@@ -314,7 +322,11 @@ const TopicManager = () => {
                   label="Subject Name"
                   placeholder="e.g. Advanced Mathematics"
                   value={form.subjectName}
-                  onChange={(e) => setForm((prev) => ({ ...prev, subjectName: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((prev) => ({ ...prev, subjectName: val }));
+                    setErrors((prev) => ({ ...prev, subjectName: validateName(val, 'Subject Name') }));
+                  }}
                   disabled={!form.gradeId}
                   error={!!errors.subjectName}
                   helperText={errors.subjectName}
@@ -450,7 +462,11 @@ const TopicManager = () => {
                   label="Topic Title"
                   placeholder="e.g. Introduction to Calculus"
                   value={form.topicName}
-                  onChange={(e) => setForm((prev) => ({ ...prev, topicName: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((prev) => ({ ...prev, topicName: val }));
+                    setErrors((prev) => ({ ...prev, topicName: validateRequiredText(val, 'Topic Name', 2) }));
+                  }}
                   disabled={!form.subjectId}
                   error={!!errors.topicName}
                   helperText={errors.topicName}
@@ -560,7 +576,14 @@ const TopicManager = () => {
             label="Name" 
             fullWidth
             value={editDialog.values.name || ''} 
-            onChange={(e) => setEditDialog((prev) => ({ ...prev, values: { ...prev.values, name: e.target.value } }))} 
+            onChange={(e) => {
+              const val = e.target.value;
+              setEditDialog((prev) => ({ ...prev, values: { ...prev.values, name: val } }));
+              const err = editDialog.type === 'subject' 
+                ? validateName(val, 'Subject Name') 
+                : validateRequiredText(val, 'Topic Name', 2);
+              setEditErrors({ name: err });
+            }} 
             error={!!editErrors.name} 
             helperText={editErrors.name} 
           />

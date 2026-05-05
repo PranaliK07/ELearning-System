@@ -47,7 +47,7 @@ const getNotificationStyle = (type) => {
     case 'achievement':
       return { icon: <Star fontSize="small" />, color: '#ffeb3b' };
     case 'announcement':
-      return { icon: <Campaign fontSize="small" />, color: '#3f51b5' };
+      return { icon: <Campaign fontSize="small" />, color: '#7E57C2' };
     default:
       return { icon: <NotificationsIcon fontSize="small" />, color: '#9e9e9e' };
   }
@@ -251,8 +251,8 @@ const MainLayout = () => {
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer + 1,
           background: mode === 'light' 
-            ? 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)' 
-            : 'linear-gradient(135deg, #08162B 0%, #17325C 100%)'
+            ? 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)'
+            : 'linear-gradient(135deg, #115E59 0%, #0F766E 100%)'
         }}
       >
         <Toolbar>

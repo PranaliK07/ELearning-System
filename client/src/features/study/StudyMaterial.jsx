@@ -122,6 +122,8 @@ const StudyMaterial = () => {
     const groupedMaterials = useMemo(() => {
         const filtered = materials.filter(item => {
             const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 item.Subject?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 (item.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                                  item.Subject?.name?.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesSubject = selectedSubjectFilter === 'all' || item.Subject?.id?.toString() === selectedSubjectFilter;
             return matchesSearch && matchesSubject;
@@ -243,7 +245,7 @@ const StudyMaterial = () => {
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                                    <Avatar sx={{ bgcolor: iconSurface, color: theme.palette.primary.main, boxShadow: isDarkMode ? 2 : '0 4px 10px rgba(26, 35, 126, 0.2)' }}>
+                                    <Avatar sx={{ bgcolor: iconSurface, color: theme.palette.primary.main, boxShadow: isDarkMode ? 2 : '0 4px 10px rgba(15, 118, 110, 0.2)' }}>
                                         {user?.role === 'student' ? <MenuBook /> : <School />}
                                     </Avatar>
                                     <Box flexGrow={1}>

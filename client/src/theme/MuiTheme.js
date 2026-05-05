@@ -1,29 +1,36 @@
 import { createTheme } from '@mui/material/styles';
 
+const BRAND_MINT = '#0F766E';
+const BRAND_MINT_DARK = '#115E59';
+const BRAND_MINT_LIGHT = '#14B8A6';
+const BRAND_MINT_SOFT = '#ECFDF5';
+const BRAND_MINT_DEEP = '#042F2E';
+const BRAND_MINT_PAPER = '#10312E';
+
 const getTheme = (mode) => createTheme({
   palette: {
     mode,
     primary: {
-      main: mode === 'light' ? '#0B1F3B' : '#8AB4F8',
-      contrastText: mode === 'light' ? '#fff' : '#0F1724'
+      main: mode === 'light' ? BRAND_MINT : '#99F6E4',
+      contrastText: mode === 'light' ? '#fff' : '#042F2E'
     },
     secondary: {
-      main: mode === 'light' ? '#B0125B' : '#F472B6',
-      contrastText: mode === 'light' ? '#fff' : '#0F1724'
+      main: mode === 'light' ? BRAND_MINT_LIGHT : '#CCFBF1',
+      contrastText: mode === 'light' ? '#fff' : '#042F2E'
     },
     success: { main: '#00C853' },
     text: {
-      primary: mode === 'light' ? '#183153' : '#F5F7FA',
-      secondary: mode === 'light' ? '#5F6B7A' : '#AAB4C3'
+      primary: mode === 'light' ? '#123B34' : '#F0FDF4',
+      secondary: mode === 'light' ? '#4B6B63' : '#B7E4DA'
     },
     background: {
-      default: mode === 'light' ? '#F5F7FA' : '#0B1220',
-      paper: mode === 'light' ? '#FFFFFF' : '#1A2740',
+      default: mode === 'light' ? BRAND_MINT_SOFT : BRAND_MINT_DEEP,
+      paper: mode === 'light' ? '#FFFFFF' : BRAND_MINT_PAPER,
     },
-    divider: mode === 'light' ? 'rgba(11, 31, 59, 0.08)' : 'rgba(255, 255, 255, 0.10)',
+    divider: mode === 'light' ? 'rgba(15, 118, 110, 0.10)' : 'rgba(255, 255, 255, 0.10)',
     action: {
-      hover: mode === 'light' ? 'rgba(11, 31, 59, 0.04)' : 'rgba(255, 255, 255, 0.06)',
-      selected: mode === 'light' ? 'rgba(11, 31, 59, 0.08)' : 'rgba(255, 255, 255, 0.10)'
+      hover: mode === 'light' ? 'rgba(15, 118, 110, 0.05)' : 'rgba(255, 255, 255, 0.06)',
+      selected: mode === 'light' ? 'rgba(15, 118, 110, 0.10)' : 'rgba(255, 255, 255, 0.10)'
     }
   },
   typography: {
@@ -44,7 +51,7 @@ const getTheme = (mode) => createTheme({
         root: {
           color: mode === 'light' ? '#5F6B7A' : '#AAB4C3',
           '&.Mui-focused': {
-            color: mode === 'light' ? '#0B1F3B' : '#F5F7FA',
+            color: mode === 'light' ? BRAND_MINT : '#F5F7FA',
           },
           '&.Mui-error': {
             color: '#d32f2f',
@@ -68,13 +75,13 @@ const getTheme = (mode) => createTheme({
           color: mode === 'light' ? '#183153' : '#F5F7FA',
           backgroundColor: 'transparent',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: mode === 'light' ? 'rgba(11, 31, 59, 0.18)' : 'rgba(255, 255, 255, 0.16)',
+            borderColor: mode === 'light' ? 'rgba(15, 118, 110, 0.18)' : 'rgba(255, 255, 255, 0.16)',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: mode === 'light' ? '#0B1F3B' : '#F5F7FA',
+            borderColor: mode === 'light' ? BRAND_MINT : '#F5F7FA',
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: mode === 'light' ? '#0B1F3B' : '#F5F7FA',
+            borderColor: mode === 'light' ? BRAND_MINT : '#F5F7FA',
           },
         },
         input: {
@@ -90,9 +97,9 @@ const getTheme = (mode) => createTheme({
       styleOverrides: {
         body: {
           background: mode === 'light'
-            ? 'radial-gradient(circle at top left, rgba(11, 31, 59, 0.08), transparent 28%), radial-gradient(circle at 80% 20%, rgba(176, 18, 91, 0.14), transparent 22%), linear-gradient(180deg, #ffffff 0%, #fffef8 48%, #ffffff 100%)'
-            : 'radial-gradient(circle at top left, rgba(64, 103, 178, 0.18), transparent 28%), radial-gradient(circle at 80% 20%, rgba(176, 18, 91, 0.18), transparent 24%), linear-gradient(180deg, #0f1724 0%, #111b2e 52%, #0f1724 100%)',
-          color: mode === 'light' ? '#183153' : '#F5F7FA'
+            ? 'radial-gradient(circle at top left, rgba(15, 118, 110, 0.10), transparent 28%), radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.15), transparent 22%), linear-gradient(180deg, #ffffff 0%, #effcf9 48%, #ffffff 100%)'
+            : 'radial-gradient(circle at top left, rgba(15, 118, 110, 0.22), transparent 28%), radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.18), transparent 24%), linear-gradient(180deg, #042F2E 0%, #0B3B38 52%, #042F2E 100%)',
+          color: mode === 'light' ? '#123B34' : '#F5F7FA'
         }
       }
     },
@@ -102,17 +109,17 @@ const getTheme = (mode) => createTheme({
           backgroundImage: mode === 'dark'
             ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 18%)'
             : 'none',
-          backgroundColor: mode === 'dark' ? 'rgba(26, 39, 64, 0.96)' : '#FFFFFF',
-          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(11, 31, 59, 0.06)',
+          backgroundColor: mode === 'dark' ? 'rgba(16, 49, 46, 0.96)' : '#FFFFFF',
+          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 118, 110, 0.06)',
           boxShadow: mode === 'light'
             ? '0 4px 20px rgba(0,0,0,0.05)'
             : '0 12px 32px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
           transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
           '&:hover': mode === 'dark' ? {
-            borderColor: 'rgba(138, 180, 248, 0.4)',
+            borderColor: 'rgba(153, 246, 228, 0.4)',
             boxShadow: '0 16px 38px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
           } : {
-            borderColor: 'rgba(11, 31, 59, 0.12)',
+            borderColor: 'rgba(15, 118, 110, 0.12)',
           }
         },
       },
@@ -123,17 +130,17 @@ const getTheme = (mode) => createTheme({
           backgroundImage: mode === 'dark'
             ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 18%)'
             : 'none',
-          backgroundColor: mode === 'dark' ? 'rgba(26, 39, 64, 0.96)' : '#FFFFFF',
-          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(11, 31, 59, 0.06)',
+          backgroundColor: mode === 'dark' ? 'rgba(16, 49, 46, 0.96)' : '#FFFFFF',
+          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 118, 110, 0.06)',
           boxShadow: mode === 'light'
             ? '0 4px 20px rgba(0,0,0,0.05)'
             : '0 12px 32px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
           transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
           '&:hover': mode === 'dark' ? {
-            borderColor: 'rgba(138, 180, 248, 0.4)',
+            borderColor: 'rgba(153, 246, 228, 0.4)',
             boxShadow: '0 16px 38px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
           } : {
-            borderColor: 'rgba(11, 31, 59, 0.12)',
+            borderColor: 'rgba(15, 118, 110, 0.12)',
           }
         }
       }

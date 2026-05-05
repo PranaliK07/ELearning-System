@@ -44,7 +44,7 @@ const renderStars = (count, total = 5, size = 18) => (
       index < count ? (
         <Star key={index} sx={{ color: '#FFD93D', fontSize: size, filter: 'drop-shadow(0 0 4px #FFD93D)' }} />
       ) : (
-        <StarBorder key={index} sx={{ color: 'rgba(11,31,59,0.18)', fontSize: size }} />
+        <StarBorder key={index} sx={{ color: 'rgba(15,118,110,0.18)', fontSize: size }} />
       )
     ))}
   </Box>
@@ -69,7 +69,7 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
           sx={{
             px: 3,
             py: 2.5,
-            background: 'linear-gradient(135deg, rgba(11,31,59,0.98) 0%, rgba(176,18,91,0.92) 100%)',
+            background: 'linear-gradient(135deg, rgba(15,118,110,0.98) 0%, rgba(45,212,191,0.92) 100%)',
             color: 'white',
             display: 'flex',
             justifyContent: 'space-between',
@@ -123,7 +123,7 @@ const StudentCard = ({ student, classData, studentDailyGoals }) => {
                   size="small"
                   sx={{
                     fontWeight: 700,
-                    bgcolor: goal.completed ? 'rgba(76,175,80,0.12)' : 'rgba(11,31,59,0.06)',
+                    bgcolor: goal.completed ? 'rgba(76,175,80,0.12)' : 'rgba(15,118,110,0.06)',
                     color: goal.completed ? 'success.dark' : 'text.secondary',
                     border: goal.completed ? '1px solid rgba(76,175,80,0.3)' : '1px solid rgba(0,0,0,0.08)',
                   }}
@@ -324,7 +324,9 @@ const TeacherClassStudentsPage = () => {
         String(student.name || '').toLowerCase().includes(query) ||
         String(student.email || '').toLowerCase().includes(query) ||
         goalNames.includes(query) ||
-        achievementNames.includes(query)
+        achievementNames.includes(query) ||
+        String(progress?.starsEarned || 0).includes(query) ||
+        String(student.Achievements?.length || 0).includes(query)
       );
     });
   }, [classData?.students, searchTerm, studentDailyGoals]);
@@ -369,7 +371,7 @@ const TeacherClassStudentsPage = () => {
           {/* Summary Cards */}
           <Grid container spacing={2} sx={{ mb: 3 }} alignItems="stretch">
             {[
-              { label: 'Students', value: classData.students.length, color: '#0B1F3B' },
+              { label: 'Students', value: classData.students.length, color: '#0F766E' },
               { label: 'Daily Stars Today', value: totalStars, color: '#f59e0b' },
               { label: 'Active Earners', value: activeEarners, color: '#16a34a' },
               { label: 'Total Achievements', value: totalAchievements, color: '#7c3aed' },

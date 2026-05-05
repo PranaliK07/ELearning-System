@@ -46,6 +46,7 @@ import {
 import axios from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { validateRequiredText } from '../../utils/validation';
 
 const ContentManagement = () => {
     const { contentId } = useParams();
@@ -83,6 +84,7 @@ const ContentManagement = () => {
     const [readingFile, setReadingFile] = useState(null);
     const [topicDialogOpen, setTopicDialogOpen] = useState(false);
     const [newTopic, setNewTopic] = useState({ name: '' });
+    const [formErrors, setFormErrors] = useState({});
 
     const fetchGrades = useCallback(async () => {
         try {
@@ -295,10 +297,16 @@ const ContentManagement = () => {
     };
 
     const categoryCards = [
-        { id: 'video', title: 'Video Lesson', icon: <VideoLibrary sx={{ fontSize: 40 }} />, color: '#B0125B' },
-        { id: 'reading', title: 'Study Notes', icon: <LibraryBooks sx={{ fontSize: 40 }} />, color: '#0B1F3B' },
+        { id: 'video', title: 'Video Lesson', icon: <VideoLibrary sx={{ fontSize: 40 }} />, color: '#14B8A6' },
+        { id: 'reading', title: 'Study Notes', icon: <LibraryBooks sx={{ fontSize: 40 }} />, color: '#0F766E' },
         { id: 'quiz', title: 'Interactive Quiz', icon: <QuizIcon sx={{ fontSize: 40 }} />, color: '#FF9800' }
     ];
+
+    const categoryLabels = {
+        video: 'Add Video Lesson',
+        reading: 'Add Study Notes',
+        quiz: 'Add Interactive Quiz'
+    };
 
     if (!selectedType) {
         return (
@@ -331,13 +339,30 @@ const ContentManagement = () => {
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Box sx={{ mb: 2 }}><Button onClick={() => setSelectedType(null)}>Back</Button></Box>
             <Paper sx={{ p: 4, borderRadius: 4, mb: 6, boxShadow: 3 }}>
+                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, color: 'primary.main' }}>
+                    {contentId ? `Edit ${selectedType?.toUpperCase()}` : categoryLabels[selectedType]}
+                </Typography>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 6 }}><TextField select fullWidth label="Class" value={formData.gradeId} onChange={(e) => setFormData({...formData, gradeId: e.target.value})}>{grades.map(g => <MenuItem key={g.id} value={g.id}>Class {g.level}</MenuItem>)}</TextField></Grid>
                         <Grid size={{ xs: 12, sm: 6 }}><TextField select fullWidth label="Subject" value={formData.subjectId} onChange={(e) => setFormData({...formData, subjectId: e.target.value})} disabled={!formData.gradeId}>{subjects.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}</TextField></Grid>
                         <Grid size={{ xs: 12, sm: 9 }}><TextField select fullWidth label="Topic" value={formData.topicId} onChange={(e) => setFormData({...formData, topicId: e.target.value})} disabled={!formData.subjectId}>{topics.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}</TextField></Grid>
                         <Grid size={{ xs: 12, sm: 3 }}><Button fullWidth variant="outlined" sx={{ height: '56px' }} startIcon={<Add />} onClick={() => setTopicDialogOpen(true)} disabled={!formData.subjectId}>New Topic</Button></Grid>
-                        <Grid size={12}><TextField fullWidth label="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required /></Grid>
+                        <Grid size={12}>
+                            <TextField 
+                                fullWidth 
+                                label="Title" 
+                                value={formData.title} 
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormData({...formData, title: val});
+                                    setFormErrors(prev => ({ ...prev, title: validateRequiredText(val, 'Title', 3) }));
+                                }} 
+                                required 
+                                error={!!formErrors.title}
+                                helperText={formErrors.title}
+                            />
+                        </Grid>
 
                         {selectedType === 'quiz' ? (
                             <Grid size={12}>

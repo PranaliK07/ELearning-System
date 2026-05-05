@@ -144,7 +144,7 @@ const TeacherDashboard = () => {
 
   const exportCSV = () => {
     handleExportClose();
-    const headers = ["Name", "Email", "Grade", "Last Active"];
+    const headers = ["Name", "Email", "Class", "Last Active"];
     const rows = data.students.map(s => [
       `"${s.name}"`,
       `"${s.email}"`,
@@ -163,7 +163,7 @@ const TeacherDashboard = () => {
     const exportRows = data.students.map(s => ({
       'Name': s.name,
       'Email': s.email,
-      'Grade': s.Grade?.name || 'N/A',
+      'Class': s.Grade?.name || 'N/A',
       'Last Active': new Date(s.updatedAt).toLocaleDateString()
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
@@ -179,7 +179,7 @@ const TeacherDashboard = () => {
     doc.text("Students Overview Report", 14, 15);
     autoTable(doc, {
       startY: 20,
-      head: [['Name', 'Email', 'Grade', 'Last Active']],
+      head: [['Name', 'Email', 'Class', 'Last Active']],
       body: data.students.map(s => [s.name, s.email, s.Grade?.name || 'N/A', new Date(s.updatedAt).toLocaleDateString()]),
     });
     doc.save("teacher_data.pdf");
@@ -211,7 +211,7 @@ const TeacherDashboard = () => {
                 children: [
                   new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Name", bold: true })] })] }),
                   new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Email", bold: true })] })] }),
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Grade", bold: true })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Class", bold: true })] })] }),
                   new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Last Active", bold: true })] })] }),
                 ],
               }),
@@ -237,12 +237,15 @@ const TeacherDashboard = () => {
 
   const filteredStudents = data.students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (student.Grade?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (new Date(student.updatedAt).toLocaleDateString()).toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const statsConfig = [
-    { label: 'Total Students', value: data.stats.totalStudents, icon: <People />, color: '#0B1F3B' },
-    { label: 'Active Classes', value: data.stats.activeClasses, icon: <School />, color: '#f50057' },
+    { label: 'Total Students', value: data.stats.totalStudents, icon: <People />, color: '#0F766E' },
+    { label: 'Active Classes', value: data.stats.activeClasses, icon: <School />, color: '#14B8A6' },
     { label: 'Assignments', value: data.stats.assignments, icon: <AssignmentIcon />, color: '#4caf50' },
   ];
 
@@ -457,7 +460,7 @@ const TeacherDashboard = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell>Student</TableCell>
-                        <TableCell>Grade</TableCell>
+                        <TableCell>Class</TableCell>
                         <TableCell>Last Active</TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>

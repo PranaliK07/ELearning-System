@@ -197,8 +197,8 @@ const Reports = () => {
       {
         label: 'Overall Progress',
         data: reportData.studentProgress.map(s => s.progress),
-        backgroundColor: 'rgba(245, 0, 87, 0.6)',
-        borderColor: 'rgba(245, 0, 87, 1)',
+        backgroundColor: 'rgba(142, 36, 170, 0.6)',
+        borderColor: 'rgba(142, 36, 170, 1)',
         borderWidth: 1,
       },
     ],
@@ -391,13 +391,13 @@ const Reports = () => {
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Active Students" value={reportData.summary.activeStudents || 0} icon={Group} color="#1a237e" />
+          <ReportStatCard label="Active Students" value={reportData.summary.activeStudents || 0} icon={Group} color="#5E35B1" />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <ReportStatCard label="Lessons Completed" value={reportData.summary.lessonsCompleted || 0} icon={CheckCircle} color="#2e7d32" />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
-          <ReportStatCard label="Watch Time" value={`${reportData.performanceMetrics.totalHours}h`} icon={AccessTime} color="#f50057" />
+          <ReportStatCard label="Watch Time" value={`${reportData.performanceMetrics.totalHours}h`} icon={AccessTime} color="#14B8A6" />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <ReportStatCard label="Avg Score" value={`${reportData.performanceMetrics.avgScore}%`} icon={TrendingUp} color="#ff9800" />
@@ -427,8 +427,8 @@ const Reports = () => {
       </Grid>
 
       <Paper sx={{ mt: 4, borderRadius: isMobile ? 3 : 6, overflow: 'hidden', border: '1px solid', borderColor: 'rgba(0,0,0,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: alpha('#0B1F3B', 0.02) }}>
-          <Typography variant="h6" fontWeight="800" sx={{ color: '#0B1F3B' }}>Student Performance Rankings</Typography>
+        <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: alpha('#0F766E', 0.02) }}>
+          <Typography variant="h6" fontWeight="800" sx={{ color: '#0F766E' }}>Student Performance Rankings</Typography>
         </Box>
         {isMobile ? (
           <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -494,7 +494,7 @@ const Reports = () => {
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 900 }}>
-              <TableHead sx={{ bgcolor: alpha('#0B1F3B', 0.02) }}>
+              <TableHead sx={{ bgcolor: alpha('#0F766E', 0.02) }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 800 }}>Student Name</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 800 }}>Class</TableCell>

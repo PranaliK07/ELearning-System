@@ -61,6 +61,13 @@ const AboutPage = () => {
     if (target !== '/#features') {
     }
   };
+  const brandNavy = '#0F766E';
+  const brandNavyDark = '#115E59';
+  const brandNavyMid = '#14B8A6';
+  const brandPink = '#2DD4BF';
+  const brandPinkDark = '#5EEAD4';
+  const brandSoft = '#ECFDF5';
+
   const roleModules = [
     { icon: <Psychology />, title: 'Student', items: ['Lessons & Topics', 'Quizzes & Practice', 'Progress Tracker'], color: brandNavy, bg: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' },
     { icon: <AutoGraph />, title: 'Teacher', items: ['Assignments & Feedback', 'Class Insights', 'Content Management'], color: brandPink, bg: 'linear-gradient(135deg, #ffffff 0%, #fff0f7 100%)' },
@@ -80,14 +87,6 @@ const AboutPage = () => {
   const handleDashboardClose = () => {
     setOpenDashboard(null);
   };
-  
-
-  const brandNavy = '#0B1F3B';
-  const brandNavyDark = '#08162B';
-  const brandNavyMid = '#17325C';
-  const brandPink = '#B0125B';
-  const brandPinkDark = '#C2185B';
-  const brandSoft = '#F4F5F9';
 
   return (
     <Box sx={{ bgcolor: '#ffffff', overflowX: 'hidden', fontFamily: '"Poppins", "Segoe UI", "Inter", system-ui, sans-serif' }}>
@@ -120,7 +119,7 @@ const AboutPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(11,31,59,0.32)',
+            background: 'rgba(15,118,110,0.32)',
             zIndex: 0
           }}
         />
@@ -246,7 +245,7 @@ const AboutPage = () => {
                       borderRadius: '24px',
                       overflow: 'hidden',
                       background: '#ffffff',
-                      border: '1px solid rgba(11,31,59,0.1)',
+                      border: '1px solid rgba(15,118,110,0.1)',
                       boxShadow: '0 20px 40px -20px rgba(0,0,0,0.15)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
@@ -318,7 +317,7 @@ const AboutPage = () => {
                 maxHeight: '80vh',
                 objectFit: 'contain',
                 borderRadius: 2,
-                background: '#0B1220'
+                background: '#042F2E'
               }}
             />
           )}
@@ -424,7 +423,7 @@ const AboutPage = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       borderRadius: '24px',
-                      border: '1px solid rgba(11,31,59,0.1)',
+                      border: '1px solid rgba(15,118,110,0.1)',
                       background: 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(10px)',
                       transition: 'all 0.3s ease',

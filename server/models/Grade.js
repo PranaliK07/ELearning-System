@@ -37,6 +37,9 @@ const Grade = sequelize.define('Grade', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   }
+}, {
+  tableName: 'grades',
+  freezeTableName: true
 });
 
 module.exports = Grade;

@@ -65,7 +65,7 @@ const StudentAttendance = () => {
 
   const statusChip = (status) => {
     if (status === 'present') {
-      return <Chip label="Present" sx={{ bgcolor: '#FFD93D', color: '#0B1F3B', fontWeight: 900 }} size="small" />;
+      return <Chip label="Present" sx={{ bgcolor: '#FFD93D', color: '#0F766E', fontWeight: 900 }} size="small" />;
     }
     if (status === 'absent') {
       return <Chip label="Absent" sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FF6B6B', fontWeight: 900 }} size="small" />;

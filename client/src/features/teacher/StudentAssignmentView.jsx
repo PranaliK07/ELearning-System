@@ -114,7 +114,7 @@ const StudentAssignmentView = () => {
         <Typography variant="h4" fontWeight="bold">Assignment Details</Typography>
       </Box>
 
-      <Paper sx={{ p: 4, borderRadius: 4, mb: 4, borderTop: '8px solid #0B1F3B' }}>
+      <Paper sx={{ p: 4, borderRadius: 4, mb: 4, borderTop: '8px solid #0F766E' }}>
         <Grid container spacing={3}>
           <Grid size={12}>
             <Box

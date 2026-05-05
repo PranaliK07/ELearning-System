@@ -24,13 +24,13 @@ import { useAuth } from '../../context/AuthContext';
 const gradeStyles = {
   1: { color: '#FF6B6B', icon: <LooksOne sx={{ fontSize: 64, color: 'white' }} />, description: 'Beginner Level' },
   2: { color: '#4ECDC4', icon: <LooksTwo sx={{ fontSize: 64, color: 'white' }} />, description: 'Foundation' },
-  3: { color: '#B0125B', icon: <Looks3 sx={{ fontSize: 64, color: 'white' }} />, description: 'Building Skills' },
-  4: { color: '#1a237e', icon: <Looks4 sx={{ fontSize: 64, color: 'white' }} />, description: 'Intermediate' },
+  3: { color: '#0F766E', icon: <Looks3 sx={{ fontSize: 64, color: 'white' }} />, description: 'Building Skills' },
+  4: { color: '#14B8A6', icon: <Looks4 sx={{ fontSize: 64, color: 'white' }} />, description: 'Intermediate' },
   5: { color: '#FFEAA7', icon: <Looks5 sx={{ fontSize: 64, color: 'white' }} />, description: 'Advanced' },
   6: { color: '#A78BFA', icon: <Looks6 sx={{ fontSize: 64, color: 'white' }} />, description: 'Advanced' }
 };
 
-const fallbackColors = ['#FF6B6B', '#4ECDC4', '#B0125B', '#1a237e', '#FFEAA7', '#A78BFA', '#B0125B', '#22C55E', '#F59E0B', '#F97316'];
+const fallbackColors = ['#99F6E4', '#5EEAD4', '#2DD4BF', '#14B8A6', '#ECFDF5', '#0F766E', '#34D399', '#22C55E', '#F59E0B', '#F97316'];
 const getFallbackColor = (level) => fallbackColors[(Math.max(1, Number(level) || 1) - 1) % fallbackColors.length];
 
 const getGradeStyle = (grade) => {
@@ -117,7 +117,7 @@ const GradeSelect = () => {
             Choose a Class
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Select a grade to view subjects and topics
+            Select a class to view subjects and topics
           </Typography>
         </Box>
 

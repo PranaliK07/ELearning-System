@@ -165,6 +165,9 @@ const TeacherAttendance = () => {
 
   const loadReport = async () => {
     if (!selectedGradeId) return;
+    if (new Date(reportFrom) > new Date(reportTo)) {
+      return toast.error("'From' date cannot be after 'To' date");
+    }
     try {
       setReportLoading(true);
       const res = await api.get(`/api/attendance/grade/${selectedGradeId}/report`, {
@@ -312,7 +315,7 @@ const TeacherAttendance = () => {
         try {
           doc.addImage(logo.dataUrl, 'PNG', 14, 10, 20, 20);
           doc.setFontSize(22);
-          doc.setTextColor(176, 18, 91); // Dark Pink
+          doc.setTextColor(142, 36, 170); // Purple
           doc.setFont('helvetica', 'bold');
           doc.text(PLATFORM_NAME, 38, 20);
           
@@ -326,7 +329,7 @@ const TeacherAttendance = () => {
         }
       }
 
-      doc.setDrawColor(176, 18, 91);
+      doc.setDrawColor(142, 36, 170);
       doc.setLineWidth(1);
       doc.line(14, startY - 5, pageWidth - 14, startY - 5);
 
@@ -358,7 +361,7 @@ const TeacherAttendance = () => {
           lineColor: [200, 200, 200]
         },
         headStyles: { 
-          fillColor: [176, 18, 91], 
+          fillColor: [142, 36, 170],
           textColor: 255, 
           fontStyle: 'bold',
           fontSize: isCompact ? 6 : 8
@@ -431,7 +434,7 @@ const TeacherAttendance = () => {
       new DocxTableRow({
         children: header.map((h) =>
           new DocxTableCell({
-            shading: { fill: 'B0125B' },
+            shading: { fill: '8E24AA' },
             children: [new Paragraph({ children: [new TextRun({ text: String(h), bold: true, color: 'FFFFFF' })], alignment: 'center' })]
           })
         )
@@ -468,7 +471,7 @@ const TeacherAttendance = () => {
               spacing: { after: 120 }
             }),
             new Paragraph({
-              children: [new TextRun({ text: PLATFORM_NAME, bold: true, size: 40, color: 'B0125B' })],
+              children: [new TextRun({ text: PLATFORM_NAME, bold: true, size: 40, color: '8E24AA' })],
               spacing: { after: 60 }
             }),
             new Paragraph({
@@ -823,7 +826,7 @@ const TeacherAttendance = () => {
                             fontWeight: 800, 
                             whiteSpace: 'nowrap',
                             bgcolor: '#f8f9fa',
-                            color: '#0B1F3B',
+                            color: '#0F766E',
                             fontSize: '0.75rem',
                             minWidth: 60
                           }}

@@ -94,7 +94,7 @@ const formatActivityDate = (date) => {
   const pageBg = theme.palette.background.default;
   const surface = theme.palette.background.paper;
   const cardBorder = theme.palette.divider;
-  const cardShadow = isDarkMode ? '0 16px 40px rgba(0, 0, 0, 0.28)' : '0 16px 40px rgba(11, 31, 59, 0.06)';
+  const cardShadow = isDarkMode ? '0 16px 40px rgba(0, 0, 0, 0.28)' : '0 16px 40px rgba(106, 27, 154, 0.06)';
   const masteryRingSize = isMobile ? 148 : 176;
   const quizStats = getQuizStats();
   const totalLessons = progress.length;
@@ -685,7 +685,7 @@ const StatCard = ({ icon: Icon, value, label, color, delay, progress, compactOnM
           border: '1px solid',
           borderColor: alpha(color, 0.12),
           background: `linear-gradient(180deg, ${alpha(color, isDarkMode ? 0.08 : 0.03)} 0%, ${theme.palette.background.paper} 28%)`,
-          boxShadow: isDarkMode ? '0 14px 32px rgba(0, 0, 0, 0.28)' : '0 14px 32px rgba(11, 31, 59, 0.06)',
+          boxShadow: isDarkMode ? '0 14px 32px rgba(0, 0, 0, 0.28)' : '0 14px 32px rgba(106, 27, 154, 0.06)',
           transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
           '&:hover': {
             transform: 'translateY(-4px)',

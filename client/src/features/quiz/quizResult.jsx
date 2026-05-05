@@ -190,7 +190,7 @@ const QuizResult = () => {
                   Retry Quiz
                 </Button>
               )}
-              <Button variant={passed ? 'contained' : 'outlined'} onClick={handleBackToQuiz} size="medium" startIcon={<QuizIcon />} sx={{ px: 4, borderRadius: 2, bgcolor: passed ? '#0B1F3B' : 'transparent', flex: { xs: '1 1 auto', sm: '0 0 auto' } }}>
+              <Button variant={passed ? 'contained' : 'outlined'} onClick={handleBackToQuiz} size="medium" startIcon={<QuizIcon />} sx={{ px: 4, borderRadius: 2, bgcolor: passed ? '#0F766E' : 'transparent', flex: { xs: '1 1 auto', sm: '0 0 auto' } }}>
                 Back to Quiz
               </Button>
             </Box>

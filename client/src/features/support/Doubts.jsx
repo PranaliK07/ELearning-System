@@ -401,7 +401,7 @@ const Doubts = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="h3" fontWeight="900" sx={{ 
-            background: 'linear-gradient(45deg, #1a237e 30%, #311b92 90%)',
+            background: 'linear-gradient(45deg, #5E35B1 30%, #311B92 90%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             mb: 1
@@ -518,7 +518,7 @@ const Doubts = () => {
                           {getStatusChip(doubt.status)}
                         </Box>
 
-                        <Box sx={{ bgcolor: alpha('#1a237e', 0.04), p: 2, borderRadius: 2, mb: 2 }}>
+                        <Box sx={{ bgcolor: alpha('#5E35B1', 0.04), p: 2, borderRadius: 2, mb: 2 }}>
                           <Typography variant="body2"><strong>Message:</strong> {doubt.question}</Typography>
                         </Box>
 

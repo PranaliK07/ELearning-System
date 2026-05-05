@@ -144,20 +144,43 @@ sequelize.authenticate()
     logger.info('✅ Database connected successfully');
     logger.info(`🔍 Database Host: ${process.env.DB_HOST}`);
     logger.info(`🔍 Database Name: ${process.env.DB_NAME}`);
-    sequelize.sync({ alter: true })
-      .then(async () => {
-        logger.info('✅ Database synced successfully (alter: true)');
-        const seedAdmin = require('./utils/seedAdmin');
-        await seedAdmin();
-      })
-      .catch((err) => {
-        logger.error('❌ Database sync FAILED:', err);
-      });
-    
-    app.listen(PORT, () => {
+    const syncOnStart =
+      process.env.DB_SYNC_ON_START
+        ? process.env.DB_SYNC_ON_START === 'true'
+        : process.env.NODE_ENV !== 'production';
+
+    if (syncOnStart) {
+      const syncOptions = process.env.SEQUELIZE_SYNC_ALTER === 'true'
+        ? { alter: true }
+        : {};
+
+      sequelize.sync(syncOptions)
+        .then(async () => {
+          logger.info(`✅ Database synced successfully${syncOptions.alter ? ' (alter: true)' : ''}`);
+          const seedAdmin = require('./utils/seedAdmin');
+          await seedAdmin();
+        })
+        .catch((err) => {
+          logger.error('❌ Database sync FAILED:', err);
+        });
+    } else {
+      logger.info('Database sync on start is disabled; skipping sequelize.sync()');
+    }
+
+    const server = app.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT}`);
       logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🔗 API: ${process.env.API_URL}`);
+    });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.warn(`Port ${PORT} is already in use. The server may already be running.`);
+        process.exit(0);
+      }
+
+      logger.error('Server failed to start:', error);
+      process.exit(1);
     });
   })
   .catch(err => {

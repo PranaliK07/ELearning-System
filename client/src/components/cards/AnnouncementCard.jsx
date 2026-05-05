@@ -44,7 +44,7 @@ const AnnouncementCard = ({ announcement, onPin, onDelete, onMarkRead }) => {
       sx={{ 
         mb: 2, 
         borderRadius: 3,
-        borderLeft: announcement.pinned ? '4px solid #f50057' : 'none',
+        borderLeft: announcement.pinned ? '4px solid #14B8A6' : 'none',
         bgcolor: announcement.read ? 'background.paper' : 'action.hover'
       }}
     >

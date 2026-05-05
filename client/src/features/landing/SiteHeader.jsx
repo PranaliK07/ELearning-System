@@ -70,7 +70,7 @@ const SiteHeader = () => {
           right: 0,
           height: { xs: 'auto', md: 36 },
           py: { xs: 0.5, md: 0 },
-          bgcolor: '#0B1220',
+          bgcolor: '#115E59',
           color: 'white',
           zIndex: (t) => t.zIndex.appBar + 1,
           display: 'flex',
@@ -180,7 +180,7 @@ const SiteHeader = () => {
                 sx={{
                   ml: 0.35,
                   fontWeight: 800,
-                  color: '#0B1F3B',
+                  color: '#0F766E',
                   letterSpacing: '-0.02em',
                   fontSize: { xs: '1rem', md: '1.25rem' }
                 }}
@@ -203,9 +203,9 @@ const SiteHeader = () => {
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 2,
-                      '&:hover': { color: '#B0125B', bgcolor: 'rgba(176,18,91,0.04)' },
+                      '&:hover': { color: '#2DD4BF', bgcolor: 'rgba(45,212,191,0.04)' },
                       '&.active': {
-                        color: '#B0125B',
+                        color: '#2DD4BF',
                         fontWeight: 800
                       }
                     }}
@@ -221,16 +221,16 @@ const SiteHeader = () => {
                     startIcon={<Dashboard sx={{ fontSize: 18 }} />}
                     sx={{
                       ml: 1,
-                      background: 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)',
+                      background: 'linear-gradient(135deg, #0F766E 0%, #2DD4BF 100%)',
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 3,
                       py: 1,
                       borderRadius: '50px',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #08162B 0%, #C2185B 100%)',
+                        background: 'linear-gradient(135deg, #115E59 0%, #5EEAD4 100%)',
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 15px rgba(11,31,59,0.3)'
+                        boxShadow: '0 6px 15px rgba(15,118,110,0.3)'
                       },
                       transition: 'all 0.3s ease'
                     }}
@@ -245,16 +245,16 @@ const SiteHeader = () => {
                     startIcon={<Login sx={{ fontSize: 18 }} />}
                     sx={{
                       ml: 1,
-                      background: 'linear-gradient(135deg, #0B1F3B 0%, #B0125B 100%)',
+                      background: 'linear-gradient(135deg, #0F766E 0%, #2DD4BF 100%)',
                       textTransform: 'none',
                       fontWeight: 600,
                       px: 3,
                       py: 1,
                       borderRadius: '50px',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #08162B 0%, #C2185B 100%)',
+                        background: 'linear-gradient(135deg, #115E59 0%, #5EEAD4 100%)',
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 15px rgba(11,31,59,0.3)'
+                        boxShadow: '0 6px 15px rgba(15,118,110,0.3)'
                       },
                       transition: 'all 0.3s ease'
                     }}

@@ -79,16 +79,16 @@ const LandingPage = () => {
     }
   };
 
-  const brandNavy = '#0B1F3B';
-  const brandNavyDark = '#08162B';
-  const brandNavyMid = '#17325C';
-  const brandPink = '#B0125B';
-  const brandPinkDark = '#C2185B';
-  const brandPinkMid = '#A41457';
-  const brandNavySoft = '#F4F5F9';
+  const brandNavy = '#0F766E';
+  const brandNavyDark = '#115E59';
+  const brandNavyMid = '#14B8A6';
+  const brandPink = '#2DD4BF';
+  const brandPinkDark = '#5EEAD4';
+  const brandPinkMid = '#0D9488';
+  const brandNavySoft = '#ECFDF5';
   const cardBaseBg = 'linear-gradient(180deg, #FFFFFF 0%, #F6F7FB 100%)';
   const cardHoverBg = 'linear-gradient(180deg, #E9ECF5 0%, #DDE2F0 100%)';
-  const cardHoverShadow = '0 22px 44px -18px rgba(11,31,59,0.45)';
+  const cardHoverShadow = '0 22px 44px -18px rgba(15,118,110,0.45)';
   const sectionBg = isDark ? '#0F172A' : brandNavySoft;
   const sectionCardBg = isDark ? 'linear-gradient(180deg, #0F172A 0%, #111827 100%)' : cardBaseBg;
   const sectionCardHoverBg = isDark ? 'linear-gradient(180deg, #111827 0%, #1F2937 100%)' : cardHoverBg;
@@ -102,14 +102,14 @@ const LandingPage = () => {
   // Features data - properly structured
   const featuresData = {
     forStudents: [
-      { icon: <Psychology />, title: 'Guided Learning Paths', description: 'Follow a clear path from grade to subject to topic with focused lessons.', color: brandNavy },
+      { icon: <Psychology />, title: 'Guided Learning Paths', description: 'Follow a clear path from class to subject to topic with focused lessons.', color: brandNavy },
       { icon: <Speed />, title: 'Quizzes and Practice', description: 'Check understanding with quick quizzes and practice activities.', color: brandPink },
       { icon: <EmojiEvents />, title: 'Achievements and Goals', description: 'Track progress and celebrate milestones as you learn.', color: brandNavyMid }
     ],
     forTeachers: [
       { icon: <Dashboard />, title: 'Progress Dashboard', description: 'See class progress, strengths, and gaps at a glance.', color: brandPink },
       { icon: <AutoGraph />, title: 'Home Work and Feedback', description: 'Create home work, review submissions, and share feedback.', color: brandNavy },
-      { icon: <MenuBook />, title: 'Content Management', description: 'Organize content by grade, subject, and topic for easy access.', color: brandPinkMid }
+      { icon: <MenuBook />, title: 'Content Management', description: 'Organize content by class, subject, and topic for easy access.', color: brandPinkMid }
     ],
     forParents: [
       { icon: <Timeline />, title: 'Progress Updates', description: 'Follow learning activity and growth over time.', color: brandNavy },
@@ -138,7 +138,7 @@ const LandingPage = () => {
   
 
   return (
-    <Box sx={{ bgcolor: isDark ? '#0B1220' : '#ffffff', overflowX: 'hidden' }}>
+    <Box sx={{ bgcolor: isDark ? '#042F2E' : '#ffffff', overflowX: 'hidden' }}>
       <SiteHeader />
 
       {/* Hero Section */}
@@ -170,7 +170,7 @@ const LandingPage = () => {
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(11,31,59,0.32)',
+            background: 'rgba(15,118,110,0.32)',
             zIndex: 0
           }}
         />
@@ -264,7 +264,7 @@ const LandingPage = () => {
                       Transform Learning Into
                       <Box component="span" sx={{ 
                         display: 'block', 
-                        backgroundImage: `linear-gradient(45deg, ${brandPink}, #FF6B6B)`,
+                        backgroundImage: `linear-gradient(45deg, ${brandPink}, #99F6E4)`,
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         color: 'transparent',
@@ -376,7 +376,7 @@ const LandingPage = () => {
             width: 320,
             height: 320,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(11,31,59,0.18), transparent 70%)',
+            background: 'radial-gradient(circle, rgba(15,118,110,0.18), transparent 70%)',
             pointerEvents: 'none'
           }}
         />
@@ -388,7 +388,7 @@ const LandingPage = () => {
             width: 360,
             height: 360,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(176,18,91,0.16), transparent 70%)',
+            background: 'radial-gradient(circle, rgba(45,212,191,0.16), transparent 70%)',
             pointerEvents: 'none'
           }}
         />
@@ -420,8 +420,8 @@ const LandingPage = () => {
               mb: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.14) 0%, rgba(11,31,59,0.04) 100%)',
-              border: '1px solid rgba(11,31,59,0.22)'
+              background: 'linear-gradient(180deg, rgba(15,118,110,0.14) 0%, rgba(15,118,110,0.04) 100%)',
+              border: '1px solid rgba(15,118,110,0.22)'
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -504,8 +504,8 @@ const LandingPage = () => {
               mb: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(176,18,91,0.16) 0%, rgba(176,18,91,0.05) 100%)',
-              border: '1px solid rgba(176,18,91,0.22)'
+              background: 'linear-gradient(180deg, rgba(45,212,191,0.16) 0%, rgba(45,212,191,0.05) 100%)',
+              border: '1px solid rgba(45,212,191,0.22)'
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -587,8 +587,8 @@ const LandingPage = () => {
             sx={{
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.12) 0%, rgba(11,31,59,0.04) 100%)',
-              border: '1px solid rgba(11,31,59,0.22)'
+              background: 'linear-gradient(180deg, rgba(15,118,110,0.12) 0%, rgba(15,118,110,0.04) 100%)',
+              border: '1px solid rgba(15,118,110,0.22)'
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: sectionTextPrimary, textAlign: 'center' }}>
@@ -668,8 +668,8 @@ const LandingPage = () => {
               mt: 8,
               p: { xs: 2, md: 3 },
               borderRadius: 4,
-              background: 'linear-gradient(180deg, rgba(11,31,59,0.14) 0%, rgba(176,18,91,0.06) 100%)',
-              border: '1px solid rgba(11,31,59,0.2)'
+              background: 'linear-gradient(180deg, rgba(15,118,110,0.14) 0%, rgba(45,212,191,0.06) 100%)',
+              border: '1px solid rgba(15,118,110,0.2)'
             }}
           >
           <Box sx={{ textAlign: 'center', mb: 3 }}>
@@ -770,8 +770,8 @@ const LandingPage = () => {
               mt: 8,
               p: { xs: 1.25, md: 1.75 },
               borderRadius: 4,
-              background: 'linear-gradient(135deg, rgba(11,31,59,0.12) 0%, rgba(176,18,91,0.08) 100%)',
-              border: '1px solid rgba(11,31,59,0.2)',
+              background: 'linear-gradient(135deg, rgba(15,118,110,0.12) 0%, rgba(45,212,191,0.08) 100%)',
+              border: '1px solid rgba(15,118,110,0.2)',
               position: 'relative',
               overflow: 'hidden'
             }}
@@ -785,7 +785,7 @@ const LandingPage = () => {
                 width: 150,
                 height: 150,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(11,31,59,0.14), transparent)',
+                background: 'radial-gradient(circle, rgba(15,118,110,0.14), transparent)',
                 pointerEvents: 'none'
               }}
             />
@@ -797,7 +797,7 @@ const LandingPage = () => {
                 width: 120,
                 height: 120,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(176,18,91,0.12), transparent)',
+                background: 'radial-gradient(circle, rgba(45,212,191,0.12), transparent)',
                 pointerEvents: 'none'
               }}
             />
@@ -941,7 +941,7 @@ const LandingPage = () => {
                   maxHeight: '80vh',
                   objectFit: 'contain',
                   borderRadius: 2,
-                  background: '#0B1220'
+                background: '#042F2E'
                 }}
               />
             )}

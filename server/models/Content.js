@@ -83,7 +83,7 @@ const Content = sequelize.define('Content', {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
-      model: 'Grades',
+      model: 'grades',
       key: 'id'
     }
   },

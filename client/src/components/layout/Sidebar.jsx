@@ -273,7 +273,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
               width: 80,
               height: 80,
               margin: '10px auto',
-              border: '3px solid #B0125B'
+              border: '3px solid #14B8A6'
             }}
             src={resolveAvatarSrc(user?.avatar)}
           >
@@ -341,7 +341,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
                 color: '#FFFFFF !important',
               },
               '&:hover': {
-                backgroundColor: '#5d0000 !important'
+                  backgroundColor: '#5d0000 !important'
               },
               transition: 'all 0.2s'
             }}

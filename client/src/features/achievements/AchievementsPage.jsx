@@ -119,6 +119,8 @@ const TeacherAchievementsView = ({ dashboardData }) => {
       return (
         normalizeText(student.name).includes(query) ||
         normalizeText(student.email).includes(query) ||
+        normalizeText(classCard.level).includes(query) ||
+        String(classCard.achievementCount).includes(query) ||
         achievements.some((achievement) => normalizeText(achievement.name).includes(query))
       );
     });
@@ -201,7 +203,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
             fontWeight="900"
             sx={{
               color: isDarkMode ? 'text.primary' : 'transparent',
-              background: isDarkMode ? 'none' : 'linear-gradient(45deg, #0B1F3B 0%, #B0125B 100%)',
+              background: isDarkMode ? 'none' : 'linear-gradient(45deg, #0F766E 0%, #14B8A6 100%)',
               WebkitBackgroundClip: isDarkMode ? 'initial' : 'text',
               WebkitTextFillColor: isDarkMode ? 'inherit' : 'transparent',
               mb: 1,
@@ -304,7 +306,7 @@ const TeacherAchievementsView = ({ dashboardData }) => {
                   sx={{
                     px: 3,
                     py: 2.5,
-                    background: 'linear-gradient(135deg, rgba(11,31,59,0.98) 0%, rgba(176,18,91,0.92) 100%)',
+                    background: 'linear-gradient(135deg, rgba(15,118,110,0.98) 0%, rgba(45,212,191,0.92) 100%)',
                     color: 'white',
                     display: 'flex',
                     alignItems: { xs: 'flex-start', sm: 'center' },
@@ -445,7 +447,7 @@ const AchievementsPage = () => {
     const pageHeight = doc.internal.pageSize.getHeight();
 
     // 1. Background / Border
-    doc.setDrawColor(11, 31, 59); // Dark blue primary
+    doc.setDrawColor(74, 20, 140); // Purple primary
     doc.setLineWidth(5);
     doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
     
@@ -461,7 +463,7 @@ const AchievementsPage = () => {
     doc.triangle(pageWidth - 8, pageHeight - 8, pageWidth - 25, pageHeight - 8, pageWidth - 8, pageHeight - 25, 'F');
 
     // 3. Header
-    doc.setTextColor(11, 31, 59);
+    doc.setTextColor(74, 20, 140);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(40);
     doc.text('CERTIFICATE OF ACHIEVEMENT', pageWidth / 2, 45, { align: 'center' });
@@ -472,13 +474,13 @@ const AchievementsPage = () => {
     doc.text('This is to certify that', pageWidth / 2, 65, { align: 'center' });
 
     // 5. Student Name
-    doc.setTextColor(176, 18, 91); // Crimson/Pink from the theme
+    doc.setTextColor(142, 36, 170); // Purple accent from the theme
     doc.setFontSize(45);
     doc.setFont('helvetica', 'bold');
     doc.text(studentName.toUpperCase(), pageWidth / 2, 85, { align: 'center' });
 
     // 6. Description
-    doc.setTextColor(11, 31, 59);
+    doc.setTextColor(74, 20, 140);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'normal');
     doc.text('has successfully earned the', pageWidth / 2, 105, { align: 'center' });
@@ -489,7 +491,7 @@ const AchievementsPage = () => {
     doc.text(certTitle.toUpperCase(), pageWidth / 2, 120, { align: 'center' });
 
     // 7. Footer
-    doc.setTextColor(11, 31, 59);
+    doc.setTextColor(74, 20, 140);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'normal');
     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -591,9 +593,9 @@ const AchievementsPage = () => {
           p: 4, 
           mb: 8, 
           borderRadius: 6, 
-          background: 'linear-gradient(135deg, #B0125B 0%, #0B1F3B 100%)',
+          background: 'linear-gradient(135deg, #14B8A6 0%, #0F766E 100%)',
           color: '#ffffff',
-          boxShadow: '0 10px 40px rgba(11, 31, 59, 0.4)'
+          boxShadow: '0 10px 40px rgba(15, 118, 110, 0.4)'
         }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
@@ -614,12 +616,12 @@ const AchievementsPage = () => {
                   <Box sx={{ 
                     p: 2, 
                     borderRadius: 4, 
-                    bgcolor: goal.completed ? '#B0125B' : 'rgba(26, 35, 126, 0.3)', 
+                    bgcolor: goal.completed ? '#14B8A6' : 'rgba(15, 118, 110, 0.3)',
                     border: `2px solid ${goal.completed ? '#FFD93D' : 'rgba(255,255,255,0.1)'}`, // Golden border when done
                     textAlign: 'center',
                     height: '100%',
                     transition: 'all 0.3s ease',
-                    boxShadow: goal.completed ? '0 8px 20px rgba(176, 18, 91, 0.4)' : 'none',
+                    boxShadow: goal.completed ? '0 8px 20px rgba(142, 36, 170, 0.4)' : 'none',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -643,7 +645,7 @@ const AchievementsPage = () => {
                         fontWeight: 900, 
                         fontSize: '0.65rem',
                         bgcolor: goal.completed ? '#FFD93D' : 'transparent',
-                        color: goal.completed ? '#0B1F3B' : 'inherit',
+                        color: goal.completed ? '#0F766E' : 'inherit',
                         px: 1,
                         borderRadius: 1
                       }}
@@ -748,11 +750,11 @@ const AchievementsPage = () => {
           mt: 8, 
           p: 4, 
           textAlign: 'center', 
-          background: 'linear-gradient(135deg, #B0125B 0%, #1a237e 100%)', 
+          background: 'linear-gradient(135deg, #14B8A6 0%, #0F766E 100%)',
           borderRadius: 6, 
           border: '2px dashed rgba(255,255,255,0.4)',
           color: 'white',
-          boxShadow: '0 10px 30px rgba(11, 31, 59, 0.2)'
+          boxShadow: '0 10px 30px rgba(15, 118, 110, 0.2)'
         }}>
             <Typography variant="body1" fontWeight="700">
                 🎓 Keep studying every day! Top students get a physical certificate mailed home!

@@ -35,7 +35,7 @@ const footerLinks = [
 const Footer = ({ onNavigate }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const footerBg = '#0B1220';
+  const footerBg = '#115E59';
   const footerText = '#E2E8F0';
   const footerMuted = '#C7D2FE';
   const footerAccent = '#A5B4FC';

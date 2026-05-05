@@ -1419,7 +1419,7 @@ const StudentDashboard = () => {
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
-              bgcolor: 'rgba(26, 35, 126, 0.2)', // Light Navy background
+              bgcolor: 'rgba(15, 118, 110, 0.2)', // Light mint background
               borderRadius: 4, 
               p: 1.5,
               border: '1px solid rgba(255,255,255,0.1)',
@@ -1442,7 +1442,7 @@ const StudentDashboard = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: goal.completed ? '#B0125B' : 'rgba(255,255,255,0.08)',
+                      bgcolor: goal.completed ? '#14B8A6' : 'rgba(255,255,255,0.08)',
                       mb: 0.5,
                       mx: 'auto',
                       border: goal.completed ? '2px solid #FFD93D' : '1px dashed rgba(255,255,255,0.3)',

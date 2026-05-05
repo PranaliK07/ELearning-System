@@ -2,7 +2,7 @@ const sequelize = require('./config/database');
 
 async function fixGradesTable() {
   try {
-    const [results] = await sequelize.query('SHOW INDEX FROM Grades');
+    const [results] = await sequelize.query('SHOW INDEX FROM `grades`');
     console.log('Current indexes:', results.map(r => r.Key_name));
     
     // We want to keep PRIMARY and maybe one index for 'level' if it's correct.
@@ -19,7 +19,7 @@ async function fixGradesTable() {
     for (const indexName of indexesToDrop) {
       console.log(`Dropping index: ${indexName}`);
       try {
-        await sequelize.query(`ALTER TABLE Grades DROP INDEX ${indexName}`);
+        await sequelize.query(`ALTER TABLE \`grades\` DROP INDEX \`${indexName}\``);
       } catch (e) {
         console.error(`Failed to drop index ${indexName}:`, e.message);
       }

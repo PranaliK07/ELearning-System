@@ -6,12 +6,10 @@ import {
   Button,
   Typography,
   Box,
-  IconButton,
-  InputAdornment
+  IconButton
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Email, Visibility, VisibilityOff, Lock } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { validateEmail, validatePassword } from '../../utils/validation';
 
@@ -26,6 +24,29 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState('idle');
+
+  const fieldRow = (icon, field) => (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, width: '100%', flex: 1 }}>
+      <Box
+        sx={{
+          width: 44,
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          color: 'primary.main',
+          flexShrink: 0
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ flex: 1 }}>{field}</Box>
+    </Box>
+  );
 
   const handleChange = (e) => {
     setFormData({
@@ -82,27 +103,22 @@ const Login = () => {
 
   return (
     <Container component="main" maxWidth="xs" sx={{ px: { xs: 2, sm: 3 } }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <Box
+        sx={{
+          marginTop: { xs: 4, sm: 8 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
       >
-        <Box
+        <Paper
+          elevation={3}
           sx={{
-            marginTop: { xs: 4, sm: 8 },
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            padding: { xs: 3, sm: 4 },
+            width: '100%',
+            borderRadius: 4
           }}
         >
-          <Paper
-            elevation={3}
-            sx={{
-              padding: { xs: 3, sm: 4 },
-              width: '100%',
-              borderRadius: 4
-            }}
-          >
             <Typography
               component="h1"
               variant="h4"
@@ -127,71 +143,76 @@ const Login = () => {
             </Typography>
 
             <form onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                error={!!errors.email}
-                helperText={errors.email}
-                margin="normal"
-                variant="outlined"
-                sx={{ mb: 2 }}
-              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {fieldRow(
+                  <Email fontSize="small" />,
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={!!errors.email}
+                    helperText={errors.email}
+                    margin="normal"
+                    variant="outlined"
+                  />
+                )}
 
-              <TextField
-                fullWidth
-                label="Password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handleChange}
-                error={!!errors.password || passwordStatus === 'error'}
-                helperText={
-                  passwordStatus === 'success'
-                    ? 'Password is correct'
-                    : errors.password
-                }
-                FormHelperTextProps={{
-                  sx: {
-                    color: passwordStatus === 'success' ? '#2e7d32' : undefined
-                  }
-                }}
-                margin="normal"
-                variant="outlined"
-                sx={{
-                  ...(passwordStatus === 'success' && {
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: '#2e7d32' },
-                      '&:hover fieldset': { borderColor: '#2e7d32' },
-                      '&.Mui-focused fieldset': { borderColor: '#2e7d32' }
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#2e7d32' }
-                  }),
-                  ...(passwordStatus === 'error' && {
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: '#d32f2f' },
-                      '&:hover fieldset': { borderColor: '#d32f2f' },
-                      '&.Mui-focused fieldset': { borderColor: '#d32f2f' }
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#d32f2f' }
-                  })
-                }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff sx={{ fontSize: 34 }} /> : <Visibility sx={{ fontSize: 34 }} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
+                {fieldRow(
+                  <Lock fontSize="small" />,
+                  <TextField
+                    fullWidth
+                    label="Password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={!!errors.password || passwordStatus === 'error'}
+                    helperText={
+                      passwordStatus === 'success'
+                        ? 'Password is correct'
+                        : errors.password
+                    }
+                    FormHelperTextProps={{
+                      sx: {
+                        color: passwordStatus === 'success' ? '#2e7d32' : undefined
+                      }
+                    }}
+                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      ...(passwordStatus === 'success' && {
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#2e7d32' },
+                          '&:hover fieldset': { borderColor: '#2e7d32' },
+                          '&.Mui-focused fieldset': { borderColor: '#2e7d32' }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': { color: '#2e7d32' }
+                      }),
+                      ...(passwordStatus === 'error' && {
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#d32f2f' },
+                          '&:hover fieldset': { borderColor: '#d32f2f' },
+                          '&.Mui-focused fieldset': { borderColor: '#d32f2f' }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': { color: '#d32f2f' }
+                      })
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff sx={{ fontSize: 34 }} /> : <Visibility sx={{ fontSize: 34 }} />}
+                        </IconButton>
+                      )
+                    }}
+                  />
+                )}
+              </Box>
 
               <Button
                 type="submit"
@@ -217,7 +238,7 @@ const Login = () => {
                   <Link
                     to="/register"
                     style={{
-                      color: '#0B1F3B',
+                      color: '#0F766E',
                       textDecoration: 'none',
                       fontWeight: 'bold'
                     }}
@@ -227,9 +248,8 @@ const Login = () => {
                 </Typography>
               </Box>
             </form>
-          </Paper>
-        </Box>
-      </motion.div>
+        </Paper>
+      </Box>
     </Container>
   );
 };

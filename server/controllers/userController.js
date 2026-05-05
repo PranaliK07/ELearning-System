@@ -13,6 +13,23 @@ const buildDemoTrialWindow = (enabled) => {
   };
 };
 
+const splitFullName = (fullName) => {
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return { firstName: '', middleName: '', lastName: '' };
+  }
+
+  if (parts.length === 1) {
+    return { firstName: parts[0], middleName: '', lastName: parts[0] };
+  }
+
+  return {
+    firstName: parts[0],
+    middleName: parts.length > 2 ? parts.slice(1, -1).join(' ') : '',
+    lastName: parts[parts.length - 1]
+  };
+};
+
 const getUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, role, search } = req.query;
@@ -76,7 +93,9 @@ const getUser = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { name, email, role = 'student', grade, isActive, studentEmail, studentId, parentPhone } = req.body;
+    const { name, email, password, role = 'student', grade, isActive, studentEmail, studentId, parentPhone } = req.body;
+    const { firstName, middleName, lastName } = splitFullName(name);
+    const providedPassword = typeof password === 'string' ? password.trim() : '';
 
     if (!name || !String(name).trim()) {
       return res.status(400).json({ message: 'Name is required' });
@@ -105,8 +124,11 @@ const createUser = async (req, res) => {
         }
       }
 
-      const temporaryPassword = crypto.randomBytes(6).toString('hex');
+      const temporaryPassword = providedPassword || crypto.randomBytes(6).toString('hex');
       existing.name = String(name).trim();
+      existing.firstName = firstName;
+      existing.middleName = middleName;
+      existing.lastName = lastName;
       existing.role = normalizedRole;
       existing.grade = grade || null;
       existing.isActive = isActive === undefined ? true : Boolean(isActive);
@@ -178,9 +200,12 @@ const createUser = async (req, res) => {
       }
     }
 
-    const temporaryPassword = crypto.randomBytes(6).toString('hex');
+    const temporaryPassword = providedPassword || crypto.randomBytes(6).toString('hex');
     const user = await User.create({
       name: String(name).trim(),
+      firstName,
+      middleName,
+      lastName,
       email: String(email).trim().toLowerCase(),
       password: temporaryPassword,
       role: normalizedRole,
@@ -207,7 +232,7 @@ const createUser = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'User created successfully',
-      temporaryPassword,
+      temporaryPassword: providedPassword ? undefined : temporaryPassword,
       user: user.getPublicProfile()
     });
   } catch (error) {
@@ -254,38 +279,70 @@ const linkParent = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { name, email, role, grade, isActive, parentEmail, parentId, clearParent, parentPhone } = req.body;
+    const { name, email, password, role, grade, isActive, parentEmail, parentId, clearParent, parentPhone } = req.body;
     const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (name) user.name = name;
-    if (email && String(email).trim().toLowerCase() !== user.email) {
+    const nextName = name !== undefined ? String(name).trim() : undefined;
+    const nextEmail = email !== undefined ? String(email).trim().toLowerCase() : undefined;
+    const nextRole = role !== undefined ? String(role).trim().toLowerCase() : undefined;
+    const nextGrade = grade !== undefined && grade !== null && grade !== '' ? Number(grade) : grade === '' ? null : undefined;
+    const nextIsActive = isActive !== undefined ? Boolean(isActive) : undefined;
+    const nextParentPhone = parentPhone !== undefined ? String(parentPhone || '').trim() : undefined;
+    const nextPassword = typeof password === 'string' ? password.trim() : undefined;
+    const currentParentId = user.ParentId ?? null;
+
+    let changed = false;
+
+    if (nextName !== undefined && nextName !== String(user.name || '').trim()) {
+      user.name = nextName;
+      changed = true;
+    }
+    if (nextEmail !== undefined && nextEmail !== String(user.email || '').trim().toLowerCase()) {
       const exists = await User.findOne({
         where: {
-          email: String(email).trim().toLowerCase(),
+          email: nextEmail,
           id: { [Op.ne]: user.id }
         }
       });
       if (exists) {
         return res.status(400).json({ message: 'Email already in use' });
       }
-      user.email = String(email).trim().toLowerCase();
+      user.email = nextEmail;
+      changed = true;
     }
-    if (role) {
-      user.role = role;
-      if (String(role).trim().toLowerCase() === 'demo') {
+    if (nextRole !== undefined && nextRole !== String(user.role || '').trim().toLowerCase()) {
+      user.role = nextRole;
+      changed = true;
+      if (nextRole === 'demo') {
         Object.assign(user, buildDemoTrialWindow(true));
       }
     }
-    if (grade !== undefined) user.grade = grade;
-    if (isActive !== undefined) user.isActive = isActive;
-    if (parentPhone !== undefined) user.parentPhone = parentPhone;
+    if (nextGrade !== undefined && Number(nextGrade) !== Number(user.grade ?? null)) {
+      user.grade = nextGrade;
+      changed = true;
+    }
+    if (nextIsActive !== undefined && nextIsActive !== Boolean(user.isActive)) {
+      user.isActive = nextIsActive;
+      changed = true;
+    }
+    if (nextParentPhone !== undefined && nextParentPhone !== String(user.parentPhone || '').trim()) {
+      user.parentPhone = nextParentPhone;
+      changed = true;
+    }
+    if (nextPassword !== undefined && nextPassword) {
+      user.password = nextPassword;
+      changed = true;
+    }
 
     if (clearParent) {
-      user.ParentId = null;
+      if (currentParentId !== null) {
+        user.ParentId = null;
+        changed = true;
+      }
     } else if (parentId || parentEmail) {
       let parent = null;
       if (parentId) {
@@ -298,13 +355,26 @@ const updateUser = async (req, res) => {
       if (!parent || parent.role !== 'parent') {
         return res.status(404).json({ message: 'Parent not found' });
       }
-      user.ParentId = parent.id;
+      if (currentParentId !== parent.id) {
+        user.ParentId = parent.id;
+        changed = true;
+      }
+    }
+
+    if (!changed) {
+      return res.json({
+        success: true,
+        changed: false,
+        message: 'No changes made',
+        user: user.getPublicProfile()
+      });
     }
 
     await user.save();
 
     res.json({
       success: true,
+      changed: true,
       message: 'User updated successfully',
       user: user.getPublicProfile()
     });

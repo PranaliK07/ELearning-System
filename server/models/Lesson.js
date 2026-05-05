@@ -30,7 +30,7 @@ const Lesson = sequelize.define('Lesson', {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
-      model: 'Grades',
+      model: 'grades',
       key: 'id'
     }
   },

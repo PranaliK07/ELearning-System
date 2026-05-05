@@ -263,7 +263,7 @@ const TopicContent = () => {
                       <Chip 
                         size="small" 
                         label={`${quiz.questionCount || quiz.questions?.length || 0} Qs`} 
-                        sx={{ fontWeight: 'bold', bgcolor: 'rgba(245, 0, 87, 0.1)', color: '#f50057' }}
+                        sx={{ fontWeight: 'bold', bgcolor: 'rgba(15, 118, 110, 0.1)', color: '#0F766E' }}
                       />
                     </Box>
                     <Typography variant="h6" fontWeight={800} sx={{ mt: 1, lineHeight: 1.2 }}>
@@ -283,9 +283,9 @@ const TopicContent = () => {
                         fontWeight: 'bold', 
                         py: 1.2,
                         textTransform: 'none',
-                        bgcolor: '#1a237e',
+                        bgcolor: '#5E35B1',
                         '&:hover': { bgcolor: '#121858' },
-                        boxShadow: '0 4px 14px 0 rgba(26, 35, 126, 0.35)'
+                        boxShadow: '0 4px 14px 0 rgba(15, 118, 110, 0.35)'
                       }}
                     >
                       Start Assessment

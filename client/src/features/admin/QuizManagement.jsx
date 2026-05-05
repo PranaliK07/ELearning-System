@@ -96,6 +96,11 @@ const QuizManagement = () => {
     const filteredQuizzes = useMemo(() => {
         return quizzes.filter(q => 
             q.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        q.topicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        q.subjectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (q.gradeLevel && `Class ${q.gradeLevel}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (`${Array.isArray(q.questions) ? q.questions.length : 0} Questions`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (new Date(q.createdAt).toLocaleDateString().toLowerCase().includes(searchTerm.toLowerCase())) ||
             q.topicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             q.subjectName?.toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -192,7 +197,7 @@ const QuizManagement = () => {
                                             label={`Class ${quiz.gradeLevel || 'N/A'}`} 
                                             size="small"
                                             icon={<School sx={{ fontSize: '1rem !important' }} />}
-                                            sx={{ bgcolor: '#0B1F3B', color: 'white' }}
+                                            sx={{ bgcolor: '#0F766E', color: 'white' }}
                                         />
                                     </TableCell>
                                     <TableCell>

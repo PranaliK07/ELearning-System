@@ -12,12 +12,15 @@ import {
   Alert
 } from '@mui/material';
 import {
+  Email,
+  Badge,
   PhotoCamera,
   ArrowBack,
-  Save
+  Save,
+  School,
+  Phone
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { resolveAvatarSrc } from '../../utils/media';
 import { validateImageFile, validateName, validateSelectRequired } from '../../utils/validation';
@@ -38,6 +41,29 @@ const EditProfile = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const fieldRow = (icon, field) => (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, width: '100%', flex: 1 }}>
+      <Box
+        sx={{
+          width: 44,
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          color: 'primary.main',
+          flexShrink: 0
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>{field}</Box>
+    </Box>
+  );
 
   const handleChange = (e) => {
     setFormData({
@@ -74,7 +100,7 @@ const EditProfile = () => {
     const nameError = validateName(formData.name, 'Full name');
     if (nameError) nextErrors.name = nameError;
     if (user?.role === 'student') {
-      const gradeError = validateSelectRequired(formData.grade, 'Grade');
+      const gradeError = validateSelectRequired(formData.grade, 'Class');
       if (gradeError) nextErrors.grade = gradeError;
     }
     setFieldErrors(nextErrors);
@@ -107,7 +133,7 @@ const EditProfile = () => {
       } else {
         setError('Failed to update profile');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -116,20 +142,15 @@ const EditProfile = () => {
 
   return (
     <Container maxWidth="md">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={() => navigate(-1)}
+        sx={{ mb: 2 }}
       >
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2 }}
-        >
-          Back to Profile
-        </Button>
+        Back to Profile
+      </Button>
 
-        <Paper sx={{ p: 4, borderRadius: 4 }}>
+      <Paper sx={{ p: 4, borderRadius: 4 }}>
           <Typography variant="h4" gutterBottom align="center">
             Edit Profile
           </Typography>
@@ -193,77 +214,96 @@ const EditProfile = () => {
               </Typography>
             </Box>
 
-            <TextField
-              fullWidth
-              label="Full Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              error={!!fieldErrors.name}
-              helperText={fieldErrors.name}
-              margin="normal"
-              variant="outlined"
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              disabled
-              margin="normal"
-              variant="outlined"
-              helperText="Email cannot be changed"
-            />
-
-            <TextField
-              select
-              fullWidth
-              label="Grade/Class"
-              name="grade"
-              value={formData.grade}
-              onChange={handleChange}
-              error={!!fieldErrors.grade}
-              helperText={fieldErrors.grade}
-              margin="normal"
-              variant="outlined"
-            >
-              <MenuItem value="">Select Grade</MenuItem>
-              <MenuItem value={1}>Class 1</MenuItem>
-              <MenuItem value={2}>Class 2</MenuItem>
-              <MenuItem value={3}>Class 3</MenuItem>
-              <MenuItem value={4}>Class 4</MenuItem>
-              <MenuItem value={5}>Class 5</MenuItem>
-            </TextField>
-
-            {user?.role === 'student' && (
+            {fieldRow(
+              <Badge fontSize="small" />,
               <TextField
                 fullWidth
-                label="Parent Mobile"
-                name="parentPhone"
-                value={formData.parentPhone}
-                onChange={handleChange}
+                label="Full Name"
+                name="name"
+                value={formData.name}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, name: val });
+                  setFieldErrors((prev) => ({ ...prev, name: validateName(val, 'Full Name') }));
+                }}
+                error={!!fieldErrors.name}
+                helperText={fieldErrors.name}
                 margin="normal"
                 variant="outlined"
-                placeholder="+1 555 123 4567"
                 required
               />
             )}
 
-            {user?.role === 'student' && (
+            {fieldRow(
+              <Email fontSize="small" />,
               <TextField
                 fullWidth
-                label="Parent Email"
-                name="parentEmail"
-                value={formData.parentEmail}
-                onChange={handleChange}
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                disabled
                 margin="normal"
                 variant="outlined"
-                placeholder="parent@example.com"
-                required
+                helperText="Email cannot be changed"
               />
+            )}
+
+            {fieldRow(
+              <School fontSize="small" />,
+              <TextField
+                select
+                fullWidth
+                label="Class"
+                name="grade"
+                value={formData.grade}
+                onChange={handleChange}
+                error={!!fieldErrors.grade}
+                helperText={fieldErrors.grade}
+                margin="normal"
+                variant="outlined"
+              >
+                <MenuItem value="">Select Class</MenuItem>
+                <MenuItem value={1}>Class 1</MenuItem>
+                <MenuItem value={2}>Class 2</MenuItem>
+                <MenuItem value={3}>Class 3</MenuItem>
+                <MenuItem value={4}>Class 4</MenuItem>
+                <MenuItem value={5}>Class 5</MenuItem>
+              </TextField>
+            )}
+
+            {user?.role === 'student' && (
+              fieldRow(
+                <Phone fontSize="small" />,
+                <TextField
+                  fullWidth
+                  label="Parent Mobile"
+                  name="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={handleChange}
+                  margin="normal"
+                  variant="outlined"
+                  placeholder="+1 555 123 4567"
+                  required
+                />
+              )
+            )}
+
+            {user?.role === 'student' && (
+              fieldRow(
+                <Email fontSize="small" />,
+                <TextField
+                  fullWidth
+                  label="Parent Email"
+                  name="parentEmail"
+                  value={formData.parentEmail}
+                  onChange={handleChange}
+                  margin="normal"
+                  variant="outlined"
+                  placeholder="parent@example.com"
+                  required
+                />
+              )
             )}
 
             <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
@@ -287,7 +327,6 @@ const EditProfile = () => {
             </Box>
           </form>
         </Paper>
-      </motion.div>
     </Container>
   );
 };

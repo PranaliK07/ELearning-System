@@ -14,9 +14,8 @@ import {
   StepLabel,
   Chip
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Badge, Class, Email, Lock, Person, Phone, School, Visibility, VisibilityOff } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import {
   validateEmail,
@@ -49,6 +48,29 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
 
   const steps = ['Personal Info', 'Account Details', 'Preferences'];
+
+  const fieldRow = (icon, field) => (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, width: '100%', flex: 1 }}>
+      <Box
+        sx={{
+          width: 44,
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          color: 'primary.main',
+          flexShrink: 0
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>{field}</Box>
+    </Box>
+  );
 
   const handleChange = (e) => {
     setFormData({
@@ -90,7 +112,7 @@ const Register = () => {
     
     if (activeStep === 2) {
       if (formData.role === 'student') {
-        const gradeError = validateSelectRequired(formData.grade, 'Grade');
+        const gradeError = validateSelectRequired(formData.grade, 'Class');
         if (gradeError) newErrors.grade = gradeError;
       }
       if (formData.role === 'student') {
@@ -131,7 +153,7 @@ const Register = () => {
     }
 
     setLoading(true);
-    const { confirmPassword, ...registerData } = formData;
+    const { confirmPassword: _confirmPassword, ...registerData } = formData;
     if (registerData.role === 'demo') {
       registerData.grade = null;
       registerData.parentPhone = null;
@@ -150,114 +172,132 @@ const Register = () => {
       case 0:
         return (
           <Box>
-            <TextField
-              fullWidth
-              label="First Name"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              error={!!errors.firstName}
-              helperText={errors.firstName}
-              margin="normal"
-              variant="outlined"
-              placeholder="Enter your first name"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Middle Name"
-              name="middleName"
-              value={formData.middleName}
-              onChange={handleChange}
-              error={!!errors.middleName}
-              helperText={errors.middleName}
-              margin="normal"
-              variant="outlined"
-              placeholder="Enter your middle name"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Last Name"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              error={!!errors.lastName}
-              helperText={errors.lastName}
-              margin="normal"
-              variant="outlined"
-              placeholder="Enter your last name"
-              required
-            />
+            {fieldRow(
+              <Person fontSize="small" />,
+              <TextField
+                fullWidth
+                label="First Name"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                error={!!errors.firstName}
+                helperText={errors.firstName}
+                margin="normal"
+                variant="outlined"
+                placeholder="Enter your first name"
+                required
+              />
+            )}
+            {fieldRow(
+              <Badge fontSize="small" />,
+              <TextField
+                fullWidth
+                label="Middle Name"
+                name="middleName"
+                value={formData.middleName}
+                onChange={handleChange}
+                error={!!errors.middleName}
+                helperText={errors.middleName}
+                margin="normal"
+                variant="outlined"
+                placeholder="Enter your middle name"
+                required
+              />
+            )}
+            {fieldRow(
+              <Person fontSize="small" />,
+              <TextField
+                fullWidth
+                label="Last Name"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                error={!!errors.lastName}
+                helperText={errors.lastName}
+                margin="normal"
+                variant="outlined"
+                placeholder="Enter your last name"
+                required
+              />
+            )}
           </Box>
         );
       
       case 1:
         return (
           <Box>
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              margin="normal"
-              variant="outlined"
-              placeholder="Enter your email"
-            />
+            {fieldRow(
+              <Email fontSize="small" />,
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
+                margin="normal"
+                variant="outlined"
+                placeholder="Enter your email"
+              />
+            )}
 
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              margin="normal"
-              variant="outlined"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
+            {fieldRow(
+              <Lock fontSize="small" />,
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                margin="normal"
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            )}
 
-            <TextField
-              fullWidth
-              label="Confirm Password"
-              name="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword}
-              margin="normal"
-              variant="outlined"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      edge="end"
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
+            {fieldRow(
+              <Lock fontSize="small" />,
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                margin="normal"
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        edge="end"
+                      >
+                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            )}
           </Box>
         );
       
@@ -271,73 +311,85 @@ const Register = () => {
                 sx={{ mt: 1, mb: 2, fontWeight: 700 }}
               />
             ) : (
-              <TextField
-                select
-                fullWidth
-                label="Role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                margin="normal"
-                variant="outlined"
-              >
-                <MenuItem value="student">Student</MenuItem>
-                <MenuItem value="teacher">Teacher</MenuItem>
-              </TextField>
+              fieldRow(
+                <School fontSize="small" />,
+                <TextField
+                  select
+                  fullWidth
+                  label="Role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  margin="normal"
+                  variant="outlined"
+                >
+                  <MenuItem value="student">Student</MenuItem>
+                  <MenuItem value="teacher">Teacher</MenuItem>
+                </TextField>
+              )
             )}
 
             {formData.role === 'student' && (
-              <TextField
-                select
-                fullWidth
-                label="Grade/Class"
-                name="grade"
-                value={formData.grade}
-                onChange={handleChange}
-                error={!!errors.grade}
-                helperText={errors.grade}
-                margin="normal"
-                variant="outlined"
-              >
-                <MenuItem value="">Select Grade</MenuItem>
-                <MenuItem value={1}>Class 1</MenuItem>
-                <MenuItem value={2}>Class 2</MenuItem>
-                <MenuItem value={3}>Class 3</MenuItem>
-                <MenuItem value={4}>Class 4</MenuItem>
-                <MenuItem value={5}>Class 5</MenuItem>
-              </TextField>
+              fieldRow(
+                <Class fontSize="small" />,
+                <TextField
+                  select
+                  fullWidth
+                  label="Class"
+                  name="grade"
+                  value={formData.grade}
+                  onChange={handleChange}
+                  error={!!errors.grade}
+                  helperText={errors.grade}
+                  margin="normal"
+                  variant="outlined"
+                >
+                  <MenuItem value="">Select Class</MenuItem>
+                  <MenuItem value={1}>Class 1</MenuItem>
+                  <MenuItem value={2}>Class 2</MenuItem>
+                  <MenuItem value={3}>Class 3</MenuItem>
+                  <MenuItem value={4}>Class 4</MenuItem>
+                  <MenuItem value={5}>Class 5</MenuItem>
+                </TextField>
+              )
             )}
 
             {formData.role === 'student' && (
-              <TextField
-                fullWidth
-                label="Parent Mobile"
-                name="parentPhone"
-                value={formData.parentPhone}
-                onChange={handleChange}
-                error={!!errors.parentPhone}
-                helperText={errors.parentPhone || 'Required for assignment reminders'}
-                margin="normal"
-                variant="outlined"
-                placeholder="+1 555 123 4567"
-                required
-              />
+              fieldRow(
+                <Phone fontSize="small" />,
+                <TextField
+                  fullWidth
+                  label="Parent Mobile"
+                  name="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={handleChange}
+                  error={!!errors.parentPhone}
+                  helperText={errors.parentPhone || 'Required for assignment reminders'}
+                  margin="normal"
+                  variant="outlined"
+                  placeholder="+1 555 123 4567"
+                  required
+                />
+              )
             )}
 
             {formData.role === 'student' && (
-              <TextField
-                fullWidth
-                label="Parent Email"
-                name="parentEmail"
-                value={formData.parentEmail}
-                onChange={handleChange}
-                error={!!errors.parentEmail}
-                helperText={errors.parentEmail || 'Required for assignment reminders'}
-                margin="normal"
-                variant="outlined"
-                placeholder="parent@example.com"
-                required
-              />
+              fieldRow(
+                <Email fontSize="small" />,
+                <TextField
+                  fullWidth
+                  label="Parent Email"
+                  name="parentEmail"
+                  value={formData.parentEmail}
+                  onChange={handleChange}
+                  error={!!errors.parentEmail}
+                  helperText={errors.parentEmail || 'Required for assignment reminders'}
+                  margin="normal"
+                  variant="outlined"
+                  placeholder="parent@example.com"
+                  required
+                />
+              )
             )}
 
             {formData.role === 'demo' && (
@@ -360,29 +412,24 @@ const Register = () => {
 
   return (
     <Container component="main" maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <Box
+        sx={{
+          marginTop: { xs: 2, sm: 4 },
+          marginBottom: { xs: 2, sm: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
       >
-        <Box
+        <Paper
+          elevation={3}
           sx={{
-            marginTop: { xs: 2, sm: 4 },
-            marginBottom: { xs: 2, sm: 4 },
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            padding: { xs: 2.5, sm: 4 },
+            width: '100%',
+            borderRadius: 4
           }}
         >
-          <Paper
-            elevation={3}
-            sx={{
-              padding: { xs: 2.5, sm: 4 },
-              width: '100%',
-              borderRadius: 4
-            }}
-          >
-            <Typography
+          <Typography
               component="h1"
               variant="h4"
               align="center"
@@ -396,7 +443,7 @@ const Register = () => {
               Join Kids Learn! 🎓
             </Typography>
             
-            <Typography
+          <Typography
               variant="body2"
               align="center"
               color="textSecondary"
@@ -405,63 +452,62 @@ const Register = () => {
               Create your account and start learning
             </Typography>
 
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+          <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
 
-            <form>
-              {getStepContent(activeStep)}
+          <form>
+            {getStepContent(activeStep)}
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+              <Button
+                onClick={handleBack}
+                disabled={activeStep === 0}
+                variant="outlined"
+              >
+                Back
+              </Button>
+
+              {activeStep === steps.length - 1 ? (
                 <Button
-                  onClick={handleBack}
-                  disabled={activeStep === 0}
-                  variant="outlined"
+                  onClick={handleSubmit}
+                  variant="contained"
+                  disabled={loading}
                 >
-                  Back
+                  {loading ? 'Creating Account...' : 'Sign Up'}
                 </Button>
-                
-                {activeStep === steps.length - 1 ? (
-                  <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={loading}
-                  >
-                    {loading ? 'Creating Account...' : 'Sign Up'}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleNext}
-                    variant="contained"
-                  >
-                    Next
-                  </Button>
-                )}
-              </Box>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  variant="contained"
+                >
+                  Next
+                </Button>
+              )}
+            </Box>
 
-              <Box sx={{ textAlign: 'center', mt: 3 }}>
-                <Typography variant="body2">
-                  Already have an account?{' '}
-                  <Link
-                    to="/login"
-                    style={{
-                      color: '#0B1F3B',
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Login here
-                  </Link>
-                </Typography>
-              </Box>
-            </form>
-          </Paper>
-        </Box>
-      </motion.div>
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="body2">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  style={{
+                    color: '#0F766E',
+                    textDecoration: 'none',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Login here
+                </Link>
+              </Typography>
+            </Box>
+          </form>
+        </Paper>
+      </Box>
     </Container>
   );
 };
